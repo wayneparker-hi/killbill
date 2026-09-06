@@ -1,0 +1,113 @@
+import "org/killbill/queue/dao/QueueSqlDao.sql.stg"
+
+extraFieldsWithComma() ::= <<
+>>
+
+
+extraValuesWithComma() ::= <<
+>>
+
+readyWhereClause(owner) ::= <<
+    processing_state = 'AVAILABLE'
+<if(owner)>and creating_owner = '<owner>'<endif>
+>>
+
+readyOrderByClause() ::= <<
+    record_id asc
+>>
+
+reapWhereClause() ::= <<
+    processing_state != 'PROCESSED'
+    and processing_state != 'REMOVED'
+    and (processing_owner IS NULL OR processing_available_date \<= :now)
+    and created_date \<= :reapingDate
+>>
+
+getReadyEntryIds(owner, tableName) ::= <<
+    select
+      record_id
+    from <tableName>
+    where
+      record_id >= :from
+      and <readyWhereClause(owner)>
+    order by
+      <readyOrderByClause()>
+    limit :max
+    ;
+>>
+
+/** Bus Events specific queries **/
+getReadyQueueEntriesForSearchKeys(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+          processing_state = 'AVAILABLE'
+      and search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyQueueEntriesForSearchKey2(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+          processing_state = 'AVAILABLE'
+      and created_date \< cast(coalesce(:maxCreatedDate, '2100-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyOrInProcessingQueueEntriesForSearchKeys(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+          processing_state in ('AVAILABLE', 'IN_PROCESSING')
+      and search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyOrInProcessingQueueEntriesForSearchKey2(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+          processing_state in ('AVAILABLE', 'IN_PROCESSING')
+      and created_date \< cast(coalesce(:maxCreatedDate, '2100-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getHistoricalQueueEntriesForSearchKeys(historyTableName) ::= <<
+    select
+      <allTableFields()>
+    from <historyTableName>
+    where
+          search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getHistoricalQueueEntriesForSearchKey2(historyTableName) ::= <<
+    select
+      <allTableFields()>
+    from <historyTableName>
+    where created_date >= cast(coalesce(:minCreatedDate, '1970-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>

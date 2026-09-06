@@ -1,0 +1,456 @@
+0.24.18
+    Update to killbill-oss-parent 0.144.66
+
+0.24.17
+    Fork config-magic
+
+0.24.16
+    queue: make timeout configurable to wait for executors threads to complete
+
+0.24.15
+    Add support for JDK 11
+    Update to killbill-oss-parent 0.144.53
+
+0.24.14
+    Update to killbill-oss-parent 0.144.49
+
+0.24.13
+    Fix https://github.com/killbill/killbill-commons/issues/90
+
+0.24.12
+    Update to killbill-oss-parent 0.144.44 (Jersey 2.x)
+
+0.24.11
+    Update to killbill-oss-parent 0.144.39
+
+0.24.10
+    Update to killbill-oss-parent 0.144.37
+
+0.24.9
+    Update to killbill-oss-parent 0.144.34
+
+0.24.8
+    Update parent pom.xml
+
+0.24.7
+    Harden jdbi string template (set a context class loader when none is specififed to avoid corrupting cache with null value)
+
+0.24.6
+    Update to killbill-oss-parent 0.144.24
+
+0.24.5
+    Update to killbill-oss-parent 0.144.19
+    Namespace all resources files
+
+0.24.4
+    Update to killbill-oss-parent 0.144.8
+
+0.24.3
+    Update to killbill-oss-parent 0.144.6
+
+0.24.2
+    Update to killbill-oss-parent 0.144.4
+
+0.24.1
+    Update to killbill-oss-parent 0.144.3
+
+0.24.0
+    Update to killbill-oss-parent 0.144.2
+    MVCC=true should be removed from H2 jdbc urls (the default MVSTore is a MVCC engine)
+
+0.23.11
+    queue: fix InMemoryPersistentBus init sequence
+
+0.23.10
+    Split queue start sequence into initQueue() and startQueue()
+    Move to airlift embeddeddb stack for the tests
+
+0.23.9
+    remove unused killbill-api dependency
+
+0.23.8
+    Fix duplication of JUL logs in certain situations
+
+0.23.7
+    Update to killbill-oss-parent 0.143.46
+
+0.23.6
+    Update to killbill-oss-parent 0.143.43
+
+0.23.5
+    Fix issue in queue upon exception
+
+0.23.4
+    xmlloader: Keep root element
+    queue: Small enhancements around exceptions
+
+0.23.3
+    Initial support for Jersey 2
+    jdbi changes for Oracle support
+    Queue improvements (org.killbill.queue.reap.schedule is deprecated)
+    Update to killbill-oss-parent 0.143.28
+
+0.23.2
+    Minor queue fixes for metrics and reaper
+
+0.23.1
+    Queue perf improvements
+
+0.23.0
+    Remork bus and notificationQ (simplify logic, minimize DB queries, improve internal metrics)
+
+0.22.5
+    jdbi: PostgreSQL bugfix for @GetGeneratedKeys on batches
+
+0.22.4
+    jdbi: add support for @GetGeneratedKeys on batches
+
+0.22.3
+    queue: create additional jdbi-shaded artifact
+
+0.22.2
+    automaton: fix serialization for distributed caching
+    clock: implement distributed clock using Redis
+    xmlloader: remove legacy URI parameter in validation
+    Update to killbill-oss-parent 0.142.5 (JDK 1.8)
+
+0.22.1
+    Configure jackson Mapper to ignore unknown properties
+
+0.22.0
+    Initial release for Kill Bill 0.20.x
+
+0.21.15
+    Update to killbill-oss-parent 0.141.91
+
+0.21.14
+    Update to killbill-oss-parent 0.141.72
+
+0.21.13
+    Improve state definition for events that were retried to better understand the final retry state.
+
+0.21.12
+    Add the possibility to bypass mapping registry cache
+
+0.21.11
+    Failed release. Dont' use.
+
+0.21.10
+    queue: revisit DEBUG log entries
+    queue: add NotificationQueue#removeFutureNotificationsForSearchKeys API
+
+0.21.9
+    queue: harden STICKY_ modes for cloud deployments, see #29 and #30
+    queue: put the user token in the MDC
+    jdbi: add support for read-only pool
+
+0.21.8
+    jdbi: set the default transaction isolation level at the pool level
+    jdbi: don't call setMaxRows(1) for most queries
+
+0.21.7
+    jdbi: make sure DBI caches are used for the queues APIs
+    jdbi: ensure prepared statements are cached (server-side) by default (regression with recent MariaDB driver upgrade)
+
+0.21.6
+    jdbi: optimize LowerToCamelBeanMapper
+    Update to killbill-oss-parent 0.141.34
+
+0.21.5
+    Add additional profiling flags for global locker and database connection.
+
+0.21.4
+    queues: expose getNbReadyEntries API
+    Update to killbill-oss-parent 0.141.27
+
+0.21.3
+    Change org.killbill.dao.leakDetectionThreshold to TimeSpan
+
+0.21.2
+    Configure HikariCP leak detection
+
+0.21.1
+    Add new apis to update notifications
+
+0.21.0
+    Initial release against work-for-release-0.19.x -- mostly getting latest code from master
+    queue: Retry code logic
+
+0.20.17
+    change org.killbill.dao.leakDetectionThreshold to TimeSpan
+
+0.20.16
+    Configure HikariCP leak detection
+
+0.20.15
+    Update to killbill-oss-parent 0.140.47
+
+0.20.14
+    Add missing api NotificationQueue#updateFutureNotificationFromTransaction to update json event
+
+0.20.13
+    jdbi: add new config property org.killbill.dao.initializationFailFast
+    Update to killbill-oss-parent 0.140.43
+
+0.20.12
+    DO NOT USE
+
+0.20.11
+    H2 support improvements
+    queue: enhance shutdown sequence
+
+0.20.10
+    Support unpooled database connections (mainly for PGBouncer)
+    Update to killbill-oss-parent 0.140.32
+
+0.20.9
+    Update to killbill-oss-parent 0.140.30
+
+0.20.8
+    Fork jdbi-2.62 (performance patches)
+    Update to killbill-oss-parent 0.140.29
+
+0.20.7
+    make sure to store the clock internally as UTC
+
+0.20.6
+    Fix PostgreSQL compatibility
+    Update various third-party dependencies
+    Update to killbill-oss-parent 0.140.22
+
+0.20.5
+    xmlloader: expose toURL helpers
+    Update to killbill-oss-parent 0.140.15
+
+0.20.4
+    queue: add missing setters in ModelDao (performance)
+    Update to killbill-oss-parent 0.140.13
+
+0.20.3
+    Add indexes for historical queries on queues
+    Switch to streaming APIs for all queues searches
+    MySQL embeddeddb compatibility with recent MariaDB Connector/J client
+
+0.20.2
+    Add queue apis for historical entries
+
+0.20.1
+    Add system property to didable XML validation
+
+0.20
+    automaton: ensure at least one enteringState transition is available
+
+0.19
+    Move embedded DBs to test-jars
+
+0.18
+    Update with latest HA branch
+
+0.17
+    0.15.1 merge for 0.17.x
+    Update to killbill-oss-parent 0.103
+
+0.16
+    Update commons to 0.16 for KB release 0.17
+
+0.15.2
+    Fix inheritance bug in WithProfilingThreadPoolExecutor
+
+0.15.1
+    Make MemoryGlobalLocker re-entrant
+    Update to killbill-oss-parent 0.94.1
+
+0.15
+    Enhance/simplify EmbeddedDB (testing using connection pooling)
+
+0.14
+    Fixed InMemoryPersistentBus implementation to correctly throw errors (instaed of swallowing them into guava)
+
+0.13
+    Set default value of 100 for notification queue capacity
+    Make MemoryGlobalLocker sleep between retries
+    Update to killbill-oss-parent 0.82
+
+0.12
+    Implement a BlockingRejectionExecutionHandler for the notificationQ
+
+0.11
+    update to latest org.mariadb.jdbc.MySQLDataSource
+    Add DAO profiling data for queue
+
+0.10
+    Fixed issue in metrics
+
+0.9
+    Metrics work (Enhance @TimedResource annotation to include more info)
+
+0.8
+    Change WithProfilingThreadPoolExecutor to extend DynamicThreadPoolExecutorWithLoggingOnExceptions instead of raw ThreadPoolExecutor
+
+0.7
+    Fix issue with notification error count computation
+
+0.6
+    Add ability for GlobalLock to be reentrant
+
+0.5
+    Rework PersistentBus and NotificationQ dispatching
+
+0.4
+    PostgreSQL support
+    Update to killbill-oss-parent 0.29
+    Update default queue properties
+
+0.3
+    Remove BoneCP support
+    org.killbill.dao.minIdle now defaults to 0
+    Upgrade Dropwizard metrics (3.1.1), jDBI (2.59) and H2 (1.4.186)
+    embeddeddb: default to MariaDB driver for MySQL
+    https://github.com/killbill/killbill-commons/issues/5
+    https://github.com/killbill/killbill-commons/issues/8
+    Update to killbill-oss-parent 0.11
+
+0.2.33
+    Add auto-increment for the queue historical tables (which caused a lot of headaches because of how mysql implements the auto_increment)
+    Minor buf fixes in queue search APIs
+
+0.2.32
+    Another fix for https://github.com/killbill/killbill-commons/issues/6
+    New search APIs for the queues
+    Update to killbill-oss-parent 0.9.10
+
+0.2.31
+    Refactor queue to remove deprecated Transmogrifier class and use jdbc Connection instead
+
+0.2.30
+    Attempt to fix https://github.com/killbill/killbill-commons/issues/6
+
+0.2.29
+    https://github.com/killbill/killbill/issues/226
+    New Debug system property for Hostname (queue)
+
+0.2.28
+    Create ClockUtil to start encapsulating Clock functions
+
+0.2.27
+    Fix around MysqldResource (test)
+    Code review integration
+
+0.2.26
+    Move to MariaDB and HikariCP (connection pool)
+    Fix in queue for duplicate entries
+    Fix for LowerToCamelBeanMapper when reading date
+    jdbi: switch to HikariCP pool and MariaDB JDBC driver
+
+0.2.25
+    Skipped (build issues)
+
+0.2.24
+    Queue: fix duplicate entry issue when configured with sticky and multiple threads
+    Update to killbill-oss-parent 0.7.26
+
+0.2.23
+    Fix inflightQ queue to allow multiple events to be submitted per transactions
+
+0.2.22
+    Queue perf improvement and bug fixes
+
+0.2.21
+    Update to killbill-oss-parent 0.7.21
+    Lower default jdbi logging level
+    Queue: performance improvements
+      - Batch queries when possible
+      - Optimize jdbi string template loading
+      - Introduce DatabaseTransactionNotificationApi
+      - Modify InflightQ algorithm to avoid polling
+
+0.2.20
+    profiling: add support for JAX-RS
+    queue: remove harmless warning in DBBackedQueue
+    Fix java 1.6 build
+    Update to killbill-oss-parent 0.7.20
+
+0.2.19
+    Add support for profiling data
+    Fix bug in inflightQ algorithm
+
+0.2.18
+    Minor change in the queue framework to inject a separate IDBI instance
+
+0.2.17
+    Minor automaton state machine tweaking (Exception handling, new apis)
+
+0.2.16
+    Introduce new automaton module
+    Introduce new xmlloader module
+    jdbi: extract DBIProvider, DaoConfig, DataSourceConnectionPoolingType and DataSourceProvider from killbill
+    Update to killbill-oss-parent 0.7.11
+
+0.2.15
+    Second pass on the inflightQ algorithm for the queue
+
+0.2.14
+    Update to killbill-oss-parent 0.5.29
+    Remove dependency on deprecated mxj libraries for MySQLStandaloneDB
+
+0.2.13
+    Introduce GenericStandaloneDB for database abstraction.
+
+0.2.10
+    Queue
+      - Move com.ning.billing.QueueObjectMapper to com.ning.billing.queue.QueueObjectMapper
+    Update to killbill-oss-parent 0.5.12
+
+0.2.9
+    Queue
+      - Make ObjectMapper configurable
+      - Enable JodaModule for default ObjectMapper on serialization
+
+0.2.8
+    Queue
+      - Fix for https://github.com/killbill/killbill-commons/issues/2 (DefaultClock doesn't respect user timezone)
+
+0.2.7
+    JDBI
+      - Import Slf4jLogging and RestartTransactionRunner from the skeleton
+
+0.2.6
+    Queue
+      - Bug fix for getCountReadyEntries NotificationQueue APi
+0.2.5
+    Queue
+      - Add ability to fecth for count of ready notifications (test purpose mostly)
+
+0.2.4
+    Queue
+      - Add interface in NotificationQueueService to retrieve all NotificationQueues
+
+0.2.3
+    Queue
+      - Remove MetricsRegistry static instance
+      - Namespace bus options
+
+0.2.2
+    Queue
+      - Make bus and notification queue table names configurable
+      - Remove date constraints in notification queue search APIs
+      - Update Metrics to 3.0.1
+      - Namespace notification queue options
+    Update to killbill-oss-parent 0.4.2
+
+0.2.1
+    embeddeddb: add MySQLStandaloneDB
+
+0.2.0
+    Update to killbill-oss-parent 0.3.7
+    embeddeddb: add refreshTableNames API
+
+0.1.8
+    Update to killbill-oss-parent 0.3.3
+    Code review integration for bus/notificationQ
+
+0.1.7
+    Update to killbill-oss-parent 0.3.2
+
+0.1.6
+    Update to killbill-oss-parent 0.3.1

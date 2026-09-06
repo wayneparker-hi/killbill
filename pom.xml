@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2010-2014 Ning, Inc.
+  ~ Copyright 2014-2020 Groupon, Inc
+  ~ Copyright 2020-2022 Equinix, Inc
+  ~ Copyright 2014-2022 The Billing Project, LLC
+  ~
+  ~ The Billing Project licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.kill-bill.billing</groupId>
+    <artifactId>killbill-monorepo</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Kill Bill Monorepo</name>
+    <description>Aggregator for the Kill Bill core modules. Pure reactor: it is NOT the parent of
+        any module -- every module keeps killbill-oss-parent as its parent, reached through an
+        explicit relativePath. Adding or removing this file must never change what a module inherits.</description>
+
+    <!--
+      Module order is the dependency topology. Do not reorder:
+
+        killbill-oss-parent   (parent pom + BOM for everything below)
+              |
+        killbill-api          (core API, org.kill-bill.billing)
+              |
+        killbill-plugin-api   (plugin SPI, org.kill-bill.billing.plugin)
+              |
+        killbill-commons      (shared libs, org.kill-bill.commons)
+              |
+        killbill-platform     (OSGi runtime today, LPR runtime tomorrow)
+              |
+        killbill              (business core)
+
+      killbill-oss-parent's dependencyManagement references every module below it, which looks
+      like a cycle but is not: those references resolve through version properties
+      (killbill-api.version, killbill.version, ...) that are declared in killbill-oss-parent
+      itself and kept in sync with each module's own <version>.
+    -->
+    <modules>
+        <module>killbill-oss-parent</module>
+        <module>killbill-api</module>
+        <module>killbill-plugin-api</module>
+        <module>killbill-commons</module>
+        <module>lpr</module>
+        <module>killbill-platform</module>
+        <module>killbill</module>
+        <module>killbill-plugin-framework</module>
+        <module>plugins</module>
+    </modules>
+</project>

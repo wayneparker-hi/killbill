@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ The Billing Project licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.kill-bill.billing</groupId>
+        <artifactId>killbill-plugins</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>hello-world-plugin</artifactId>
+    <packaging>jar</packaging>
+    <name>Hello World Plugin</name>
+    <description>The canonical example plugin, ported from OSGi to LPR.
+
+        Kept as the reference for what a migration involves, so the diff against the original is
+        worth reading:
+
+          * HelloWorldActivator (extends KillbillActivatorBase, ~120 lines of BundleContext,
+            Hashtable properties and per-service registrar calls) becomes HelloWorldPlugin, an
+            implementation of Plugin.
+          * ServiceTracker wrappers around the Kill Bill API, the DataSource, the clock and the
+            metric registry are gone. The runtime hands those over through PluginContext.
+          * The bnd instructions in the pom -- Bundle-Activator inferred by scanning for a subclass,
+            Import-Package listing forty-odd packages, Embed-Dependency inlining every jar -- are
+            replaced by five lines of plugin.yaml.
+          * packaging changes from 'bundle' to 'jar'.
+
+        What did not change is the part that was always this plugin's own business: the
+        PaymentPluginApi and InvoicePluginApi implementations compile untouched.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <!-- Provided, not compile: the runtime supplies these types, and they must resolve
+                 parent-first so that plugin and core share one Class object. Bundling a copy is
+                 exactly the mistake ClassLoaderPolicy exists to defend against. -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-classloader-default</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-core</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-descriptor-yaml</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- The migration test assembles a real runtime, so it declares the runtime's pieces
+             explicitly rather than leaning on what the testkit happens to pull in. -->
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-spi</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-testkit</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-payment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-platform-plugin-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-platform-plugin-runtime</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-util</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing.plugin</groupId>
+            <artifactId>killbill-plugin-api-invoice</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing.plugin</groupId>
+            <artifactId>killbill-plugin-api-payment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

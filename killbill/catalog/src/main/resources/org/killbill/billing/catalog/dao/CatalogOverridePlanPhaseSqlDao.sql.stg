@@ -1,0 +1,64 @@
+tableName() ::= "catalog_override_plan_phase"
+
+
+tableFields(prefix) ::= <<
+  <prefix>phase_number
+, <prefix>phase_def_record_id
+, <prefix>target_plan_def_record_id
+, <prefix>created_date
+, <prefix>created_by
+, <prefix>tenant_record_id
+>>
+
+allTableFields(prefix) ::= <<
+  <prefix>record_id
+, <tableFields(prefix)>
+>>
+
+
+tableValues() ::= <<
+  :phaseNumber
+, :phaseDefRecordId
+, :targetPlanDefRecordId
+, :createdDate
+, :createdBy
+, :tenantRecordId
+>>
+
+
+allTableValues() ::= <<
+  :recordId
+, <tableValues()>
+>>
+
+create() ::= <<
+insert into <tableName()> (
+<tableFields("")>
+)
+values (
+<tableValues()>
+)
+;
+>>
+
+getByRecordId() ::= <<
+select <allTableFields("")>
+from
+<tableName()>
+where record_id = :recordId
+and tenant_record_id = :tenantRecordId
+;
+>>
+
+getTargetPlanDefinition() ::= <<
+select
+target_plan_def_record_id
+from
+<tableName()>
+where
+1=1
+and phase_number = :phaseNumber
+and phase_def_record_id = :phaseDefRecordId
+and tenant_record_id = :tenantRecordId
+;
+>>

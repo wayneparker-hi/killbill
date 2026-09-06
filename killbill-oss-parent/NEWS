@@ -1,0 +1,2213 @@
+0.144.78
+    Update postgresql from 42.3.1 to 42.3.2
+    Update sortpom-maven-plugin from 3.0.0 to 3.0.1
+
+0.144.77
+    Update build-helper-maven-plugin from 3.2.0 to 3.3.0
+    Update checker-qual from 3.19.0 to 3.21.1
+    Update duplicate-finder-maven-plugin from 1.5.0 to 1.5.1
+    Update jackson.version from 2.13.0 to 2.13.1
+    Update killbill-commons from 0.24.19 to 0.24.20
+    Update logback.version from 1.2.7 to 1.2.10
+    Update maven-release-plugin from 3.0.0-M4 to 3.0.0-M5
+    Update maven-scm-plugin from 1.12.0 to 1.12.2
+    Update mysql-connector-java from 8.0.27 to 8.0.28
+    Update slf4j.version from 1.7.32 to 1.7.33
+    Update spotbugs-annotations from 4.5.0 to 4.5.3
+    Update spotbugs-maven-plugin from 4.5.0.0 to 4.5.3.0
+    Update swagger.version from 1.6.3 to 1.6.4
+
+0.144.76
+    Update killbill-base-plugin to 4.2.16
+
+0.144.75
+    Update killbill-platform to 0.40.12
+
+0.144.74
+    Update byte-buddy from 1.12.2 to 1.12.3
+    Update killbill-commons to 0.24.19
+    Update mockito-core from 3.11.2 to 4.1.0
+    Update redisson from 3.16.4 to 3.16.6
+    Update spotbugs-maven-plugin from 4.4.2.2 to 4.5.0.0
+
+0.144.73
+    Update awaitility from 4.1.0 to 4.1.1
+    Update biz.aQute.bndlib from 6.0.0 to 6.1.0
+    Update byte-buddy from 1.11.20 to 1.12.2
+    Update checker-qual from 3.18.1 to 3.19.0
+    Update joda-time from 2.10.12 to 2.10.13
+    Update kotlin-stdlib-common from 1.5.31 to 1.6.0
+    Update logback from 1.2.6 to 1.2.7
+    Update mysql-connector-java from 8.0.26 to 8.0.27
+    Update netty from 4.1.69.Final to 4.1.70.Final
+    Update shiro from 1.3.2 to 1.8.0
+    Update postgresql from 42.2.24 to 42.3.1
+    Update redisson from 3.16.3 to 3.16.4
+    Update spotbugs-annotations from 4.4.2 to 4.5.0
+    Update spotbugs-maven-plugin from 4.4.2.1 to 4.4.2.2
+
+0.144.72
+    Add commons-codec:commons-codec:1.15
+    Update ehcache from 3.9.6 to 3.9.7
+    Update spotbugs-maven-plugin from 4.4.1 to 4.4.2.1
+
+0.144.71
+    Add io.netty:netty-transport-native-unix-common:4.1.69.Final
+
+0.144.70
+    Add io.netty:netty-transport-native-epoll:4.1.69.Final:linux-x86_64
+    Add io.netty:netty-transport-native-kqueue:4.1.69.Final:osx-x86_64
+
+0.144.69
+    Update killbill-base-plugin from 4.2.14 to 4.2.15
+
+0.144.68
+    Update killbill-platform from 0.40.10 to 0.40.11
+
+0.144.67
+    Update killbill-commons from 0.24.17 to 0.24.18
+
+0.144.66
+    Add io.netty:netty-resolver:4.1.69.Final
+
+0.144.65
+    Update assertj-core from 3.20.2 to 3.21.0
+    Update biz.aQute.bndlib from 5.3.0 to 6.0.0
+    Update byte-buddy from 1.11.12 to 1.11.20
+    Update checker-qual from 3.17.0 to 3.18.1
+    Update ehcache from 3.9.5 to 3.9.6
+    Update extra-enforcer-rules from 1.3 to 1.4
+    Update guava from 30.1.1-jre to 31.0.1-jre
+    Update influxdb-java from 2.21 to 2.22
+    Update jackson.version from 2.12.4 to 2.13.0
+    Update jersey from 2.34 to 2.35
+    Update jetty.version from 9.4.43.v20210629 to 9.4.44.v20210927
+    Update joda-time from 2.10.10 to 2.10.12
+    Update jooq from 3.14.13 to 3.14.15
+    Update killbill-commons from 0.24.16 to 0.24.17
+    Update kotlin-stdlib-common from 1.5.21 to 1.5.31
+    Update logback.version from 1.2.5 to 1.2.6
+    Update maven-enforcer-plugin from 3.0.0-M3 to 3.0.0
+    Update maven-javadoc-plugin from 3.3.0 to 3.3.1
+    Update maven-war-plugin from 3.3.1 to 3.3.2
+    Update netty.version from 4.1.66.Final to 4.1.69.Final
+    Update postgresql from 42.2.23 to 42.2.24
+    Update redisson from 3.16.1 to 3.16.3
+    Update spotbugs-annotations from 4.4.1 to 4.4.2
+    Update spotbugs-maven-plugin from 4.2.0 to 4.4.1
+    Update swagger.version from 1.6.2 to 1.6.3
+    Switch from org.skife.config:config-magic to org.kill-bill.commons:killbill-config-magic
+
+0.144.64
+    Update killbill-client from 1.2.4 to 1.2.5
+
+0.144.63
+    Update killbill-platform from 0.40.9 to 0.40.10
+
+0.144.62
+    Update killbill-platform from 0.40.8 to 0.40.9
+
+0.144.61
+    Update killbill-base-plugin from 4.2.13 to 4.2.14
+
+0.144.60
+    Update killbill-commons from 0.24.15 to 0.24.16
+
+0.144.59
+    Update byte-buddy from 1.11.8 to 1.11.12
+    Update checker-qual from 3.16.0 to 3.17.0
+    Update ehcache from 3.9.4 to 3.9.5
+    Update git-commit-id-plugin from 4.0.5 to 4.9.10
+    Update janino from 3.1.4 to 3.1.6
+    Update jaxb-runtime from 2.3.4 to 2.3.5
+
+0.144.58
+    Update killbill-client from 1.2.3 to 1.2.4
+
+0.144.57
+    Update killbill-platform from 0.40.7 to 0.40.8
+
+0.144.56
+    Update killbill-base-plugin from 4.2.12 to 4.2.13
+
+0.144.55
+    Downgrade jooq to 3.14.13
+
+0.144.54
+    Update killbill-commons from 0.24.14 to 0.24.15
+
+0.144.53
+    Add com.sun.activation:jakarta.activation 2.0.1
+    Add io.jsonwebtoken:jjwt-api:0.11.2
+    Add io.jsonwebtoken:jjwt-impl:0.11.2
+    Add io.jsonwebtoken:jjwt-jackson:0.11.2
+    Add org.glassfish.jaxb:jaxb-runtime 2.3.4
+    Update assertj-core from 3.19.0 to 3.20.2
+    Update async-http-client from 2.12.1 to 2.12.3
+    Update awaitility from 4.0.3 to 4.1.0
+    Update byte-buddy from 1.10.21 to 1.11.8
+    Update checker-qual from 3.13.0 to 3.16.0
+    Update commons-compress from 1.20 to 1.21
+    Update commons-io from 2.8.0 to 2.11.0
+    Update commons-lang3 from 3.11 to 3.12.0
+    Update concurrent from 202 to 206
+    Update ehcache from 3.9.3 to 3.9.4
+    Update git-commit-id-plugin from 4.0.3 to 4.0.5
+    Update guava from 30.1-jre to 30.1.1-jre
+    Update HikariCP from 4.0.2 to 4.0.3
+    Update jackson from 2.12.3 to 2.12.4
+    Update janino from 3.1.3 to 3.1.4
+    Update javassist from 3.27.0-GA to 3.28.0-GA
+    Update jetty from 9.4.40.v20210413 to 9.4.43.v20210629
+    Update jooby from 1.6.8 to 1.6.9
+    Update jooq from 3.14.7 to 3.15.1
+    Update kotlin-stdlib-common from 1.4.30 to 1.5.21
+    Update log from 205 to 206
+    Update logback from 1.2.3 to 1.2.5
+    Update mariadb-java-client from 2.7.2 to 2.7.3
+    Update maven-gpg-plugin from 1.6 to 3.0.1
+    Update maven-javadoc-plugin from 3.2.0 to 3.3.0
+    Update maven-release-plugin from 3.0.0-M1 to 3.0.0-M4
+    Update mockito-core from 3.9.0 to 3.11.2
+    Update mysql-connector-java from 8.0.23 to 8.0.26
+    Update netty from 4.1.63.Final to 4.1.66.Final
+    Update postgresql from 42.2.20 to 42.2.23
+    Update redisson from 3.15.0 to 3.16.1
+    Update slf4j from 1.7.30 to 1.7.32
+    Update snakeyaml from 1.27 to 1.29
+    Update sortpom-maven-plugin from 2.13.1 to 3.0.0
+    Update spotbugs-annotations from 4.2.1 to 4.3.0
+    Update testng from 7.3.0 to 7.4.0
+    Add javac-release profile for JDK11+ builds
+
+0.144.52
+    Update killbill-base-plugin from 4.2.11 to 4.2.12
+
+0.144.51
+    Add org.objenesis:objenesis:3.2
+    Update checker-qual from 3.10.0 to 3.13.0
+    Update easymock from 4.2 to 4.3
+    Update ehcache from 3.9.0 to 3.9.3
+    Update jackson from 2.12.1 to 2.12.3
+    Update jersey from 2.33 to 2.34
+    Update jetty from 9.4.36.v20210114 to 9.4.40.v20210413
+    Update killbill-client from 1.2.2 to 1.2.3
+    Update killbill-platform from 0.40.6 to 0.40.7
+    Update log from 202 to 205
+    Update mockito-core from 3.7.7 to 3.9.0
+    Update netty from 4.1.59.Final to 4.1.63.Final
+    Update postgresql from 42.2.19 to 42.2.20
+
+0.144.50
+    Update biz.aQute.bndlib from 5.2.0 to 5.3.0
+    Update killbill-commons from 0.24.13 to 0.24.14
+    Update manifold from 2020.1.45 to 2021.1.11
+
+0.144.49
+    Update byte-buddy from 1.10.19 to 1.10.21
+    Update HikariCP from 4.0.1 to 4.0.2
+    Update jersey from 2.32 to 2.33
+    Update junit from 4.13.1 to 4.13.2
+    Update killbill-commons from 0.24.11 to 0.24.13
+    Update netty from 4.1.58.Final to 4.1.59.Final
+    Update postgresql from 42.2.18 to 42.2.19
+
+0.144.48
+    Update killbill-client from 1.2.1 to 1.2.2
+
+0.144.47
+    Update killbill-platform from 0.40.5 to 0.40.6
+
+0.144.46
+    Update killbill-base-plugin from 4.2.10 to 4.2.11
+
+0.144.45
+    Update killbill-commons from 0.24.11 to 0.24.12
+
+0.144.44
+    Update checker-qual from 3.9.1 to 3.10.0
+    Update HikariCP from 4.0.0 to 4.0.1
+    Update janino from 3.1.2 to 3.1.3
+    Update jersey from 1.19.4 to 2.32
+    Update joda-time from 2.10.9 to 2.10.10
+    Update jooq from 3.14.4 to 3.14.7
+    Update kotlin-stdlib-common from 1.4.21 to 1.4.30
+    Update mariadb-java-client from 2.7.1 to 2.7.2
+    Update redisson from 3.14.1 to 3.15.0
+    Update snappy-java from 1.1.8.2 to 1.1.8.4
+    Update spotbugs-annotations from 4.2.0 to 4.2.1
+
+0.144.43
+    Update assertj-core from 3.18.1 to 3.19.0
+    Update checker-qual from 3.8.0 to 3.9.1
+    Update HikariCP from 3.4.5 to 4.0.0
+    Update jetty from 9.4.35.v20201120 to 9.4.36.v20210114
+    Update mockito-core from 3.6.28 to 3.7.7
+    Update mysql-connector-java from 8.0.22 to 8.0.23
+    Update sortpom-maven-plugin from 2.12.0 to 2.13.1
+
+0.144.42
+    Update killbill-base-plugin from 4.2.9 to 4.2.10
+
+0.144.41
+    Update killbill-platform from 0.40.4 to 0.40.5
+
+0.144.40
+    Update killbill-commons from 0.24.9 to 0.24.11
+    Update netty from 4.1.56.Final to 4.1.58.Final
+
+0.144.39
+    No functional change
+
+0.144.38
+    Update assertj-core from 3.18.0 to 3.18.1
+    Update byte-buddy from 1.10.18 to 1.10.19
+    Update checker-qual from 3.7.0 to 3.8.0
+    Update compress-lzf from 1.0.4 to 1.1
+    Update concurrent from 201 to 202
+    Update config from 1.4.0 to 1.4.1
+    Update git-commit-id-plugin from 4.0.2 to 4.0.3
+    Update guava from 30.0-jre to 30.1-jre
+    Update influxdb-java from 2.20 to 2.21
+    Update jackson from 2.11.3 to 2.12.1
+    Update jetty from 9.4.33.v20201020 to 9.4.35.v20201120
+    Update joda-time from 2.10.6 to 2.10.9
+    Update jooq from 3.14.1 to 3.14.4
+    Update kotlin-stdlib-common from 1.4.0 to 1.4.21
+    Update log from 201 to 202
+    Update mariadb-java-client from 2.7.0 to 2.7.1
+    Update mockito-core from 3.5.15 to 3.6.28
+    Update netty from 4.1.53.Final to 4.1.56.Final
+    Update redisson from 3.13.5 to 3.14.1
+    Update snappy-java from 1.1.8 to 1.1.8.2
+    Update spotbugs-annotations from 4.1.4 to 4.2.0
+    Update spotbugs-maven-plugin from 4.1.4 to 4.2.0
+
+0.144.37
+    Update killbill-platform to 0.40.4
+
+0.144.36
+    Update killbill-base-plugin to 4.2.9
+
+0.144.35
+    Update killbill-commons -> 0.24.9
+
+0.144.34
+    Update assertj-core from 3.17.2 to 3.18.0
+    Update biz.aQute.bndlib from 5.1.2 to 5.2.0
+    Update byte-buddy from 1.10.16 to 1.10.18
+    Update checker-qual from 3.6.1 to 3.7.0
+    Update concurrent from 200 to 201
+    Update duplicate-finder-maven-plugin from 1.4.0 to 1.5.0
+    Update guava from 29.0-jre to 30.0-jre
+    Update jetty from 9.4.31.v20200723 to 9.4.33.v20201020
+    Update jooq from 3.13.4 to 3.14.1
+    Update junit from 4.13 to 4.13.1
+    Update mockito-core from 3.5.9 to 3.5.15
+    Update mysql-connector-java from 8.0.21 to 8.0.22
+    Update netty from 4.1.52.Final to 4.1.53.Final
+    Update postgresql from 42.2.16 to 42.2.18
+    Update redisson from 3.13.4 to 3.13.5
+    Update snappy-java from 1.1.7.7 to 1.1.8
+    Update spotbugs-annotations from 4.1.3 to 4.1.4
+    Update spotbugs-maven-plugin from 4.0.4 to 4.1.4
+
+0.144.33
+    Update killbill-platform -> 0.40.3
+
+0.144.32
+    Update killbill-base-plugin -> 4.2.8
+
+0.144.31
+    Update killbill-commons -> 0.24.8
+
+0.144.30
+    Update killbill-commons -> 0.24.7
+    Update assertj-core from 3.17.1 to 3.17.2
+    Update byte-buddy from 1.10.14 to 1.10.16
+    Update commons-io from 2.7 to 2.8.0
+    Update jackson from 2.11.2 to 2.11.3
+    Update jersey from 1.19.3 to 1.19.4
+    Update jetty from 9.4.30.v20200611 to 9.4.31.v20200723
+    Update log from 200 to 201
+    Update mariadb-java-client from 2.6.2 to 2.7.0
+    Update metrics from 3.2.3 to 3.2.6
+    Update netty from 4.1.51.Final to 4.1.52.Final
+    Update snakeyaml from 1.26 to 1.27
+    Update spotbugs-annotations from 4.1.2 to 4.1.3
+    Update spring from 2.0.2 to 2.5.6
+    Update swagger from 1.5.21 to 1.6.2
+    Update wiremock from 2.27.1 to 2.27.2
+    Update git-commit-id-plugin from 4.0.1 to 4.0.2
+    Update maven-resources-plugin from 3.1.0 to 3.2.0
+    Update maven-scm-manager-plexus from 1.8.1 to 1.11.2
+    Update maven-scm-provider-gitexe from 1.8.1 to 1.11.2
+
+0.144.29
+    Update killbill-client to 1.2.1
+
+0.144.28
+    Update killbill-base-plugin to 4.2.7
+
+0.144.27
+    Update killbill-platform to 0.40.2
+
+0.144.26
+    Update killbill-base-plugin to 4.2.6
+
+0.144.25
+    Update killbill-commons to 0.24.6
+
+0.144.24
+    Add commons-compress 1.20
+    Add checker-qual 3.6.1
+    Add flyway-core 4.0
+    Add influxdb-java 2.20
+    Add kotlin-stdlib-common 1.4.0
+    Add slf4j-log4j12 1.7.30
+    Add wiremock 2.27.1
+    Update assertj-core from 3.16.1 to 3.17.1
+    Update byte-buddy from 1.10.13 to 1.10.14
+    Update commons-lang3 from 3.10 to 3.11
+    Update ehcache from 3.8.1 to 3.9.0
+    Update HikariCP from 2.3.13 to 3.4.5
+    Update io.airlift:concurrent from 0.198 to 200
+    Update io.airlift:log from 0.198 to 200
+    Update jakarta.activation-api from 1.2.1 to 1.2.2
+    Update jakarta.xml.bind-api from 2.3.2 to 2.3.3
+    Update jackson from 2.11.1 to 2.11.2
+    Update jooby from 1.4.0 to 1.6.8
+    Update jooq from 3.9.1 to 3.13.4
+    Update mariadb-java-client from 1.7.4 to 2.6.2
+    Update mockito-core from 3.4.4 to 3.5.9
+    Update mysql-connector-java from 5.1.46 to 8.0.21
+    Update netty from 4.1.50.Final to 4.1.51.Final
+    Update postgresql from 42.1.4 to 42.2.16
+    Update redisson from 3.13.2 to 3.13.4
+    Update snappy-java from 1.1.7.6 to 1.1.7.7
+    Update spotbugs-annotations from 4.0.6 to 4.1.2
+    Update spring from 2.0.1 to 2.0.2
+    Update spring-mock from 2.0.1 to 2.0.8
+    Update testng from 7.1.0 to 7.3.0
+
+0.144.23
+    Update killbill-client to 1.2.0
+
+0.144.22
+    Update killbill-platform to 0.40.1
+
+0.144.21
+    Update killbill-base-plugin to 4.2.5
+
+0.144.20
+    Update killbill-commons to 0.24.5
+
+0.144.19
+    Excluding logging frameworks from embedded-redis
+    Fix byte-buddy conflicts
+    Fix jaxb conflicts
+    Set Netty version to 4.1.50.Final
+    Introduce check.skip-dependency-versions and check.fail-dependency-versions
+
+0.144.18
+    rat: ignore documentation
+
+0.144.17
+    Update killbill-base-plugin to 4.2.4
+
+0.144.16
+    Introduce check.spotbugs-exclude-filter-file
+    Introduce osgi.extra-import
+
+0.144.15
+    Rename surefire.skipTests to skipTests
+    Update killbill-base-plugin to 4.2.3
+
+0.144.14
+    Update killbill-base-plugin to 4.2.2
+
+0.144.13
+    Update killbill-platform to 0.40.0
+
+0.144.12
+    Review default osgi.import property
+
+0.144.11
+    Set default value for osgi.activator
+    Introduce surefire.skipTests (false by default)
+
+0.144.10
+    Update killbill-base-plugin to 4.2.1
+
+0.144.9
+    Update killbill-commons to 0.24.4
+
+0.144.8
+    Update async-http-client to 2.12.1 (groupId is now org.asynchttpclient)
+    Update maven-bundle-plugin to 4.2.1
+
+0.144.7
+    Update killbill-commons to 0.24.3
+
+0.144.6
+    Update jetty from 9.2.10.v20150310 to 9.4.30.v20200611
+    Update mockito from 3.4.0 to 3.4.4
+    Upgrade various Maven plugins
+
+0.144.5
+    Update killbill-commons to 0.24.2
+
+0.144.4
+    Run maven-javadoc-plugin earlier in the build (before gpg plugin)
+
+0.144.3
+    Fix sonatype-oss-release profile
+    Update killbill-commons to 0.24.0
+
+0.144.2
+    Get rid of killbill-commons-for-tests dependencies
+
+0.144.1
+    Downgrade joda-money from 1.0.2 to 1.0.1
+    Review plugins in main build
+
+0.144.0
+    Update ST4 from 4.0.8 to 4.3.1
+    Update awaitility from 2.0.0 to 4.0.3
+    Update c3p0 from 0.9.5 to 0.9.5.5
+    Update cache-api from 1.0.0 to 1.1.1
+    Update cglib-nodep from 3.1 to 3.3.0
+    Update classmate from 1.1.0 to 1.5.1
+    Update com.typesafe:config from 1.3.2 to 1.4.0
+    Update commons-email from 1.2 to 1.5
+    Update commons-io from 2.5 to 2.7
+    Update commons-lang3 from 3.2.1 to 3.10
+    Update derby from 10.10.1.1 to 10.14.2.0
+    Update easymock from 3.3 to 4.2
+    Update ehcache from 3.3.1 to 3.8.1
+    Update embedded-redis from 0.7.2 to 0.7.3
+    Update guava from 26.0-jre to 29.0-jre
+    Update guice from 4.1.0 to 4.2.3
+    Update h2 from 1.4.194 to 1.4.200
+    Update hamcrest from 1.3 to 2.2
+    Update io.airlift:units from 1.0 to 1.6
+    Update jackson from 2.9.8 to 2.11.1
+    Update janino from 3.1.0 to 3.1.2
+    Update jasypt from 1.9.2 to 1.9.3
+    Update javassist from 3.21.0-GA to 3.27.0-GA
+    Update jmustache from 1.5 to 1.15
+    Update jmxutils from 1.19 to 1.21
+    Update joda-money from 0.12 to 1.0.2
+    Update joda-time from 2.9.9 to 2.10.6
+    Update junit from 4.12 to 4.13
+    Update low-gc-membuffers from 1.1.1 to 1.2.0
+    Update mockito from 1.10.19 to 3.4.0
+    Update redisson from 3.10.0 to 3.13.2
+    Update slf4j from 1.7.25 to 1.7.30
+    Update snakeyaml from 1.23 to 1.26
+    Update spotbugs-annotations from 4.0.4 to 4.0.6
+    Update testing-mysql-server from 8.0.12-2 to 8.0.12-5
+    Update testng from 6.14.3 to 7.1.0
+    Update killbill-base-plugin -> 4.2.0
+    Remove com.google.code.findbugs:annotations
+    Switch from cglib:cglib to cglib:cglib-nodep
+    Switch from org.mockito:mockito-all to org.mockito:mockito-core
+    Upgrade various Maven plugins
+    Remove jdk16, jdk17, and jdk18 profiles (target 1.8 is the default)
+    Remove reporting section
+    Remove dependency on org.sonatype.oss:oss-parent
+
+0.143.63
+    Update killbill-platform -> 0.39.17
+
+0.143.62
+    Update killbill-platform -> 0.39.16
+
+0.143.61
+    Update killbill-base-plugin -> 4.1.0
+
+0.143.60
+    Update killbill-platform -> 0.39.15
+
+0.143.59
+    Update killbill-commons -> 0.23.11
+
+0.143.58
+    Update killbill-platform -> 0.39.14
+
+0.143.57
+    Update killbill-commons -> 0.23.10
+
+0.143.56
+    Upgrade testing-mysql-server packages
+
+0.143.55
+    No changes
+
+0.143.54
+    Update killbill-commons -> 0.23.9
+
+0.143.53
+    Update killbill-commons -> 0.23.8
+
+0.143.52
+    Update killbill-platform 0.39.12 -> 0.39.13
+
+0.143.51
+    Update killbill-plugin-api 0.26.3 -> 0.26.4
+
+0.143.50
+    Update killbill-platform -> 0.39.12
+
+0.143.49
+    Update killbill-base-plugin -> 4.0.3
+
+0.143.48
+    Update killbill-platform -> 0.39.11
+
+0.143.47
+    Update killbill-commons -> 0.23.7
+
+0.143.46
+    Update killbill-plugin-api -> 0.26.3
+
+0.143.45
+    Update killbill-api -> 0.53.17
+
+0.143.44
+    Update killbill-commons -> 0.23.6
+    Update killbill-platform -> 0.39.10
+
+0.143.43
+    Update killbill-base-plugin -> 4.0.2
+
+0.143.42
+    Update killbill-api -> 0.53.16
+    Update metrics-guice -> 3.2.2
+    Update metrics -> 3.2.3
+    Update janino -> 3.1.0
+
+0.143.41
+    Update killbill-platform -> 0.39.9
+
+0.143.40
+    Update killbill-api -> 0.53.15 and killbill-client -> 1.1.9
+
+0.143.39
+    Update killbill-api -> 0.53.14
+
+0.143.38
+    Update killbill-api -> 0.53.13
+
+0.143.37
+    Update killbill-platform -> 0.39.8
+
+0.143.36
+    Update killbill-commons -> 0.23.5
+    Add dependency snappy-java
+
+0.143.35
+    Update killbill-base-plugin -> 4.0.0
+
+0.143.34
+    Update killbill-plugin-api -> 0.26.2
+
+0.143.33
+    Update killbill-api -> 0.53.12 and killbill-client -> 1.1.8
+
+0.143.32
+    Update killbill-commons -> 0.23.4 and killbill-api -> 0.53.11
+
+0.143.31
+    Update killbill-client -> 1.1.7
+
+0.143.30
+   Update killbill-platform -> 0.39.7
+
+0.143.29
+   Update killbill-commons -> 0.23.3
+
+0.143.28
+    Update killbill-api -> 0.53.10
+
+0.143.27
+    Update killbill-client -> 1.1.6, killbill-api -> 0.53.9
+
+0.143.26
+    Update mariadb-java-client -> 1.7.4 (fix for https://jira.mariadb.org/browse/CONJ-604)
+
+0.143.25
+    Update killbill-api -> 0.53.8 & killbill-client -> 1.1.5
+
+0.143.24
+    Update killbill-platform -> 0.39.6
+
+0.143.23
+    Update killbill-plugin-api -> 0.26.1
+
+0.143.22
+    Update killbill-api to 0.53.7 and killbill-client to 1.1.4
+
+0.143.21
+    Update killbill-api -> 0.53.6 and killbill-client -> 1.1.3
+
+0.143.20
+    Update killbill-platform -> 0.39.5
+
+0.143.19
+    Update killbill-commons -> 0.23.2
+
+0.143.18
+    Update killbill-platform -> 0.39.4
+
+0.143.17
+    Update killbill-commons -> 0.23.1
+
+0.143.16
+    Update killbill-api -> 0.53.5
+
+0.143.15
+    Update killbill-platform -> 0.39.3
+
+0.143.14
+    Update killbill-api -> 0.53.4
+
+0.143.13
+    Update killbill-api -> 0.53.3
+
+0.143.12
+    Update killbill-client -> 1.1.2, killbill-api.version -> 0.53.2
+
+0.143.11
+    Update killbill-client -> 1.1.1
+
+0.143.10
+    Update killbill-client -> 1.1.0
+
+0.143.9
+    Update killbill-api -> 0.53.1
+
+0.143.8
+    Update killbill-platform -> 0.39.2
+
+0.143.7
+    update killbill-commons -> 0.23.0
+
+0.143.6
+    Update killbill-commons -> 0.22.5
+
+0.143.5
+    Update killbill-commons -> 0.22.4
+
+0.143.4
+    Update killbill-platform -> 0.39.1
+
+0.143.3
+    Update jackson version for redisson change and fix issues with dependency check
+
+0.143.2
+    Update killbill-platform -> 0.39.0
+
+0.143.1
+    Update killbill-plugin-api -> 0.26.0
+
+0.143.0
+    Update version for work against kb 0.21
+
+0.142.8
+    Update Redisson to 3.10.0
+
+0.142.7
+    Update killbill-commons -> 0.22.3
+    Update killbill-platform -> 0.38.3
+
+0.142.6
+    Update killbill-commons -> 0.22.2
+
+0.142.5
+    Update Guava to 26.0-jre
+    Update Jackson to 2.9.7
+    Update Swagger to 1.5.21
+    Update javassist to 3.21.0-GA
+    Add com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.7
+    Add it.ozimov:embedded-redis:0.7.2
+    Add org.redisson:redisson:3.8.2
+    Switch to jdk18 profile by default
+
+0.142.4
+    Update killbill-platform -> 0.38.2
+
+0.142.3
+    Update killbill-platform -> 0.38.1
+
+0.142.2
+    Update killbill-commons -> 0.22.1
+
+0.142.1
+    Update killbill-platform -> 0.38.0
+
+0.142.0
+    Initial release for Kill Bill 0.20.x
+
+0.141.97
+    Update killbill-base-plugin -> 2.4.0
+
+0.141.96
+    Swagger UI upgrade
+
+0.141.95
+    Update killbill-client -> 1.0.6
+
+0.141.94
+    Update killbill-base-plugin -> 2.3.6
+
+0.141.93
+    Update killbill-platform -> 0.37.19
+
+0.141.92
+    Update killbill-commons -> 0.21.15
+
+0.141.91
+    Update killbill-api -> 0.51.27
+
+0.141.90
+    Update killbill-base-plugin -> 2.3.5
+
+0.141.89
+    Update killbill-api -> 0.51.26
+
+0.141.88
+    Update killbill-base-plugin -> 2.3.4
+
+0.141.87
+    Update killbill-client -> 1.0.5
+
+0.141.86
+    Update killbill-client -> 1.0.4
+
+0.141.85
+    Update killbill-platform -> 0.37.18
+
+0.141.84
+    Update killbill-base-plugin -> 2.3.3
+
+0.141.83
+    Update killbill-platform -> 0.37.17
+
+0.141.82
+    Update killbill-plugin-api -> 0.24.8
+
+0.141.81
+    Update killbill-api -> 0.51.25
+
+0.141.80
+    Update killbill-platform -> 0.37.16
+
+0.141.79
+    Update killbill-api.version -> 0.51.24
+
+0.141.78
+    Update killbill-base-plugin -> 2.3.2
+
+0.141.77
+    Update Jooby to 1.4.0
+
+0.141.76
+    Update killbill-client -> 1.0.3 and killbill-api -> 0.51.23
+
+0.141.75
+    Update killbill-client -> 1.0.2
+
+0.141.74
+    Update killbill-platform -> 0.37.15
+
+0.141.73
+    Update killbill-commons -> 0.21.14
+
+0.141.72
+    Update TestNG -> 6.14.3
+    Add org.jasypt:jasypt:1.9.2
+
+0.141.71
+    Update killbill-client -> 1.0.1
+
+0.141.70
+    Update killbill-api -> 0.51.22
+
+0.141.69
+    Update killbill-client -> 1.0.0
+
+0.141.68
+    Update killbill-api -> 0.51.21
+
+0.141.67
+    Update killbill-commons -> 0.21.13
+
+0.141.66
+    Update killbill-base-plugin -> 2.3.1
+
+0.141.65
+    Update killbill-client -> 0.41.13
+
+0.141.64
+    Update killbill-api -> 0.51.20 and killbill-commons -> 0.21.12
+
+0.141.63
+    Update killbill-api -> 0.51.19
+
+0.141.62
+    Update killbill-api -> 0.51.18 and killbill-client -> 0.41.12
+
+0.141.61
+    Update killbill-client -> 0.41.11
+
+0.141.60
+    Update killbill-api -> 0.51.17
+
+0.141.59
+    Update killbill-platform -> 0.37.14
+
+0.141.58
+    Update killbill-api -> 0.51.16
+
+0.141.57
+    Update killbill-client -> 0.41.10
+
+0.141.56
+    Update killbill-api -> 0.51.15
+
+0.141.55
+    Update killbill-platform -> 0.37.13
+
+0.141.54
+    Update killbill-base-plugin.version -> 2.3.0
+
+0.141.53
+    Update killbill-plugin-api -> 0.24.7
+
+0.141.52
+    Update killbill-api -> 0.51.14
+
+0.141.51
+    Update killbill-platform -> 0.37.12
+
+0.141.50
+    Add swagger code gen exclude files for rat plugin
+
+0.141.49
+    Update killbill-base-plugin.version -> 2.2.0
+
+0.141.48
+    Update killbill-plugin-api -> 0.24.6
+
+0.141.47
+    Update killbill-api -> 0.51.13
+    Update killbill-plugin-api -> 0.24.5
+
+0.141.46
+    Update killbill-platform -> 0.37.11
+    Update killbill-client -> 0.41.9
+
+0.141.45
+    Update killbill-commons -> 0.21.10
+
+0.141.44
+    Update killbill-api -> 0.51.12
+    Update killbill-client -> 0.41.8
+
+0.141.43
+    Update killbill-platform -> 0.37.10
+
+0.141.42
+    Update killbill-commons -> 0.21.9
+
+0.141.41
+    Add missing dependencies for swagger-jaxrs and swagger-models
+
+0.141.40
+    Update killbill-platform -> 0.37.9
+
+0.141.39
+    Update killbill-commons -> 0.21.8
+
+0.141.38
+    Update killbill-platform -> 0.37.8
+
+0.141.37
+    Update killbill-commons -> 0.21.7
+
+0.141.36
+    Update killbill-platform -> 0.37.7
+
+0.141.35
+    Update killbill-commons -> 0.21.6
+
+0.141.34
+    Update killbill-commons-for-tests version
+
+0.141.33
+    Update killbill-client -> 0.41.7
+
+0.141.32
+    Update killbill-platform -> 0.37.6
+
+0.141.31
+    Update killbill-commons -> 0.21.5
+
+0.141.30
+    Update killbill-api -> 0.51.11
+
+0.141.29
+    Update killbill-base-plugin.version -> 2.1.0
+    Add org.yaml:snakeyaml:1.18
+    Add profiles to run integration tests
+
+0.141.28
+    Update killbill-commons -> 0.21.4
+
+0.141.27
+    Update killbill-client -> 0.41.6
+
+0.141.26
+    Update killbill-api -> 0.51.10
+
+0.141.25
+    Update killbill-platform -> 0.37.5
+
+0.141.24
+    Update killbill-api -> 0.51.9
+
+0.141.23
+    Update killbill-commons -> 0.21.3
+
+0.141.22
+    Update killbill-platform -> 0.37.4
+
+0.141.21
+    Update killbill-commons -> 0.21.2
+
+0.141.20
+    Update killbill-api -> 0.51.8
+    Update killbill-client -> 0.41.5
+
+0.141.19
+    Update killbill-platform -> 0.37.3
+
+0.141.18
+    Update killbill-commons for tests -> 0.21.1
+
+0.141.17
+    Update killbill-base-plugin -> 2.0.0
+
+0.141.16
+    Bump io.airlift.units to 1.0 and add exclusion for guava to fix issues reported by maven-dependency-versions-check-plugin
+
+0.141.15
+    Update killbill-platform -> 0.37.2
+
+0.141.14
+    Update killbill-plugin-api -> 0.24.4
+
+0.141.13
+    Update killbill-commons -> 0.21.1
+    Update killbill-api -> 0.51.7
+
+0.141.12
+    Update killbill-platform -> 0.37.1
+
+0.141.11
+    Update killbill-commons -> 0.21.0
+
+0.141.10
+    Update killbill-plugin-api -> 0.24.3
+
+0.141.9
+    Update killbill-api -> 0.51.6
+
+0.141.8
+    Update killbill-api -> 0.51.5
+    Update killbill-client -> 0.41.4
+
+0.141.7
+    Update killbill-plugin-api -> 0.24.2
+    Update killbill-client -> 0.41.3
+
+0.141.6
+    Update killbill-client -> 0.51.4
+
+0.141.5
+    Update killbill-api -> 0.41.2
+    Update killbill-client-java -> 0.51.3
+
+0.141.2
+    Update killbill-api -> 0.51.2
+
+0.141.1
+    Update postgreSQL version to 9.6.3
+
+0.141.0
+    Initial version against 0.19.x branch
+
+0.140.55
+    Update killbill-base-plugin.version -> 1.3.1
+
+0.140.54
+    Update killbill-base-plugin.version -> 1.3.0
+    Add org.yaml:snakeyaml:1.18
+    Add profiles to run integration tests
+
+0.140.53
+    Update killbill-platform -> 0.36.15
+
+0.140.52
+    Update killbill-commons -> 0.20.17
+
+0.140.51
+    Update killbill-platform -> 0.36.14
+
+0.140.50
+    Update killbill-commons -> 0.20.16
+
+0.140.49
+    Update killbill-platform -> 0.36.13
+
+0.140.48
+    Update killbill-commons -> 0.20.15
+
+0.140.47
+    Update killbill-base-plugin.version -> 1.2.3
+
+0.140.46
+    Update killbill-commons -> 0.20.14
+
+0.140.45
+    Update killbill-platform to 0.36.12
+
+0.140.44
+    Update killbill-commons -> 0.20.13
+
+0.140.43
+    Add com.izettle:dropwizard-metrics-influxdb dependency
+
+0.140.42
+    Update TestNG to 6.12
+
+0.140.41
+    Ignore .circleci for RAT
+
+0.140.40
+    Update killbill-api -> 0.50.2
+
+0.140.39
+    Update killbill-client -> 0.40.10
+
+0.140.38
+    Update killbill-base-plugin -> 1.2.0
+
+0.140.37
+    Add Jooby 1.1.3
+    Update killbill-platform to 0.36.11
+
+0.140.36
+    Update killbill-platform to 0.36.10
+
+0.140.35
+    Update killbill-commons -> 0.20.11
+
+0.140.34
+    Update killbill-platform to 0.36.9
+
+0.140.33
+    Update killbill-commons -> 0.20.10
+
+0.140.32
+    Update killbill-platform to 0.36.8
+
+0.140.31
+    Update killbill-commons -> 0.20.9
+
+0.140.30
+    Update killbill-commons -> 0.20.8
+
+0.140.29
+    Add cglib:cglib:3.1
+    Add com.fasterxml:classmate:1.1.0
+    Add junit:junit:4.12
+    Add org.antlr:antlr-runtime:3.5.2
+    Add org.antlr:ST4:4.0.8
+    Add org.apache.commons:commons-jexl:2.1.1
+    Add org.apache.derby:derby:10.10.1.1
+    Add org.assertj:assertj-core:3.4.1
+    Add org.easymock:easymock:3.3
+    Add org.hamcresthamcrest-core:1.3
+    Add org.ow2.asm:asm:5.0.3
+    Add org.springframework:spring:2.0.1
+    Add org.springframework:spring-mock:2.0.1
+    Add org.antlr:antlr3-maven-plugin:3.5.2
+    Exclude org.jdbi:jdbi
+
+0.140.28
+    Update killbill-client -> 0.40.9
+    Ignore .github for RAT
+
+0.140.27
+    Downgrade Swagger
+
+0.140.26
+    Update killbill-commons -> 0.20.7
+
+0.140.25
+    Update killbill-base-plugin -> 1.1.2
+    Update killbill-client -> 0.40.8
+
+0.140.24
+    Update killbill-platform to 0.36.7
+
+0.140.23
+    Update killbill-commons -> 0.20.6
+
+0.140.22
+    Update async-http-client to 1.9.40.
+    Update awaitility to 2.0.0.
+    Update com.google.code.findbugs:annotations to 3.0.1u2.
+    Update com.google.code.findbugs:jsr305 to 3.0.2.
+    Update commons-io to 2.5.
+    Update config-magic to 0.17.
+    Update Ehcache to 3.3.1.
+    Update Guava to 20.0.
+    Update Guice to 4.1.0.
+    Update H2 to 1.4.194.
+    Update HikariCP to 2.3.13.
+    Update Jersey to 1.19.3.
+    Update jmxutils to 1.19.
+    Update Joda-Money to 0.12.
+    Update Joda-Time to 2.9.9.
+    Update jooQ to 3.9.1.
+    Update JRuby to 1.7.26 and switch to non-shaded jar.
+    Update Logback to 1.2.3.
+    Update low-gc-membuffers to 1.1.1.
+    Update MariaDB client to 1.5.9.
+    Update Metrics to 3.2.2.
+    Update metrics-guice to 3.2.1.
+    Update Swagger to 1.5.13.
+    Remove unused mogwee-executors.
+
+0.140.21
+    Update killbill-client -> 0.40.7
+
+0.140.20
+    Update killbill-platform to 0.36.6
+    Update Ehcache to 3.3.0
+    Update Shiro to 1.3.2
+
+0.140.19
+    Update killbill-client -> 0.40.6
+
+0.140.18
+    Update killbill-platform -> 0.36.5
+
+0.140.17
+    Update killbill-platform -> 0.36.4
+
+0.140.16
+    Update killbill-commons -> 0.20.5
+
+0.140.15
+    Update Dropwizard metrics to 3.2.1
+    Update Jackson to 2.6.7
+    Update Joda-Time to 2.9.7
+    Update Logback to 1.1.11
+    Update SLF4J to 1.7.25
+
+0.140.14
+    Update killbill-commons -> 0.20.4
+    Update killbill-base-plugin -> 1.1.1
+
+0.140.13
+    Update killbill-platform -> 0.36.3
+
+0.140.12
+    Update killbill-commons -> 0.20.3
+
+0.140.11
+    Update MariaDB client to 1.5.8
+    Update Ehcache to 2.10.3
+
+0.140.10
+    Update killbill-client -> 0.40.3
+
+0.140.9
+    Update killbill-commons -> 0.20.2
+
+0.140.8
+    Update killbill-api -> 0.50.1 and killbill-plugin-api -> 0.23.1
+
+0.140.7
+    Update killbill-client -> 0.40.2
+
+0.140.6
+    Update killbill-commons -> 0.20.1
+
+0.140.5
+    Update killbill-platform to 0.36.2
+
+0.140.4
+    Update killbill-client to 0.40.1
+
+0.140.3
+    Update maven-gpg-plugin to 1.6
+
+0.140.2
+    Update killbill-platform -> 0.36.1
+
+0.140.1
+    Update killbill-base-plugin -> 1.1.0
+
+0.140
+    Update killbill-platform -> 0.36
+
+0.139
+    Update killbill-plugin-api -> 0.23
+
+0.138
+    Update killbill-client -> 0.40 and killbill-platform -> 0.35
+
+0.137
+    Update plugin-api -> 0.22
+
+0.136
+    Update killbill-api -> 0.50
+
+0.135
+    Update killbill-platform -> 0.34
+
+0.134
+    Update killbill-plugin-api from 0.0 -> 0.21
+
+0.133
+    Update killbill-base-plugin -> 1.0.3
+
+0.132
+    Update killbill-base-plugin -> 1.0.2
+
+0.131
+    Update killbill-commons -> 0.20
+    Update killbill-platform -> 0.33
+
+0.130
+    Update killbill-api -> 0.49
+
+0.129
+    Update killbill-api -> 0.48
+    Update killbill-client -> 0.39
+
+0.128
+    Update killbill-api -> 0.47
+
+0.127
+    Update killbill-api -> 0.46
+
+0.126
+    Update killbill-api -> 0.45 and killbill-client -> 0.38
+
+0.125
+    Update killbill-api -> 0.44 and killbill-client -> 0.37
+
+0.124
+    Update killbill-client -> 0.36
+    Update killbill-api -> 0.43
+
+0.123
+    Update killbill-client -> 0.35 and killbill-api -> 0.42
+
+0.122
+    Update killbill-client -> 0.34
+
+0.121
+    Update killbill-client -> 0.33
+    killbill-api -> 0.41
+
+0.120
+    Update Jackson to 2.4.5
+    Add org.apache.commons:commons-lang3:3.2.1
+
+0.119
+    Update killbill-base-plugin -> 1.0.1
+
+0.118
+    Update killbill-client -> 0.32
+
+0.117
+    Update killbill-client -> 0.31
+
+0.116
+    Update killbill-api -> 0.40
+    Update killbill-client -> 0.30
+
+0.115
+    Update killbill-client -> 0.29
+    Update killbill-api -> 0.39
+
+0.114
+    Update Swagger to 1.5.9
+
+0.113
+    Update killbill-commons -> 0.19
+    Update killbill-platform -> 0.31
+    Add io.airlift:command:0.2
+    Add io.airlift:units:0.94
+
+0.112
+    Update killbill-api.version -> 0.38
+
+0.111
+    killbill-client -> 0.28
+
+0.110
+    Update killbill-platform -> 0.30
+
+0.109
+    Update killbill-api -> 0.37
+    Add org.codehaus.janino:janino:2.5.16
+
+0.108
+    Update killbill-platform -> 0.29
+
+0.107
+    Update killbill-client -> 0.27
+    Update killbill-commons -> 0.18
+
+0.106
+    Update killbill-plugin-api -> 0.20
+
+0.105
+    Update killbill-api -> 0.36
+
+0.104
+    Update killbill-commons -> 0.17
+    Update killbill-platform -> 0.28
+
+0.103
+    Update killbill-api -> 0.35
+    Update killbill-client -> 0.26
+
+0.102
+    Update killbill-base-plugin -> 1.0.0
+
+0.101
+    Update killbill-client -> 0.25
+
+0.100
+    Update platform to 0.27 for KB release 0.17
+
+0.99
+    Update client-java to 0.24 for KB release 0.17
+
+0.98
+    Update commons to 0.16 for KB release 0.17
+
+0.97
+    Update plugin-api to 0.19 for KB release 0.17
+
+0.96
+    Update api to 0.34 for KB release 0.17
+
+0.95
+    Create initial version of pom.xml for KB release 0.17.0
+
+0.94.5
+    Update killbill-client.version -> 0.23.4
+
+0.94.4
+    Update killbill-api -> 0.33.1
+    Upgrade killbill-client -> 0.23.1
+
+0.94.3
+    Update killbill-platform -> 0.26.1
+
+0.94.2
+    Update killbill-commons -> 0.15.1
+
+0.94.1
+    Upgrade killbill-platform -> 0.26
+    Upgrade killbill-client -> 0.23.1
+
+0.94
+    Update killbill-base-plugin to 0.3.3
+
+0.93
+    Upgrade killbill-platform -> 0.25
+
+0.92
+    Upgrade killbill-platform -> 0.24
+    Update killbill-api -> 0.33
+
+0.91
+    Update killbill-commons -> 0.15
+
+0.90
+    Add missing slf4j SimpleLogger for testng tests to make sure we print the date of each log line
+
+0.89
+    Update killbill-platform -> 0.23
+
+0.88
+    Update killbill-platform to 0.22
+
+0.87
+    Add org.joda:joda-money dependency
+    Update Logback to 1.1.7
+    Update SLF4J to 1.7.21
+
+0.86
+    Update killbill-commons to 0.14
+    Update killbill-platform to 0.21
+
+0.85
+    Update killbill-platform -> 0.21
+
+0.84
+    Update killbill-client -> 0.20
+
+0.83
+    Update killbill-commons -> 0.13
+
+0.82
+    Update killbill-client -> 0.19
+
+0.81
+    Update killbill-client -> 0.18
+
+0.80
+    Update killbill-platform -> 0.20
+
+0.79
+    Update killbill-platform -> 0.19
+
+0.78
+    Update killbill-commons -> 0.12
+
+0.77
+    Update killbill-base-plugin to 0.3.0
+
+0.76
+    Update killbill-platform -> 0.18
+
+0.75
+    Update killbill-api -> 0.32
+
+0.74
+    Update killbill-platform -> 0.17
+
+0.73
+    Update killbill-api.version -> 0.31
+
+0.72
+    Update killbill-platform to 0.16
+
+0.71
+    Update killbill-client -> 0.17
+
+0.70
+    Update killbill-client -> 0.16
+    Update killbill-platform -> 0.15
+
+0.69
+    Update killbill-plugin-api -> 0.18
+
+0.68
+    Update killbill-api -> 0.30
+
+0.67
+    Upgrade killbill-api -> 0.29
+
+0.66
+    Update killbill-platform -> 0.14
+
+0.65
+    Update killbill-client -> 0.15
+    Update killbill-commons -> 0.11
+
+0.64
+    Update killbill-plugin-api -> 0.17
+
+0.63
+    Upgrade killbill-api -> 0.28
+    Update mariadb-java-client to 1.2.3
+
+0.62
+    update killbill-commons -> 0.10
+
+0.61
+    Upgrade killbill-client -> 0.14
+    Upgrade killbill-api -> 0.27
+
+0.60
+    Upgrade killbill-platform -> 0.13
+
+0.59
+    Upgrade killbill-commons -> 0.9
+
+0.58
+    Update killbill-client to 0.13
+
+0.57
+    Update killbill-base-plugin to 0.2.3
+
+0.56
+    Update killbill-platform -> 0.11
+
+0.55
+    Update killbill-api -> 0.26
+
+0.54
+    Update killbill-platform to 0.10
+
+0.53
+    Update killbill-api to 0.25
+
+0.52
+    Update killbill-platform to 0.9
+
+0.51
+    Update killbill-base-plugin to 0.2.2
+
+0.50
+    Update killbill-base-plugin to 0.2.1
+
+0.49
+    Update killbill-plugin-api to 0.16
+
+0.48
+    Update killbill-api to 0.24
+
+0.47
+    Update killbill-client -> 0.12
+
+0.46
+    Update killbill-api -> 0.23
+
+0.45
+    Update killbill-commons to 0.8
+
+0.44
+    Update killbill-client -> 0.11
+    Add io.dropwizard.metrics:metrics-graphite:3.1.1
+
+0.43
+    Update killbill-api -> 0.22
+
+0.42
+    Update killbill-client -> 0.10
+
+0.41
+    Update killbill-api to 0.21
+
+0.40
+    update killbill-client.version -> 0.9
+
+0.39
+    Update killbill-commons to 0.7
+
+0.38
+    Update killbill-commons to 0.6
+
+0.37
+    Update killbill-platform to 0.8
+
+0.36
+    Update killbill-commons to 0.5
+
+0.35
+    Update killbill-platform to 0.7
+
+0.34
+    Update killbill-plugin-api to 0.15
+
+0.33
+    Update killbill-api to 0.20
+    Update killbill-client to 0.7
+
+0.32
+    Update killbill-base-plugin to 0.2.0
+
+0.31
+    Update killbill-platform to 0.6
+
+0.30
+    Update killbill-plugin-api to 0.14
+    Update killbill-client-java to 0.6
+
+0.29
+    Update killbill-commons to 0.4
+
+0.28
+    Rename killbill-plugin-api-routing to killbill-plugin-api-control
+    New postgresql and localtest-postgresql profiles
+    Profile localtest has been renamed localtest-mysql
+    Add io.airlift:testing-postgresql-server:0.3
+    Add org.postgresql:postgresql:9.4-1201-jdbc41
+    Add org.kill-bill.commons:killbill-embeddeddb-postgresql
+    Update killbill-plugin-api to 0.13
+    Update jmxutils to 1.18
+
+0.27
+    Update killbill-platform -> 0.5
+
+0.26
+    Add missing dependency for plugin-api-entitlement
+
+0.25
+    Update plugin-api to 0.12
+
+0.24
+    Upgrade killbill-api.version -> 0.19
+
+0.23
+    killbill-platform.version -> 0.4
+
+0.22
+    killbill-platform -> 0.3
+
+0.20
+    killbill-platform -> 0.3
+
+0.19
+    Add missing dependency for killbill-plugin-api-catalog
+
+0.18
+    killbill-plugin-api.version -> 0.11
+
+0.17
+    killbill-api.version -> 0.18
+
+0.16
+    Update killbill-api to 0.17
+
+0.15
+    Upgrade killbill-api to 0.16
+
+0.14
+    Update pom with latest released killbill-plugin-api 0.10
+
+0.13
+    Update killbill-api to 0.15
+    Update killbill-plugin-api to 0.10
+
+0.12
+    Update killbill-client.version to 0.5
+
+0.11
+    Update killbill-api to 0.14
+    Update killbill-plugin-api to 0.9
+    Update killbill-commons to 0.3
+    Update killbill-platform to 0.2
+    Update killbill-base-plugin to 0.1.0
+    Update killbill-client-java to 0.4
+    Update Async Http Client to 1.9.19
+    Update c3p0 to 0.9.5
+    Update Dropwizard metrics to 3.1.1
+    Update Ehcache to 2.9.1
+    Update H2 to 1.4.186
+    Update HikariCP to 2.3.7
+    Update jDBI to 2.62
+    Update Jetty to 9.2.10.v20150310
+    Update JRuby to 1.7.20
+    Update Logback to 1.1.3
+    Update mariadb-java-client to 1.1.8
+    Update Servlet API to 3.1.0
+    Update SLF4J to 1.7.12
+    Update com.google.code.findbugs:annotations to 3.0.0
+    Update org.javassist:javassist to 3.19.0-GA
+    Remove BoneCP
+    Update maven-deploy-plugin to 2.8.2
+
+0.10.3
+    Update killbill-platform.version to 0.1.5 (fix transitive dependency issues)
+
+0.10.2
+    Upgrade killbill-plugin-api to 0.8.5
+
+0.10.1
+    Upgrade kilbill-client-java to 0.3.1
+
+0.10.0
+    Update api and client for new price override feature
+
+0.9.15
+    Update killbill-platform to 0.1.4
+
+0.9.14
+    Update killbill-plugin-api to 0.8.4
+
+0.9.13
+    Update killbill-plugin-api to 0.8.3
+    Update killbill-client-java to 0.2.2
+
+0.9.12
+    Update killbill-api to 0.12.4
+    Update killbill-commons to 0.2.33
+    Update killbill-client-java to 0.2.1
+
+0.9.11
+    Update killbill-api to 0.12.2
+    Update killbill-commons to 0.2.32
+    Update killbill-platform to 0.1.3
+    Update killbill-client-java to 0.2.0
+
+0.9.10
+    Update killbill-api to 0.12.1
+    Update killbill-commons to 0.2.31
+
+0.9.9
+    Update killbill-api to 0.12.0
+    Update killbill-commons to 0.2.30
+    Update org.mockito:mockito-all to 1.10.19
+
+0.9.8
+    Update killbill-client-java to 0.1.2
+    Update slf4j to 1.7.7
+
+0.9.7
+    Update killbill-platform to 0.1.2
+
+0.9.6
+    Update killbill-api to 0.11.3
+
+0.9.5
+    Update killbill-api to 0.11.2
+    Update killbill-base-plugin to 0.0.2
+    Update killbill-commons to 0.2.29
+    Update killbill-client-java to 0.1.1
+    Add org.kill-bill.billing:killbill-tenant:test-jar
+
+0.9.4
+    Add org.kill-bill.billing.plugin.java:killbill-base-plugin:0.0.1
+    Add org.jooq:jooq:3.5.0
+    rat:
+     - Upgrade plugin to 0.11
+     - Ignore wsdl, txt, h2 and jOOQ files
+
+0.9.3
+    Update killbill-api to 0.10.3
+
+0.9.2
+    Update killbill-platform to 0.1.1
+
+0.9.1
+    Update killbill-plugin-api to 0.8.2
+    Update killbill-platform to 0.1.0 (prev release was use a wrong platform version)
+
+0.8.8
+    Update killbill-plugin-api to 0.8.2
+    Update killbill-platform to 0.1.0
+
+0.8.7
+    Update killbill-api to 0.10.2
+
+0.8.6
+    Update killbill-commons to 0.2.28
+
+0.8.5
+    Update api and java client to reflect latest api changes for dryRun operations
+
+0.8.4
+    Update jackson to 2.4.3
+
+0.8.3
+    Update jsr305 and jackson version to fix vmc dependency issue
+
+0.8.2
+    Update killbill-commons to 0.2.27
+    Update killbill-platform to 0.0.14
+    Upgrade JRuby version to 1.7.16
+
+0.8.1
+    Update killbill-plugin-api to 0.8.1
+    Add com.wordnik:swagger-annotations:1.3.10
+    Add com.wordnik:swagger-jersey-jaxrs_2.10:1.3.10
+
+0.8.0
+    Update killbill-api to 0.10.0
+    Update killbill-plugin-api to 0.8.0
+
+0.7.30
+    Update killbill-commons to 0.2.26
+    Update mysql-connector-java to 5.1.33
+
+0.7.29
+    Update killbill-commons to 0.2.25
+    Update killbill-platform to 0.0.13
+
+0.7.28
+    Add com.zaxxer:HikariCP:2.0.1
+    Add com.zaxxer:HikariCP-java6:2.0.1
+    Add org.javassist:javassist:3.18.2-GA
+    Add org.mariadb.jdbc:mariadb-java-client:1.1.7
+
+0.7.27
+    Update killbill-commons to 0.2.24
+    Update killbill-api to 0.9.10
+
+0.7.26
+    Update killbill-platform to 0.0.12
+
+0.7.25
+    Update killbill-commons to 0.2.23
+
+0.7.24
+    Update killbill-platform to 0.0.11
+
+0.7.23
+    Update killbill-commons to 0.2.22
+    Update killbill-platform to 0.0.10
+
+0.7.22
+    Update killbill-platform to 0.0.9
+
+0.7.21
+    Add aopalliance:aopalliance:1.0
+    Add com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:2.3.2
+    Add com.sun.jersey:jersey-core:1.18.1
+    Update jetty-console-maven-plugin to 1.55 (groupId is now org.simplericity.jettyconsole)
+    Update killbill-client-java to 0.0.14
+    Update killbill-commons to 0.2.21
+
+0.7.20
+    Add org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4:1.16
+    Update com.google.code.sortpom:maven-sortpom-plugin to 2.3.0
+    Update com.mchange:c3p0 to 0.9.5-pre8 (see https://github.com/swaldman/c3p0/issues/29)
+    Update net.sf.ehcache artifacts to 2.6.9
+    Update org.apache.shiro artifacts to 1.2.3
+    Update killbill-commons to 0.2.20
+    Update killbill-platform to 0.0.8
+
+0.7.19
+    Update killbill-api to 0.9.8
+    Update killbill-commons to 0.2.19
+    Update killbill-platform to 0.0.7
+
+0.7.18
+    New release (same as previous, that did not complete, sigh, sigh...)
+
+0.7.17
+    New release (same as previous, that did not complete)
+
+0.7.16
+    Update killbill-commons to 0.2.18
+    Update killbill-platform to 0.0.6
+    Update killbill to 0.11.7
+    Update killbill-client-java to 0.0.13
+
+0.7.15
+    Update maven-bundle-plugin to 2.5.0
+    Update killbill-api to 0.9.7
+    Update killbill-commons to 0.2.17
+    Update killbill-platform to 0.0.5
+    Update killbill to 0.11.6
+
+0.7.14
+    Add com.ning:compress-lzf
+    Tweak nexus-staging-maven-plugin configuration (see https://issues.sonatype.org/browse/OSSRH-10547)
+
+0.7.13
+    Update nexus-staging-maven-plugin to 1.6.2
+    Update oss-parent to 9
+
+0.7.12
+    Update killbill-api to 0.9.6
+    Update killbill-plugin-api to 0.7.4
+    Update killbill-commons to 0.2.16
+    Update killbill-client-java to 0.0.12
+    Update killbill to 0.11.5
+    Update logback to 1.1.2
+    Add killbill-platform 0.0.1
+
+0.7.11
+    Update killbill to 0.11.3
+
+0.7.10
+    Upgrade jruby version 1.7.12
+
+0.7.9
+    Update killbill-plugin-api to 0.7.3
+
+0.7.8
+    Update killbill-api to 0.9.5
+    Update killbill-plugin-api to 0.7.2
+
+0.7.7
+    Update killbill-client-java to 0.0.10
+    Update killbill to 0.11.2
+
+0.7.6
+    Update killbill-plugin-api to 0.7.1
+
+0.7.5
+    Update killbill-api to 0.9.4
+
+0.7.4
+    Update killbill-api to 0.9.3
+
+0.7.3
+    Update killbill-api to 0.9.2
+
+0.7.2
+    Update killbill-api to 0.9.1
+
+0.7.1
+    Upgrade killbill-client-java to 0.0.9
+
+0.7.0
+    Update killbill-api to 0.9.0
+    Update killbill-plugin-api to 0.7.0
+
+0.6.34
+    Upgrade for new direct payment API (unstable)
+    Remove deprecated Felix artifacts
+
+0.5.33
+    Upgrade killbill-client-java to 0.0.8
+
+0.5.32
+    Use all-in-one-bundle Felix webconsole artifact
+
+0.5.31
+    Upgrade common to 0.2.15
+
+0.5.30
+    Update OSGI artifacts
+
+0.5.29
+    Update killbill-commons to 0.2.14
+    Tweaks around MySQL and H2 scopes
+
+0.5.28
+    Update killbill-commons to 0.2.13
+
+0.5.27
+   Update package name from com.ning -> org.killbill
+
+0.5.26
+    N/A
+
+0.5.25
+    rat: ignore ddl and prc files
+
+0.5.24
+    Update killbill to 0.8.11
+    Update killbill-client-java to 0.0.4
+
+0.5.23
+    Update killbill-api to 0.8.1
+    Update killbill-client to 0.0.3
+
+0.5.22
+    Update killbill to 0.8.10
+    Update killbill-analytics-plugin to 0.5.9
+    Update killbill-client-java to 0.0.2
+
+0.5.21
+    Update killbill-commons.version to 0.2.11
+
+0.5.20
+    Update joda-time to 2.3
+
+0.5.19
+    Update killbill to 0.8.8
+    Update AHC to 1.7.24
+
+0.5.18
+    Add com.ning.billing:killbill-client-java dependency
+
+0.5.17
+    Update killbill-api to 0.8.0
+    Update killbill-plugin-api to 0.6.3
+
+0.5.16
+    Update killbill-api to 0.7.13
+
+0.5.15
+    Update killbill-api version to 0.7.12
+
+0.5.14
+    Update killbill-api version to 0.7.11
+
+0.5.13
+    Update killbill-commons to 0.2.10
+    Update killbill-analytics-plugin to 0.5.5
+
+0.5.12
+    Update killbill-api version to 0.7.10
+
+0.5.11
+    Update killbill-api version to 0.7.9
+
+0.5.10
+    Update jdbi version for performance reason
+
+0.5.9
+    Update killbill-api to 0.7.8
+    Update killbill-plugin-api to 0.6.2
+
+0.5.8
+    Update killbill-api to 0.7.7
+
+0.5.7
+    Update killbill-api to 0.7.6
+
+0.5.6
+    Update killbill-commons to 0.2.9
+
+0.5.5
+    Update killbill-api to 0.7.5
+
+0.5.4
+    Update killbill-api and killbill-plugin-api for currency api modifications
+
+0.5.3
+    Update killbill-api to 0.7.3 (Fix missing currency on plugin info)
+
+0.5.2
+    Update killbill-api to 0.7.2 and killbill-plugin-api to 0.6.0
+
+0.5.1
+    Update killbill-api to 0.7.1 (new pagination API)
+
+0.5.0
+    Update killbill-api to 0.7.0 (new currency conversion API)
+    Update killbill-plugin-api to 0.5.0 (new pagination and currency conversion APIs)
+    Update killbill to 0.7.0 (new pagination JAX-RS API)
+    Update killbill-analytics-plugin to 0.5.1
+
+0.4.18
+    Update version of nexus-staging-maven-plugin to 1.4.8
+
+0.4.17
+    Update version of shade plugin to 2.1
+
+0.4.16
+    Update to Guava 15.0
+    Update to BoneCP 0.8.0-rc3 (fixes the Guava version mismatch)
+    Add com.dmurph:JGoogleAnalyticsTracker 1.2.0
+
+0.4.15
+    Update killbill-commons to 0.2.8
+
+0.4.14
+    Ignore debian files for rat plugin
+
+0.4.13
+    Update killbill-api to 0.6.7
+
+0.4.12
+    Update killbill-api to 0.6.6
+
+0.4.11
+    Update killbill-analytics-plugin to 0.4.3
+    Update killbill-commons to 0.2.7
+
+0.4.10
+    Update killbill-common to 0.2.6
+
+0.4.9
+    Update killbill-common to 0.2.5
+
+0.4.8
+    Update killbill-api to 0.6.5
+    Update killbill-common to 0.2.4
+
+0.4.7
+    Update killbill-api to 0.6.4
+
+0.4.6
+    Update killbill-api to 0.6.3
+
+0.4.5
+    Update killbill-api to 0.6.2
+
+0.4.4
+    Remove test scope for ClockMock
+
+0.4.3
+    Update killbill-commons to 0.2.3
+
+0.4.2
+    Update killbill-analytics-plugin to 0.4.0
+    Update killbill-commons to 0.2.2
+    Introduce Metrics 3.0.1
+
+0.4.1
+    Minor API changes for entitlement after code review
+
+0.4.0 (entitlement new apis, overdue at account level)
+    Update killbill-api to 0.6.0
+    Update killbill to 0.6.0
+    Update killbill-plugin-api to 0.4.0
+
+0.3.11
+    Update killbill-api to 0.5.0
+    Update killbill to 0.5.0
+    Update killbill-analytics-plugin to 0.3.6
+    Update killbill-meter-plugin to 0.4.1
+    Update Shiro to 1.2.2
+
+0.3.10
+    Update killbill-commons to 0.2.1
+
+0.3.9
+    Update killbill to 0.4.0
+
+0.3.8
+    Update killbill-commons to 0.2.0
+    Update killbill-analytics-plugin to 0.3.5
+    Update killbill-meter-plugin to 0.4.0
+
+0.3.7
+    Update killbill-api to 0.4.0 (search APIs)
+    Update killbill-plugin-api to 0.3.0 (search APIs)
+
+0.3.6
+    Fix typo in analytics plugin version
+
+0.3.5
+    Update killbill-api to 0.3.3 (support for all ISO currencies)
+    Update killbill-plugin-api to 0.2.6 (api dependency)
+    Update analytics plugin to 0.3.4 (api dependency)
+
+0.3.4
+    Upgrade latest analytics plugin
+
+0.3.3
+    New killbill-api version (0.3.2). Renaming Entitlement -> Subscription. Create new Entitlement module (replace JunctionApi)
+    New killbill-commons version (0.1.8). Bus/NotificationQ code reveiew comments
+    New killbil version (0.3.4). Fix flaky unit tests
+    Check-in IntelliJ .idea .iml
+
+0.3.2
+    Extract Notification queue and clock into commons (add artifacts in oss-parent)
+
+0.3.1
+    Increment mysql-connector-java to 5.1.22
+    Remove provided scope for javax.inject to fix Kill Bill in 5 minutes (go script)
+
+0.3.0
+    Update killbill to 0.3.1
+    Remove com.ning.billing:killbill-analytics (now deprecated)
+    Update com.ning.billing:killbill-osgi-bundles-analytics to 0.3.2
+    Update com.ning.billing:killbill-osgi-bundles-meter to 0.3.1 (now extracted from core)
+
+0.2.6
+    Update killbill-plugin-api to 0.2.4
+
+0.2.5
+    Update killbill-api to 0.3.0
+
+0.2.4
+    Added dependencies for killbill-server
+    Fix build warnings by skipping the maven-jar-plugin if needed
+    rat: ignore .bak files (generated by sortpom, ignored in git)
+
+0.2.3
+    Initial import from https://github.com/killbill/killbill
+    Added the sort pom plugin as part of the build (https://code.google.com/p/sortpom/)

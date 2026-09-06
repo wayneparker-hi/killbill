@@ -1,0 +1,76 @@
+group ReportsConfigurationSqlDao;
+
+tableName() ::= "analytics_reports"
+
+tableFields(prefix) ::= <<
+  <prefix>record_id
+, <prefix>report_name
+, <prefix>report_pretty_name
+, <prefix>report_type
+, <prefix>source_table_name
+, <prefix>source_name
+, <prefix>source_query
+, <prefix>refresh_procedure_name
+, <prefix>refresh_frequency
+, <prefix>refresh_hour_of_day_gmt
+>>
+
+getAllReportsConfigurations() ::= <<
+select
+  <tableFields("t.")>
+from <tableName()> t
+;
+>>
+
+getReportConfigurationForReport() ::= <<
+select
+  <tableFields("t.")>
+from <tableName()> t
+where report_name = :reportName
+;
+>>
+
+addReportConfiguration() ::= <<
+insert into <tableName()> (
+  report_name
+, report_pretty_name
+, report_type
+, source_table_name
+, source_name
+, source_query
+, refresh_procedure_name
+, refresh_frequency
+, refresh_hour_of_day_gmt
+) values (
+  :reportName
+, :reportPrettyName
+, :reportType
+, :sourceTableName
+, :sourceName
+, :sourceQuery
+, :refreshProcedureName
+, :refreshFrequency
+, :refreshHourOfDayGmt
+);
+>>
+
+updateReportConfiguration() ::= <<
+update <tableName()>
+set
+  report_pretty_name = :reportPrettyName
+, report_type = :reportType
+, source_table_name = :sourceTableName
+, source_name = :sourceName
+, source_query = :sourceQuery
+, refresh_procedure_name = :refreshProcedureName
+, refresh_frequency = :refreshFrequency
+, refresh_hour_of_day_gmt = :refreshHourOfDayGmt
+where report_name = :reportName
+;
+>>
+
+deleteReportConfiguration() ::= <<
+delete from <tableName()>
+where report_name = :reportName
+;
+>>

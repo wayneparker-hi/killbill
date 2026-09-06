@@ -1,0 +1,91 @@
+/*
+ * Copyright 2014-2018 Groupon, Inc
+ * Copyright 2014-2018 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.jaxrs.resources;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+
+import org.killbill.billing.account.api.AccountUserApi;
+import org.killbill.billing.entitlement.api.SubscriptionApiException;
+import org.killbill.billing.jaxrs.json.PluginInfoJson;
+import org.killbill.billing.jaxrs.util.Context;
+import org.killbill.billing.jaxrs.util.JaxrsUriBuilder;
+import org.killbill.billing.runtime.api.PluginsInfoApi;
+import org.killbill.billing.payment.api.InvoicePaymentApi;
+import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.util.api.AuditUserApi;
+import org.killbill.billing.util.api.CustomFieldUserApi;
+import org.killbill.billing.util.api.TagUserApi;
+import org.killbill.commons.utils.collect.Iterables;
+import org.killbill.clock.Clock;
+import org.killbill.commons.metrics.api.annotation.TimedResource;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+@Singleton
+@Path(JaxrsResource.PLUGINS_INFO_PATH)
+@Tag(name = "PluginInfo", description = "Operations on plugins")
+public class PluginInfoResource extends JaxRsResourceBase {
+
+    private final PluginsInfoApi pluginsInfoApi;
+
+    @Inject
+    public PluginInfoResource(final JaxrsUriBuilder uriBuilder,
+                              final TagUserApi tagUserApi,
+                              final CustomFieldUserApi customFieldUserApi,
+                              final AuditUserApi auditUserApi,
+                              final AccountUserApi accountUserApi,
+                              final PaymentApi paymentApi,
+                              final InvoicePaymentApi invoicePaymentApi,
+                              final PluginsInfoApi pluginsInfoApi,
+                              final Clock clock,
+                              final Context context) {
+        super(uriBuilder, tagUserApi, customFieldUserApi, auditUserApi, accountUserApi, paymentApi, invoicePaymentApi, null, clock, context);
+        this.pluginsInfoApi = pluginsInfoApi;
+    }
+
+    @TimedResource
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve the list of registered plugins")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = PluginInfoJson.class))))})
+    public Response getPluginsInfo(@jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException {
+        final List<PluginInfoJson> result = Iterables.toStream(pluginsInfoApi.getPluginsInfo())
+                .map(PluginInfoJson::new)
+                .collect(Collectors.toUnmodifiableList());
+        return Response.status(Status.OK).entity(result).build();
+    }
+
+}

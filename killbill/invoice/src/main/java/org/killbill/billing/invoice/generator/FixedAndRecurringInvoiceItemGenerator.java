@@ -1,0 +1,560 @@
+/*
+ * Copyright 2014-2016 Groupon, Inc
+ * Copyright 2014-2016 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.invoice.generator;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+import jakarta.inject.Inject;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Interval;
+import org.joda.time.LocalDate;
+import org.killbill.billing.ErrorCode;
+import org.killbill.billing.account.api.ImmutableAccountData;
+import org.killbill.billing.callcontext.InternalCallContext;
+import org.killbill.billing.catalog.api.BillingMode;
+import org.killbill.billing.catalog.api.BillingPeriod;
+import org.killbill.billing.catalog.api.CatalogApiException;
+import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.catalog.api.PhaseType;
+import org.killbill.billing.catalog.api.Plan;
+import org.killbill.billing.invoice.api.DryRunInfo;
+import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.api.InvoiceApiException;
+import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.invoice.api.InvoiceItemType;
+import org.killbill.billing.invoice.generator.InvoiceWithMetadata.SubscriptionFutureNotificationDates;
+import org.killbill.billing.invoice.model.FixedPriceInvoiceItem;
+import org.killbill.billing.invoice.model.InvalidDateSequenceException;
+import org.killbill.billing.invoice.model.RecurringInvoiceItem;
+import org.killbill.billing.invoice.model.RecurringInvoiceItemData;
+import org.killbill.billing.invoice.model.RecurringInvoiceItemDataWithNextBillingCycleDate;
+import org.killbill.billing.invoice.optimizer.InvoiceOptimizerBase.AccountInvoices;
+import org.killbill.billing.invoice.tree.AccountItemTree;
+import org.killbill.billing.junction.BillingEvent;
+import org.killbill.billing.junction.BillingEventSet;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.subscription.api.SubscriptionBaseTransitionType;
+import org.killbill.billing.util.config.definition.InvoiceConfig;
+import org.killbill.billing.util.currency.KillBillMoney;
+import org.killbill.clock.Clock;
+import org.killbill.commons.utils.Preconditions;
+import org.killbill.commons.utils.annotation.VisibleForTesting;
+import org.killbill.commons.utils.collect.MultiValueHashMap;
+import org.killbill.commons.utils.collect.MultiValueMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.killbill.billing.invoice.generator.InvoiceDateUtils.calculateNumberOfWholeBillingPeriods;
+import static org.killbill.billing.invoice.generator.InvoiceDateUtils.calculateProRationAfterLastBillingCycleDate;
+import static org.killbill.billing.invoice.generator.InvoiceDateUtils.calculateProRationBeforeFirstBillingPeriod;
+import static org.killbill.billing.subscription.api.SubscriptionBaseTransitionType.BCD_CHANGE;
+
+public class FixedAndRecurringInvoiceItemGenerator extends InvoiceItemGenerator {
+
+    private static final Logger log = LoggerFactory.getLogger(FixedAndRecurringInvoiceItemGenerator.class);
+
+    private final InvoiceConfig config;
+
+    @Inject
+    public FixedAndRecurringInvoiceItemGenerator(final InvoiceConfig config, final Clock clock) {
+        this.config = config;
+    }
+
+    public InvoiceGeneratorResult generateItems(final ImmutableAccountData account, final UUID invoiceId, final BillingEventSet eventSet,
+                                                final AccountInvoices existingInvoices, final LocalDate targetDate,
+                                                final Currency targetCurrency, final Map<UUID, SubscriptionFutureNotificationDates> perSubscriptionFutureNotificationDate,
+                                                final DryRunInfo dryRunInfo,
+                                                final Iterable<PluginProperty> pluginProperties, final InternalCallContext internalCallContext) throws InvoiceApiException {
+        final MultiValueMap<UUID, LocalDate> createdItemsPerDayPerSubscription = new MultiValueHashMap<>();
+
+
+        final InvoicePruner invoicePruner = new InvoicePruner(existingInvoices);
+        final Set<UUID> toBeIgnored = invoicePruner.getFullyRepairedItemsClosure();
+        final AccountItemTree accountItemTree = new AccountItemTree(account.getId(), invoiceId, config.getProrationFixedDays(internalCallContext));
+        for (final Invoice invoice : existingInvoices.getInvoices()) {
+            for (final InvoiceItem item : invoice.getInvoiceItems()) {
+                if (toBeIgnored.contains(item.getId())) {
+                    continue;
+                }
+
+                if (item.getSubscriptionId() == null || // Always include migration invoices, credits, external charges etc.
+                    !eventSet.getSubscriptionIdsWithAutoInvoiceOff()
+                             .contains(item.getSubscriptionId())) { //don't add items with auto_invoice_off tag
+
+                    accountItemTree.addExistingItem(item);
+                    trackInvoiceItemCreatedDay(item, createdItemsPerDayPerSubscription, internalCallContext);
+                }
+            }
+        }
+
+        // Generate list of proposed invoice items based on billing events from junction-- proposed items are ALL items since beginning of time
+        final List<InvoiceItem> proposedItems = new ArrayList<>();
+        processRecurringBillingEvents(invoiceId, account.getId(), eventSet, targetDate, targetCurrency, proposedItems, perSubscriptionFutureNotificationDate, internalCallContext);
+        processFixedBillingEvents(invoiceId, account.getId(), eventSet, targetDate, targetCurrency, proposedItems, internalCallContext);
+
+
+        existingInvoices.filterProposedItems(proposedItems, eventSet, internalCallContext);
+
+        try {
+            accountItemTree.mergeWithProposedItems(proposedItems);
+        } catch (final IllegalStateException e) {
+            // Proposed items have already been logged
+            throw new InvoiceApiException(e, ErrorCode.UNEXPECTED_ERROR, String.format("ILLEGAL INVOICING STATE accountItemTree=%s", accountItemTree.toString()));
+        }
+
+        final List<InvoiceItem> resultingItems = accountItemTree.getResultingItemList();
+        safetyBounds(resultingItems, createdItemsPerDayPerSubscription, internalCallContext);
+
+        return new InvoiceGeneratorResult(resultingItems, Collections.emptySet());
+    }
+
+    private void processRecurringBillingEvents(final UUID invoiceId, final UUID accountId, final BillingEventSet events,
+                                               final LocalDate targetDate, final Currency currency, final List<InvoiceItem> proposedItems,
+                                               final Map<UUID, SubscriptionFutureNotificationDates> perSubscriptionFutureNotificationDate,
+                                               final InternalCallContext internalCallContext) throws InvoiceApiException {
+        if (events.isEmpty()) {
+            return;
+        }
+
+        // Pretty-print the generated invoice items from the junction events
+        final InvoiceItemGeneratorLogger invoiceItemGeneratorLogger = new InvoiceItemGeneratorLogger(invoiceId, accountId, "recurring", log);
+
+        final Iterator<BillingEvent> eventIt = events.iterator();
+        BillingEvent nextEvent = eventIt.next();
+        while (eventIt.hasNext()) {
+            final BillingEvent thisEvent = nextEvent;
+            nextEvent = eventIt.next();
+            if (!events.getSubscriptionIdsWithAutoInvoiceOff().
+                    contains(thisEvent.getSubscriptionId())) { // don't consider events for subscriptions that have auto_invoice_off
+                final BillingEvent adjustedNextEvent = (thisEvent.getSubscriptionId().equals(nextEvent.getSubscriptionId())) ? nextEvent : null;
+                final List<InvoiceItem> newProposedItems = processRecurringEvent(invoiceId, accountId, thisEvent, adjustedNextEvent, targetDate, currency, invoiceItemGeneratorLogger, perSubscriptionFutureNotificationDate, internalCallContext);
+                proposedItems.addAll(newProposedItems);
+            }
+        }
+        final List<InvoiceItem> newProposedItems = processRecurringEvent(invoiceId, accountId, nextEvent, null, targetDate, currency, invoiceItemGeneratorLogger, perSubscriptionFutureNotificationDate, internalCallContext);
+
+        proposedItems.addAll(newProposedItems);
+
+        invoiceItemGeneratorLogger.logItems();
+    }
+
+    @VisibleForTesting
+    void processFixedBillingEvents(final UUID invoiceId, final UUID accountId, final BillingEventSet events, final LocalDate targetDate,
+                                   final Currency currency, final List<InvoiceItem> proposedItems, final InternalCallContext internalCallContext) throws InvoiceApiException {
+        if (events.isEmpty()) {
+            return;
+        }
+
+        InvoiceItem prevItem = null;
+
+        // Pretty-print the generated invoice items from the junction events
+        final InvoiceItemGeneratorLogger invoiceItemGeneratorLogger = new InvoiceItemGeneratorLogger(invoiceId, accountId, "fixed", log);
+
+        final Iterator<BillingEvent> eventIt = events.iterator();
+        BillingEvent currentEvent = eventIt.next();
+
+        do {
+            BillingEvent nextEvent = eventIt.hasNext() ? eventIt.next() : null;
+
+            if (currentEvent.getTransitionType() != BCD_CHANGE) {
+                BillingEvent adjustedNextEvent = null;
+                if(nextEvent != null) {
+                    adjustedNextEvent = currentEvent.getSubscriptionId().equals(nextEvent.getSubscriptionId()) ? nextEvent : null;
+                }
+                final InvoiceItem currentFixedPriceItem = generateFixedPriceItem(invoiceId, accountId, currentEvent, adjustedNextEvent, targetDate, currency, invoiceItemGeneratorLogger, internalCallContext);
+
+                if (!isSameDayAndSameSubscription(prevItem, currentEvent, internalCallContext) && prevItem != null) {
+                    proposedItems.add(prevItem);
+                }
+                prevItem = currentFixedPriceItem;
+            }
+
+            currentEvent = nextEvent;
+        } while (currentEvent != null);
+
+        if (prevItem != null) {
+            proposedItems.add(prevItem);
+        }
+
+        invoiceItemGeneratorLogger.logItems();
+    }
+
+    @VisibleForTesting
+    boolean isSameDayAndSameSubscription(final InvoiceItem prevComputedFixedItem, final BillingEvent currentBillingEvent, final InternalCallContext internalCallContext) {
+
+        final LocalDate curLocalEffectiveDate = internalCallContext.toLocalDate(currentBillingEvent.getEffectiveDate());
+        if (prevComputedFixedItem != null && /* If we have computed a previous item */
+            prevComputedFixedItem.getStartDate().compareTo(curLocalEffectiveDate) == 0 && /* The current billing event happens at the same date */
+            prevComputedFixedItem.getSubscriptionId().compareTo(currentBillingEvent.getSubscriptionId()) == 0 /* The current billing event happens for the same subscription */) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Turn a set of events into a list of invoice items. Note that the dates on the invoice items will be rounded (granularity of a day)
+    @VisibleForTesting
+    List<InvoiceItem> processRecurringEvent(final UUID invoiceId, final UUID accountId, final BillingEvent thisEvent, @Nullable final BillingEvent nextEvent,
+                                            final LocalDate targetDate, final Currency currency,
+                                            final InvoiceItemGeneratorLogger invoiceItemGeneratorLogger,
+                                            final Map<UUID, SubscriptionFutureNotificationDates> perSubscriptionFutureNotificationDates,
+                                            final InternalCallContext internalCallContext) throws InvoiceApiException {
+
+        final List<InvoiceItem> items = new ArrayList<InvoiceItem>();
+        final LocalDate thisEventEffectiveDate = internalCallContext.toLocalDate(thisEvent.getEffectiveDate());
+        if (thisEventEffectiveDate.compareTo(targetDate) > 0) {
+            return items;
+        }
+
+        // Handle recurring items
+        final BillingPeriod billingPeriod = thisEvent.getBillingPeriod();
+        if (billingPeriod != BillingPeriod.NO_BILLING_PERIOD) {
+
+            final Plan currentPlan = thisEvent.getPlan();
+            Preconditions.checkNotNull(currentPlan, "Unexpected null Plan name event = %s", thisEvent);
+
+            final BillingMode recurringBillingMode = currentPlan.getRecurringBillingMode();
+            final LocalDate startDate = thisEventEffectiveDate;
+
+            if (!startDate.isAfter(targetDate)) {
+                final LocalDate endDate = (nextEvent == null) ? null : internalCallContext.toLocalDate(nextEvent.getEffectiveDate());
+
+                final int billCycleDayLocal = thisEvent.getBillCycleDayLocal();
+
+                final RecurringInvoiceItemDataWithNextBillingCycleDate itemDataWithNextBillingCycleDate;
+                try {
+                    itemDataWithNextBillingCycleDate = generateInvoiceItemData(startDate, endDate, targetDate, billCycleDayLocal, billingPeriod, recurringBillingMode, internalCallContext);
+                } catch (final InvalidDateSequenceException e) {
+                    throw new InvoiceApiException(ErrorCode.INVOICE_INVALID_DATE_SEQUENCE, startDate, endDate, targetDate);
+                }
+                for (final RecurringInvoiceItemData itemDatum : itemDataWithNextBillingCycleDate.getItemData()) {
+
+                    final BigDecimal rate = thisEvent.getRecurringPrice();
+                    if (rate != null) {
+                        final BigDecimal quantity = new BigDecimal(thisEvent.getQuantity());
+                        final BigDecimal rateXQuantity = rate.multiply(quantity);
+
+                        final BigDecimal amount = KillBillMoney.of(itemDatum.getNumberOfCycles().multiply(rateXQuantity), currency);
+                        final DateTime catalogEffectiveDate = thisEvent.getCatalogEffectiveDate() != null ? thisEvent.getCatalogEffectiveDate() : null;
+                        final RecurringInvoiceItem recurringItem = new RecurringInvoiceItem(invoiceId,
+                                                                                            accountId,
+                                                                                            thisEvent.getBundleId(),
+                                                                                            thisEvent.getSubscriptionId(),
+                                                                                            currentPlan.getProduct().getName(),
+                                                                                            currentPlan.getName(),
+                                                                                            thisEvent.getPlanPhase().getName(),
+                                                                                            catalogEffectiveDate,
+                                                                                            itemDatum.getStartDate(),
+                                                                                            itemDatum.getEndDate(),
+                                                                                            amount, rateXQuantity, currency);
+                        items.add(recurringItem);
+                    }
+                }
+                updatePerSubscriptionNextNotificationDate(thisEvent.getSubscriptionId(), itemDataWithNextBillingCycleDate.getNextBillingCycleDate(), items, recurringBillingMode,
+                                                          perSubscriptionFutureNotificationDates);
+            }
+        } else {
+            final SubscriptionFutureNotificationDates futureNotificationDates = perSubscriptionFutureNotificationDates.get(thisEvent.getSubscriptionId());
+            if (futureNotificationDates != null) {
+                futureNotificationDates.clearNextRecurringDate();
+            }
+        }
+
+        // For debugging purposes
+        invoiceItemGeneratorLogger.append(thisEvent, items);
+
+        return items;
+
+    }
+
+    private void updatePerSubscriptionNextNotificationDate(final UUID subscriptionId, final LocalDate nextBillingCycleDate, final List<InvoiceItem> newProposedItems, final BillingMode billingMode,
+                                                           final Map<UUID, SubscriptionFutureNotificationDates> perSubscriptionFutureNotificationDates) {
+
+        LocalDate nextNotificationDate = null;
+        switch (billingMode) {
+            case IN_ADVANCE:
+                for (final InvoiceItem item : newProposedItems) {
+                    if ((item.getEndDate() != null) &&
+                        (item.getAmount() == null ||
+                         item.getAmount().compareTo(BigDecimal.ZERO) >= 0)) {
+                        if (nextNotificationDate == null) {
+                            nextNotificationDate = item.getEndDate();
+                        } else {
+                            nextNotificationDate = nextNotificationDate.compareTo(item.getEndDate()) > 0 ? nextNotificationDate : item.getEndDate();
+                        }
+                    }
+                }
+                break;
+            case IN_ARREAR:
+                nextNotificationDate = nextBillingCycleDate;
+                break;
+            default:
+                throw new IllegalStateException("Unrecognized billing mode " + billingMode);
+        }
+
+        if (nextNotificationDate != null) {
+            SubscriptionFutureNotificationDates subscriptionFutureNotificationDates = perSubscriptionFutureNotificationDates.get(subscriptionId);
+            if (subscriptionFutureNotificationDates == null) {
+                subscriptionFutureNotificationDates = new SubscriptionFutureNotificationDates(billingMode);
+                perSubscriptionFutureNotificationDates.put(subscriptionId, subscriptionFutureNotificationDates);
+            }
+            subscriptionFutureNotificationDates.updateNextRecurringDateIfRequired(nextNotificationDate);
+
+        }
+    }
+
+    public RecurringInvoiceItemDataWithNextBillingCycleDate generateInvoiceItemData(final LocalDate startDate,
+                                                                                    @Nullable final LocalDate endDate,
+                                                                                    final LocalDate targetDate,
+                                                                                    final int billingCycleDayLocal,
+                                                                                    final BillingPeriod billingPeriod,
+                                                                                    final BillingMode billingMode,
+                                                                                    final InternalCallContext internalCallContext) throws InvalidDateSequenceException {
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new InvalidDateSequenceException();
+        }
+        if (targetDate.isBefore(startDate)) {
+            throw new InvalidDateSequenceException();
+        }
+
+        final List<RecurringInvoiceItemData> results = new ArrayList<RecurringInvoiceItemData>();
+
+        final BillingIntervalDetail billingIntervalDetail = new BillingIntervalDetail(startDate, endDate, targetDate, billingCycleDayLocal, billingPeriod, billingMode, config.getInArrearMode(internalCallContext));
+
+        // We are not billing for less than a day
+        if (!billingIntervalDetail.hasSomethingToBill()) {
+            return new RecurringInvoiceItemDataWithNextBillingCycleDate(results, billingIntervalDetail);
+        }
+        //
+        // If there is an endDate and that endDate is before our first coming firstBillingCycleDate, all we have to do
+        // is to charge for that period
+        //
+        if (endDate != null && !endDate.isAfter(billingIntervalDetail.getFirstBillingCycleDate())) {
+            final BigDecimal leadingProRationPeriods = calculateProRationBeforeFirstBillingPeriod(startDate, endDate, billingPeriod, config.getProrationFixedDays(internalCallContext));
+            final RecurringInvoiceItemData itemData = new RecurringInvoiceItemData(startDate, endDate, leadingProRationPeriods);
+            results.add(itemData);
+            return new RecurringInvoiceItemDataWithNextBillingCycleDate(results, billingIntervalDetail);
+        }
+
+        //
+        // Leading proration if
+        // i) The first firstBillingCycleDate is strictly after our start date AND
+        // ii) The endDate is is not null and is strictly after our firstBillingCycleDate (previous check)
+        //
+        if (billingIntervalDetail.getFirstBillingCycleDate().isAfter(startDate)) {
+            final BigDecimal leadingProRationPeriods = calculateProRationBeforeFirstBillingPeriod(startDate, billingIntervalDetail.getFirstBillingCycleDate(), billingPeriod, config.getProrationFixedDays(internalCallContext));
+            if (leadingProRationPeriods != null && leadingProRationPeriods.compareTo(BigDecimal.ZERO) > 0) {
+                // Not common - add info in the logs for debugging purposes
+                final RecurringInvoiceItemData itemData = new RecurringInvoiceItemData(startDate, billingIntervalDetail.getFirstBillingCycleDate(), leadingProRationPeriods);
+                log.info("Adding pro-ration: {}", itemData);
+                results.add(itemData);
+            }
+        }
+
+        //
+        // Calculate the effectiveEndDate from the firstBillingCycleDate:
+        // - If endDate != null and targetDate is after endDate => this is the endDate and will lead to a trailing pro-ration
+        // - If not, this is the last billingCycleDate calculation right after the targetDate
+        //
+        final LocalDate effectiveEndDate = billingIntervalDetail.getEffectiveEndDate();
+
+        //
+        // Based on what we calculated previously, code recompute one more time the numberOfWholeBillingPeriods
+        //
+        final LocalDate lastBillingCycleDate = billingIntervalDetail.getLastBillingCycleDate();
+        final int numberOfWholeBillingPeriods = calculateNumberOfWholeBillingPeriods(billingIntervalDetail.getFirstBillingCycleDate(), lastBillingCycleDate, billingPeriod);
+
+        for (int i = 0; i < numberOfWholeBillingPeriods; i++) {
+            final LocalDate servicePeriodStartDate;
+            if (!results.isEmpty()) {
+                // Make sure the periods align, especially with the pro-ration calculations above
+                servicePeriodStartDate = results.get(results.size() - 1).getEndDate();
+            } else if (i == 0) {
+                // Use the specified start date
+                servicePeriodStartDate = startDate;
+            } else {
+                throw new IllegalStateException("We should at least have one invoice item!");
+            }
+
+            // Make sure to align the end date with the BCD
+            final LocalDate servicePeriodEndDate = billingIntervalDetail.getFutureBillingDateFor(i + 1);
+            results.add(new RecurringInvoiceItemData(servicePeriodStartDate, servicePeriodEndDate, BigDecimal.ONE));
+        }
+
+        //
+        // Now we check if indeed we need a trailing proration and add that incomplete item
+        //
+        if (effectiveEndDate.isAfter(lastBillingCycleDate)) {
+            final BigDecimal trailingProRationPeriods = calculateProRationAfterLastBillingCycleDate(effectiveEndDate, lastBillingCycleDate, billingPeriod, config.getProrationFixedDays(internalCallContext));
+            if (trailingProRationPeriods.compareTo(BigDecimal.ZERO) > 0) {
+                // Not common - add info in the logs for debugging purposes
+                final RecurringInvoiceItemData itemData = new RecurringInvoiceItemData(lastBillingCycleDate, effectiveEndDate, trailingProRationPeriods);
+                log.info("Adding trailing pro-ration: {}", itemData);
+                results.add(itemData);
+            }
+        }
+        return new RecurringInvoiceItemDataWithNextBillingCycleDate(results, billingIntervalDetail);
+    }
+
+    private InvoiceItem generateFixedPriceItem(final UUID invoiceId, final UUID accountId, final BillingEvent thisEvent, @Nullable final BillingEvent nextEvent,
+                                               final LocalDate targetDate, final Currency currency,
+                                               final InvoiceItemGeneratorLogger invoiceItemGeneratorLogger, final InternalCallContext internalCallContext) throws InvoiceApiException {
+        final LocalDate roundedStartDate = internalCallContext.toLocalDate(thisEvent.getEffectiveDate());
+        if (roundedStartDate.isAfter(targetDate)) {
+            return null;
+        } else {
+            final BigDecimal fixedPrice = thisEvent.getFixedPrice();
+
+            if (fixedPrice != null) {
+                final BigDecimal quantity = new BigDecimal(thisEvent.getQuantity());
+                final BigDecimal fixedPriceXQuantity = fixedPrice.multiply(quantity);
+
+                final Plan currentPlan = thisEvent.getPlan();
+                Preconditions.checkNotNull(currentPlan, String.format("Unexpected null Plan name event = %s", thisEvent));
+
+                final DateTime catalogEffectiveDate = thisEvent.getCatalogEffectiveDate() != null ? thisEvent.getCatalogEffectiveDate() : null;
+                LocalDate invoiceItemEndDate = null;
+                if (thisEvent.getRecurringPrice() == null && thisEvent.getPlanPhase().getPhaseType() != PhaseType.EVERGREEN) {
+                    try {
+                        if (nextEvent != null && nextEvent.getTransitionType() == SubscriptionBaseTransitionType.PHASE) {
+                            invoiceItemEndDate = internalCallContext.toLocalDate(nextEvent.getEffectiveDate());
+                        }
+                        else {
+                            invoiceItemEndDate = thisEvent.getPlanPhase().getDuration().addToLocalDate(roundedStartDate);
+                        }
+
+                    } catch (final CatalogApiException e) {
+                        log.warn("Error while computing invoice item end date, ", e.getMessage());
+                    }
+                }
+                final FixedPriceInvoiceItem fixedPriceInvoiceItem = new FixedPriceInvoiceItem(invoiceId, accountId, thisEvent.getBundleId(),
+                                                                                              thisEvent.getSubscriptionId(),
+                                                                                              currentPlan.getProduct().getName(), currentPlan.getName(), thisEvent.getPlanPhase().getName(),
+                                                                                              catalogEffectiveDate,
+                                                                                              roundedStartDate, invoiceItemEndDate, fixedPriceXQuantity, currency);
+
+                // For debugging purposes
+                invoiceItemGeneratorLogger.append(thisEvent, fixedPriceInvoiceItem);
+
+                return fixedPriceInvoiceItem;
+            } else {
+                return null;
+            }
+        }
+    }
+
+
+
+    @VisibleForTesting
+    void safetyBounds(final Iterable<InvoiceItem> resultingItems, final MultiValueMap<UUID, LocalDate> createdItemsPerDayPerSubscription, final InternalCallContext internalCallContext) throws InvoiceApiException {
+        // Trigger an exception if we detect the creation of similar items for a given subscription
+        // See https://github.com/killbill/killbill/issues/664
+        if (config.isSanitySafetyBoundEnabled(internalCallContext)) {
+            final Map<UUID, MultiValueMap<LocalDate, InvoiceItem>> fixedItemsPerDateAndSubscription = new HashMap<>();
+            final Map<UUID, MultiValueMap<Interval, InvoiceItem>> recurringItemsPerServicePeriodAndSubscription = new HashMap<>();
+            for (final InvoiceItem resultingItem : resultingItems) {
+                if (resultingItem.getInvoiceItemType() == InvoiceItemType.FIXED) {
+                    validateSafetyBoundsWithFixedInvoiceItem(fixedItemsPerDateAndSubscription, resultingItem);
+                } else if (resultingItem.getInvoiceItemType() == InvoiceItemType.RECURRING) {
+                    validateSafetyBoundsWithRecurringInvoiceItem(recurringItemsPerServicePeriodAndSubscription, resultingItem);
+                }
+            }
+        }
+
+        // Trigger an exception if we create too many invoice items for a subscription on a given day
+        if (config.getMaxDailyNumberOfItemsSafetyBound(internalCallContext) == -1) {
+            // Safety bound disabled
+            return;
+        }
+
+        for (final InvoiceItem invoiceItem : resultingItems) {
+            if (invoiceItem.getSubscriptionId() != null) {
+                final LocalDate resultingItemCreationDay = trackInvoiceItemCreatedDay(invoiceItem, createdItemsPerDayPerSubscription, internalCallContext);
+
+                final Collection<LocalDate> creationDaysForSubscription = createdItemsPerDayPerSubscription.get(invoiceItem.getSubscriptionId());
+                int i = 0;
+                for (final LocalDate creationDayForSubscription : creationDaysForSubscription) {
+                    if (creationDayForSubscription.compareTo(resultingItemCreationDay) == 0) {
+                        i++;
+                        if (i > config.getMaxDailyNumberOfItemsSafetyBound(internalCallContext)) {
+                            // Proposed items have already been logged
+                            throw new InvoiceApiException(ErrorCode.UNEXPECTED_ERROR, String.format("SAFETY BOUND TRIGGERED subscriptionId='%s', resultingItem=%s", invoiceItem.getSubscriptionId(), invoiceItem));
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void validateSafetyBoundsWithFixedInvoiceItem(final Map<UUID, MultiValueMap<LocalDate, InvoiceItem>> fixedItemsPerDateAndSubscription,
+                                                  final InvoiceItem resultingItem) throws InvoiceApiException {
+        if (fixedItemsPerDateAndSubscription.get(resultingItem.getSubscriptionId()) == null) {
+            fixedItemsPerDateAndSubscription.put(resultingItem.getSubscriptionId(), new MultiValueHashMap<>());
+        }
+        fixedItemsPerDateAndSubscription.get(resultingItem.getSubscriptionId()).putElement(resultingItem.getStartDate(), resultingItem);
+
+        final Collection<InvoiceItem> resultingInvoiceItems = fixedItemsPerDateAndSubscription.get(resultingItem.getSubscriptionId()).get(resultingItem.getStartDate());
+        if (resultingInvoiceItems.size() > 1) {
+            throw new InvoiceApiException(ErrorCode.UNEXPECTED_ERROR, String.format("SAFETY BOUND TRIGGERED Multiple FIXED items for subscriptionId='%s', startDate='%s', resultingItems=%s",
+                                                                                    resultingItem.getSubscriptionId(), resultingItem.getStartDate(), resultingInvoiceItems));
+        }
+    }
+
+    @VisibleForTesting
+    void validateSafetyBoundsWithRecurringInvoiceItem(final Map<UUID, MultiValueMap<Interval, InvoiceItem>> recurringItemsPerServicePeriodAndSubscription,
+                                                      final InvoiceItem resultingItem) throws InvoiceApiException {
+        if (recurringItemsPerServicePeriodAndSubscription.get(resultingItem.getSubscriptionId()) == null) {
+            recurringItemsPerServicePeriodAndSubscription.put(resultingItem.getSubscriptionId(), new MultiValueHashMap<>());
+        }
+        final Interval interval = new Interval(resultingItem.getStartDate().toDateTimeAtStartOfDay(DateTimeZone.UTC),
+                                               resultingItem.getEndDate().toDateTimeAtStartOfDay(DateTimeZone.UTC));
+        recurringItemsPerServicePeriodAndSubscription.get(resultingItem.getSubscriptionId()).putElement(interval, resultingItem);
+
+        final Collection<InvoiceItem> resultingInvoiceItems = recurringItemsPerServicePeriodAndSubscription.get(resultingItem.getSubscriptionId()).get(interval);
+        if (resultingInvoiceItems.size() > 1) {
+            throw new InvoiceApiException(ErrorCode.UNEXPECTED_ERROR, String.format("SAFETY BOUND TRIGGERED Multiple RECURRING items for subscriptionId='%s', startDate='%s', endDate='%s', resultingItems=%s",
+                                                                                    resultingItem.getSubscriptionId(), resultingItem.getStartDate(), resultingItem.getEndDate(), resultingInvoiceItems));
+        }
+    }
+
+    private LocalDate trackInvoiceItemCreatedDay(final InvoiceItem invoiceItem, final MultiValueMap<UUID, LocalDate> createdItemsPerDayPerSubscription, final InternalCallContext internalCallContext) {
+        final UUID subscriptionId = invoiceItem.getSubscriptionId();
+        if (subscriptionId == null) {
+            return null;
+        }
+
+        final LocalDate createdDay = internalCallContext.toLocalDate(Objects.requireNonNullElse(invoiceItem.getCreatedDate(), internalCallContext.getCreatedDate()));
+        createdItemsPerDayPerSubscription.putElement(subscriptionId, createdDay);
+        return createdDay;
+    }
+}

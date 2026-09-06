@@ -1,0 +1,143 @@
+/*
+ * Copyright 2014-2020 Groupon, Inc
+ * Copyright 2020-2022 Equinix, Inc
+ * Copyright 2014-2022 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.plugin.avatax.api;
+
+import java.util.Collections;
+import java.util.UUID;
+
+import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.plugin.api.AdditionalItemsResult;
+import org.killbill.billing.invoice.plugin.api.InvoiceContext;
+import org.killbill.billing.invoice.plugin.api.OnFailureInvoiceResult;
+import org.killbill.billing.invoice.plugin.api.OnSuccessInvoiceResult;
+import org.killbill.billing.plugin.runtime.PluginConfigProperties;
+import org.killbill.billing.plugin.runtime.KillbillApi;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.plugin.api.PluginProperties;
+import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
+import org.killbill.billing.plugin.avatax.client.AvaTaxClient;
+import org.killbill.billing.plugin.avatax.client.TaxRatesClient;
+import org.killbill.billing.plugin.avatax.core.AvaTaxConfigurationHandler;
+import org.killbill.billing.plugin.avatax.core.TaxRatesConfigurationHandler;
+import org.killbill.billing.plugin.avatax.dao.AvaTaxDao;
+import org.killbill.clock.Clock;
+
+public class AvalaraInvoicePluginApi extends PluginInvoicePluginApi {
+
+    private static final String AVALARA_SKIP = "AVALARA_SKIP";
+
+    private final AvaTaxConfigurationHandler avaTaxConfigurationHandler;
+    private final TaxRatesConfigurationHandler taxRatesConfigurationHandler;
+    private final AvaTaxInvoicePluginApi avaTaxInvoicePluginApi;
+    private final TaxRatesInvoicePluginApi taxRatesInvoicePluginApi;
+
+    public AvalaraInvoicePluginApi(final AvaTaxConfigurationHandler avaTaxConfigurationHandler,
+                                   final TaxRatesConfigurationHandler taxRatesConfigurationHandler,
+                                   final AvaTaxDao dao,
+                                   final KillbillApi killbillApi,
+                                   final PluginConfigProperties configProperties,
+                                   final Clock clock) {
+        super(killbillApi, configProperties, clock);
+        this.avaTaxConfigurationHandler = avaTaxConfigurationHandler;
+        this.taxRatesConfigurationHandler = taxRatesConfigurationHandler;
+
+        this.avaTaxInvoicePluginApi = new AvaTaxInvoicePluginApi(avaTaxConfigurationHandler,
+                                                                 dao,
+                                                                 killbillApi,
+                                                                 configProperties,
+                                                                 clock);
+        this.taxRatesInvoicePluginApi = new TaxRatesInvoicePluginApi(taxRatesConfigurationHandler,
+                                                                     dao,
+                                                                     killbillApi,
+                                                                     configProperties,
+                                                                     clock);
+    }
+
+    @Override
+    public AdditionalItemsResult getAdditionalInvoiceItems(final Invoice invoice, final boolean dryRun, final Iterable<PluginProperty> properties, final InvoiceContext context) {
+        if (PluginProperties.findPluginPropertyValue(AVALARA_SKIP, properties) != null) {
+            return new AvataxAdditionalItemsResult(Collections.emptyList(), null);
+        }
+
+        final UUID kbTenantId = context.getTenantId();
+        final AvaTaxClient avaTaxClient = avaTaxConfigurationHandler.getConfigurable(kbTenantId);
+        final TaxRatesClient taxRatesClient = taxRatesConfigurationHandler.getConfigurable(kbTenantId);
+
+        // Note: there is a small window of doom here if the reconfiguration happens at the wrong time
+
+        if (avaTaxClient.isConfigured()) {
+            // If a per tenant taxRatesClient is configured and a global avaTaxClient, we would use the latter
+            // Should this behavior be configurable?
+            return avaTaxInvoicePluginApi.getAdditionalInvoiceItems(invoice, dryRun, properties, context);
+        } else if (taxRatesClient.isConfigured()) {
+            return taxRatesInvoicePluginApi.getAdditionalInvoiceItems(invoice, dryRun, properties, context);
+        } else {
+            // Not configured for that tenant?
+            return new AvataxAdditionalItemsResult(Collections.emptyList(), null);
+        }
+    }
+
+    @Override
+    public OnSuccessInvoiceResult onSuccessCall(final InvoiceContext context, final Iterable<PluginProperty> properties) {
+        if (PluginProperties.findPluginPropertyValue(AVALARA_SKIP, properties) != null) {
+            return super.onSuccessCall(context, properties);
+        }
+
+        final UUID kbTenantId = context.getTenantId();
+        final AvaTaxClient avaTaxClient = avaTaxConfigurationHandler.getConfigurable(kbTenantId);
+        final TaxRatesClient taxRatesClient = taxRatesConfigurationHandler.getConfigurable(kbTenantId);
+
+        // Note: there is a small window of doom here if the reconfiguration happens at the wrong time
+
+        if (avaTaxClient.isConfigured()) {
+            // If a per tenant taxRatesClient is configured and a global avaTaxClient, we would use the latter
+            // Should this behavior be configurable?
+            return avaTaxInvoicePluginApi.onSuccessCall(context, properties);
+        } else if (taxRatesClient.isConfigured()) {
+            return taxRatesInvoicePluginApi.onSuccessCall(context, properties);
+        } else {
+            // Not configured for that tenant?
+            return super.onSuccessCall(context, properties);
+        }
+    }
+
+    @Override
+    public OnFailureInvoiceResult onFailureCall(final InvoiceContext context, final Iterable<PluginProperty> properties) {
+        if (PluginProperties.findPluginPropertyValue(AVALARA_SKIP, properties) != null) {
+            return super.onFailureCall(context, properties);
+        }
+
+        final UUID kbTenantId = context.getTenantId();
+        final AvaTaxClient avaTaxClient = avaTaxConfigurationHandler.getConfigurable(kbTenantId);
+        final TaxRatesClient taxRatesClient = taxRatesConfigurationHandler.getConfigurable(kbTenantId);
+
+        // Note: there is a small window of doom here if the reconfiguration happens at the wrong time
+
+        if (avaTaxClient.isConfigured()) {
+            // If a per tenant taxRatesClient is configured and a global avaTaxClient, we would use the latter
+            // Should this behavior be configurable?
+            return avaTaxInvoicePluginApi.onFailureCall(context, properties);
+        } else if (taxRatesClient.isConfigured()) {
+            return taxRatesInvoicePluginApi.onFailureCall(context, properties);
+        } else {
+            // Not configured for that tenant?
+            return super.onFailureCall(context, properties);
+        }
+    }
+}

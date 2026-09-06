@@ -1,0 +1,2408 @@
+group BusinessAnalyticsSqlDao;
+
+createAnalyticsSubscriptionTransitions() ::= <<
+insert into analytics_subscription_transitions (
+  subscription_event_record_id
+, bundle_id
+, bundle_external_key
+, subscription_id
+, requested_timestamp
+, event
+, prev_product_name
+, prev_product_type
+, prev_product_category
+, prev_slug
+, prev_phase
+, prev_billing_period
+, prev_price
+, converted_prev_price
+, prev_price_list
+, prev_mrr
+, converted_prev_mrr
+, prev_currency
+, prev_service
+, prev_state
+, prev_business_active
+, prev_start_date
+, next_product_name
+, next_product_type
+, next_product_category
+, next_slug
+, next_phase
+, next_billing_period
+, next_price
+, converted_next_price
+, next_price_list
+, next_mrr
+, converted_next_mrr
+, next_currency
+, next_service
+, next_state
+, next_business_active
+, next_start_date
+, next_end_date
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :subscriptionEventRecordId
+, :bundleId
+, :bundleExternalKey
+, :subscriptionId
+, :requestedTimestamp
+, :event
+, :prevProductName
+, :prevProductType
+, :prevProductCategory
+, :prevSlug
+, :prevPhase
+, :prevBillingPeriod
+, :prevPrice
+, :convertedPrevPrice
+, :prevPriceList
+, :prevMrr
+, :convertedPrevMrr
+, :prevCurrency
+, :prevService
+, :prevState
+, :prevBusinessActive
+, :prevStartDate
+, :nextProductName
+, :nextProductType
+, :nextProductCategory
+, :nextSlug
+, :nextPhase
+, :nextBillingPeriod
+, :nextPrice
+, :convertedNextPrice
+, :nextPriceList
+, :nextMrr
+, :convertedNextMrr
+, :nextCurrency
+, :nextService
+, :nextState
+, :nextBusinessActive
+, :nextStartDate
+, :nextEndDate
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsBundles() ::= <<
+insert into analytics_bundles (
+  bundle_record_id
+, bundle_id
+, bundle_external_key
+, subscription_id
+, bundle_account_rank
+, latest_for_bundle_external_key
+, charged_through_date
+, current_product_name
+, current_product_type
+, current_product_category
+, current_slug
+, current_phase
+, current_billing_period
+, current_price
+, converted_current_price
+, current_price_list
+, current_mrr
+, converted_current_mrr
+, current_currency
+, current_service
+, current_state
+, current_business_active
+, current_start_date
+, current_end_date
+, converted_currency
+, original_created_date
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :bundleRecordId
+, :bundleId
+, :bundleExternalKey
+, :subscriptionId
+, :bundleAccountRank
+, :latestForBundleExternalKey
+, :chargedThroughDate
+, :currentProductName
+, :currentProductType
+, :currentProductCategory
+, :currentSlug
+, :currentPhase
+, :currentBillingPeriod
+, :currentPrice
+, :convertedCurrentPrice
+, :currentPriceList
+, :currentMrr
+, :convertedCurrentMrr
+, :currentCurrency
+, :currentService
+, :currentState
+, :currentBusinessActive
+, :currentStartDate
+, :currentEndDate
+, :convertedCurrency
+, :originalCreatedDate
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsAccounts() ::= <<
+insert into analytics_accounts (
+  email
+, first_name_length
+, currency
+, billing_cycle_day_local
+, payment_method_id
+, time_zone
+, locale
+, address1
+, address2
+, company_name
+, city
+, state_or_province
+, country
+, postal_code
+, phone
+, migrated
+, balance
+, converted_balance
+, oldest_unpaid_invoice_date
+, oldest_unpaid_invoice_balance
+, oldest_unpaid_invoice_currency
+, converted_oldest_unpaid_invoice_balance
+, oldest_unpaid_invoice_id
+, last_invoice_date
+, last_invoice_balance
+, last_invoice_currency
+, converted_last_invoice_balance
+, last_invoice_id
+, last_payment_date
+, last_payment_status
+, nb_active_bundles
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, updated_date
+, account_id
+, account_name
+, account_external_key
+, parent_account_id
+, parent_account_name
+, parent_account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :email
+, :firstNameLength
+, :currency
+, :billingCycleDayLocal
+, :paymentMethodId
+, :timeZone
+, :locale
+, :address1
+, :address2
+, :companyName
+, :city
+, :stateOrProvince
+, :country
+, :postalCode
+, :phone
+, :migrated
+, :balance
+, :convertedBalance
+, :oldestUnpaidInvoiceDate
+, :oldestUnpaidInvoiceBalance
+, :oldestUnpaidInvoiceCurrency
+, :convertedOldestUnpaidInvoiceBalance
+, :oldestUnpaidInvoiceId
+, :lastInvoiceDate
+, :lastInvoiceBalance
+, :lastInvoiceCurrency
+, :convertedLastInvoiceBalance
+, :lastInvoiceId
+, :lastPaymentDate
+, :lastPaymentStatus
+, :nbActiveBundles
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :updatedDate
+, :accountId
+, :accountName
+, :accountExternalKey
+, :parentAccountId
+, :parentAccountName
+, :parentAccountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoices() ::= <<
+insert into analytics_invoices (
+  invoice_record_id
+, invoice_id
+, invoice_number
+, invoice_date
+, target_date
+, currency
+, raw_balance
+, converted_raw_balance
+, balance
+, converted_balance
+, amount_paid
+, converted_amount_paid
+, amount_charged
+, converted_amount_charged
+, original_amount_charged
+, converted_original_amount_charged
+, amount_credited
+, converted_amount_credited
+, amount_refunded
+, converted_amount_refunded
+, converted_currency
+, written_off
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoiceRecordId
+, :invoiceId
+, :invoiceNumber
+, :invoiceDate
+, :targetDate
+, :currency
+, :rawBalance
+, :convertedRawBalance
+, :balance
+, :convertedBalance
+, :amountPaid
+, :convertedAmountPaid
+, :amountCharged
+, :convertedAmountCharged
+, :originalAmountCharged
+, :convertedOriginalAmountCharged
+, :amountCredited
+, :convertedAmountCredited
+, :amountRefunded
+, :convertedAmountRefunded
+, :convertedCurrency
+, :writtenOff
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceAdjustments() ::= <<
+insert into analytics_invoice_adjustments (
+  invoice_item_record_id
+, second_invoice_item_record_id
+, item_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, raw_invoice_balance
+, converted_raw_invoice_balance
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_written_off
+, item_type
+, item_source
+, bundle_id
+, bundle_external_key
+, product_name
+, product_type
+, product_category
+, slug
+, phase
+, billing_period
+, start_date
+, end_date
+, amount
+, converted_amount
+, currency
+, linked_item_id
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoiceItemRecordId
+, :secondInvoiceItemRecordId
+, :itemId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :rawInvoiceBalance
+, :convertedRawInvoiceBalance
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoiceWrittenOff
+, :itemType
+, :itemSource
+, :bundleId
+, :bundleExternalKey
+, :productName
+, :productType
+, :productCategory
+, :slug
+, :phase
+, :billingPeriod
+, :startDate
+, :endDate
+, :amount
+, :convertedAmount
+, :currency
+, :linkedItemId
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceItems() ::= <<
+insert into analytics_invoice_items (
+  invoice_item_record_id
+, second_invoice_item_record_id
+, item_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, raw_invoice_balance
+, converted_raw_invoice_balance
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_written_off
+, item_type
+, item_source
+, bundle_id
+, bundle_external_key
+, product_name
+, product_type
+, product_category
+, slug
+, usage_name
+, phase
+, billing_period
+, start_date
+, end_date
+, amount
+, converted_amount
+, currency
+, linked_item_id
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoiceItemRecordId
+, :secondInvoiceItemRecordId
+, :itemId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :rawInvoiceBalance
+, :convertedRawInvoiceBalance
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoiceWrittenOff
+, :itemType
+, :itemSource
+, :bundleId
+, :bundleExternalKey
+, :productName
+, :productType
+, :productCategory
+, :slug
+, :usageName
+, :phase
+, :billingPeriod
+, :startDate
+, :endDate
+, :amount
+, :convertedAmount
+, :currency
+, :linkedItemId
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceItemAdjustments() ::= <<
+insert into analytics_invoice_item_adjustments (
+  invoice_item_record_id
+, second_invoice_item_record_id
+, item_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, raw_invoice_balance
+, converted_raw_invoice_balance
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_written_off
+, item_type
+, item_source
+, bundle_id
+, bundle_external_key
+, product_name
+, product_type
+, product_category
+, slug
+, phase
+, billing_period
+, start_date
+, end_date
+, amount
+, converted_amount
+, currency
+, linked_item_id
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoiceItemRecordId
+, :secondInvoiceItemRecordId
+, :itemId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :rawInvoiceBalance
+, :convertedRawInvoiceBalance
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoiceWrittenOff
+, :itemType
+, :itemSource
+, :bundleId
+, :bundleExternalKey
+, :productName
+, :productType
+, :productCategory
+, :slug
+, :phase
+, :billingPeriod
+, :startDate
+, :endDate
+, :amount
+, :convertedAmount
+, :currency
+, :linkedItemId
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceCredits() ::= <<
+insert into analytics_invoice_credits (
+  invoice_item_record_id
+, second_invoice_item_record_id
+, item_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, raw_invoice_balance
+, converted_raw_invoice_balance
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_written_off
+, item_type
+, item_source
+, bundle_id
+, bundle_external_key
+, product_name
+, product_type
+, product_category
+, slug
+, phase
+, billing_period
+, start_date
+, end_date
+, amount
+, converted_amount
+, currency
+, linked_item_id
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoiceItemRecordId
+, :secondInvoiceItemRecordId
+, :itemId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :rawInvoiceBalance
+, :convertedRawInvoiceBalance
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoiceWrittenOff
+, :itemType
+, :itemSource
+, :bundleId
+, :bundleExternalKey
+, :productName
+, :productType
+, :productCategory
+, :slug
+, :phase
+, :billingPeriod
+, :startDate
+, :endDate
+, :amount
+, :convertedAmount
+, :currency
+, :linkedItemId
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentAuths() ::= <<
+insert into analytics_payment_auths (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentCaptures() ::= <<
+insert into analytics_payment_captures (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentPurchases() ::= <<
+insert into analytics_payment_purchases (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentRefunds() ::= <<
+insert into analytics_payment_refunds (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentCredits() ::= <<
+insert into analytics_payment_credits (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentChargebacks() ::= <<
+insert into analytics_payment_chargebacks (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentVoids() ::= <<
+insert into analytics_payment_voids (
+  invoice_payment_record_id
+, invoice_payment_id
+, invoice_id
+, invoice_number
+, invoice_created_date
+, invoice_date
+, invoice_target_date
+, invoice_currency
+, invoice_balance
+, converted_invoice_balance
+, invoice_amount_paid
+, converted_invoice_amount_paid
+, invoice_amount_charged
+, converted_invoice_amount_charged
+, invoice_original_amount_charged
+, converted_invoice_original_amount_charged
+, invoice_amount_credited
+, converted_invoice_amount_credited
+, invoice_amount_refunded
+, converted_invoice_amount_refunded
+, invoice_payment_type
+, payment_id
+, refund_id
+, payment_number
+, payment_external_key
+, payment_transaction_id
+, payment_transaction_external_key
+, payment_transaction_status
+, linked_invoice_payment_id
+, amount
+, converted_amount
+, currency
+, plugin_name
+, payment_method_id
+, payment_method_external_key
+, plugin_created_date
+, plugin_effective_date
+, plugin_status
+, plugin_gateway_error
+, plugin_gateway_error_code
+, plugin_first_reference_id
+, plugin_second_reference_id
+, plugin_property_1
+, plugin_property_2
+, plugin_property_3
+, plugin_property_4
+, plugin_property_5
+, plugin_pm_id
+, plugin_pm_is_default
+, plugin_pm_type
+, plugin_pm_cc_name
+, plugin_pm_cc_type
+, plugin_pm_cc_expiration_month
+, plugin_pm_cc_expiration_year
+, plugin_pm_cc_last_4
+, plugin_pm_address1
+, plugin_pm_address2
+, plugin_pm_city
+, plugin_pm_state
+, plugin_pm_zip
+, plugin_pm_country
+, converted_currency
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :invoicePaymentRecordId
+, :invoicePaymentId
+, :invoiceId
+, :invoiceNumber
+, :invoiceCreatedDate
+, :invoiceDate
+, :invoiceTargetDate
+, :invoiceCurrency
+, :invoiceBalance
+, :convertedInvoiceBalance
+, :invoiceAmountPaid
+, :convertedInvoiceAmountPaid
+, :invoiceAmountCharged
+, :convertedInvoiceAmountCharged
+, :invoiceOriginalAmountCharged
+, :convertedInvoiceOriginalAmountCharged
+, :invoiceAmountCredited
+, :convertedInvoiceAmountCredited
+, :invoiceAmountRefunded
+, :convertedInvoiceAmountRefunded
+, :invoicePaymentType
+, :paymentId
+, :refundId
+, :paymentNumber
+, :paymentExternalKey
+, :paymentTransactionId
+, :paymentTransactionExternalKey
+, :paymentTransactionStatus
+, :linkedInvoicePaymentId
+, :amount
+, :convertedAmount
+, :currency
+, :pluginName
+, :paymentMethodId
+, :paymentMethodExternalKey
+, :pluginCreatedDate
+, :pluginEffectiveDate
+, :pluginStatus
+, :pluginGatewayError
+, :pluginGatewayErrorCode
+, :pluginFirstReferenceId
+, :pluginSecondReferenceId
+, :pluginProperty1
+, :pluginProperty2
+, :pluginProperty3
+, :pluginProperty4
+, :pluginProperty5
+, :pluginPmId
+, :pluginPmIsDefault
+, :pluginPmType
+, :pluginPmCcName
+, :pluginPmCcType
+, :pluginPmCcExpirationMonth
+, :pluginPmCcExpirationYear
+, :pluginPmCcLast4
+, :pluginPmAddress1
+, :pluginPmAddress2
+, :pluginPmCity
+, :pluginPmState
+, :pluginPmZip
+, :pluginPmCountry
+, :convertedCurrency
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsAccountTransitions() ::= <<
+insert into analytics_account_transitions (
+  blocking_state_record_id
+, service
+, state
+, start_date
+, end_date
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :blockingStateRecordId
+, :service
+, :state
+, :startDate
+, :endDate
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsAccountTags() ::= <<
+insert into analytics_account_tags (
+  tag_record_id
+, name
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :tagRecordId
+, :name
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsBundleTags() ::= <<
+insert into analytics_bundle_tags (
+  tag_record_id
+, bundle_id
+, bundle_external_key
+, name
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :tagRecordId
+, :bundleId
+, :bundleExternalKey
+, :name
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceTags() ::= <<
+insert into analytics_invoice_tags (
+  tag_record_id
+, invoice_id
+, name
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :tagRecordId
+, :invoiceId
+, :name
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentTags() ::= <<
+insert into analytics_payment_tags (
+  tag_record_id
+, invoice_payment_id
+, name
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :tagRecordId
+, :invoicePaymentId
+, :name
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsAccountFields() ::= <<
+insert into analytics_account_fields (
+  custom_field_record_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsBundleFields() ::= <<
+insert into analytics_bundle_fields (
+  custom_field_record_id
+, bundle_id
+, bundle_external_key
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :bundleId
+, :bundleExternalKey
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoiceFields() ::= <<
+insert into analytics_invoice_fields (
+  custom_field_record_id
+, invoice_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :invoiceId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsInvoicePaymentFields() ::= <<
+insert into analytics_invoice_payment_fields (
+  custom_field_record_id
+, invoice_payment_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :invoicePaymentId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentFields() ::= <<
+insert into analytics_payment_fields (
+  custom_field_record_id
+, payment_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :paymentId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsPaymentMethodFields() ::= <<
+insert into analytics_payment_method_fields (
+  custom_field_record_id
+, payment_method_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :paymentMethodId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+createAnalyticsTransactionFields() ::= <<
+insert into analytics_transaction_fields (
+  custom_field_record_id
+, transaction_id
+, name
+, field_value
+, created_date
+, created_by
+, created_reason_code
+, created_comments
+, account_id
+, account_name
+, account_external_key
+, account_record_id
+, tenant_record_id
+, report_group
+) values (
+  :customFieldRecordId
+, :transactionId
+, :name
+, :fieldValue
+, :createdDate
+, :createdBy
+, :createdReasonCode
+, :createdComments
+, :accountId
+, :accountName
+, :accountExternalKey
+, :accountRecordId
+, :tenantRecordId
+, :reportGroup
+);
+>>
+
+CHECK_TENANT(prefix) ::= <<
+case
+    when <prefix>tenant_record_id is null and :tenantRecordId is null then true
+    when <prefix>tenant_record_id is null or  :tenantRecordId is null then false
+    else <prefix>tenant_record_id = :tenantRecordId
+end
+>>
+
+CHECK_TENANT_AND_ACCOUNT(prefix) ::= <<
+<CHECK_TENANT(prefix)>
+and <prefix>account_record_id = :accountRecordId
+>>
+
+SELECT_STAR_FROM_TABLE(table) ::= <<
+select *
+from <table> t
+where <CHECK_TENANT_AND_ACCOUNT("t.")>
+>>
+
+deleteByBundleId(tableName) ::= <<
+delete from <tableName>
+where <CHECK_TENANT("")>
+and bundle_id = :bundleId
+;
+>>
+
+deleteByInvoiceId(tableName) ::= <<
+delete from <tableName>
+where <CHECK_TENANT("")>
+and invoice_id = :invoiceId
+;
+>>
+
+deleteByAccountRecordId(tableName) ::= <<
+delete from <tableName>
+where <CHECK_TENANT_AND_ACCOUNT("")>
+;
+>>
+
+getAccountByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_accounts")>
+;
+>>
+
+getSubscriptionTransitionsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_subscription_transitions")>
+;
+>>
+
+getBundlesByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_bundles")>
+;
+>>
+
+getAccountTransitionsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_account_transitions")>
+;
+>>
+
+getInvoicesByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoices")>
+;
+>>
+
+getInvoiceAdjustmentsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_adjustments")>
+;
+>>
+
+getInvoiceItemsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_items")>
+;
+>>
+
+getInvoiceItemAdjustmentsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_item_adjustments")>
+;
+>>
+
+getInvoiceItemCreditsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_credits")>
+;
+>>
+
+getPaymentAuthsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_auths")>
+;
+>>
+
+getPaymentCapturesByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_captures")>
+;
+>>
+
+getPaymentPurchasesByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_purchases")>
+;
+>>
+
+getPaymentRefundsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_refunds")>
+;
+>>
+
+getPaymentCreditsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_credits")>
+;
+>>
+
+getPaymentChargebacksByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_chargebacks")>
+;
+>>
+
+getAccountFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_account_fields")>
+;
+>>
+
+getBundleFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_bundle_fields")>
+;
+>>
+
+getInvoiceFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_fields")>
+;
+>>
+
+getInvoicePaymentFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_payment_fields")>
+;
+>>
+
+getPaymentFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_fields")>
+;
+>>
+
+getPaymentMethodFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_method_fields")>
+;
+>>
+
+getTransactionFieldsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_transaction_fields")>
+;
+>>
+
+getAccountTagsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_account_tags")>
+;
+>>
+
+getBundleTagsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_bundle_tags")>
+;
+>>
+
+getInvoiceTagsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_invoice_tags")>
+;
+>>
+
+getInvoicePaymentTagsByAccountRecordId() ::= <<
+<SELECT_STAR_FROM_TABLE("analytics_payment_tags")>
+;
+>>

@@ -1,0 +1,126 @@
+import "org/killbill/queue/dao/QueueSqlDao.sql.stg"
+
+extraFieldsWithComma() ::= <<
+      , future_user_token
+      , effective_date
+      , queue_name
+>>
+
+
+extraValuesWithComma() ::= <<
+      , :futureUserToken
+      , :effectiveDate
+      , :queueName
+>>
+
+readyWhereClause(owner) ::= <<
+    effective_date \<= :now
+    and processing_state = 'AVAILABLE'
+<if(owner)>and creating_owner = '<owner>'<endif>
+>>
+
+reapWhereClause() ::= <<
+    processing_state != 'PROCESSED'
+    and processing_state != 'REMOVED'
+    and (processing_owner IS NULL OR processing_available_date \<= :now)
+    and effective_date \<= :reapingDate
+>>
+
+readyOrderByClause() ::= <<
+        effective_date asc
+      , created_date asc
+      , record_id
+>>
+
+/** Notifications specific queries **/
+getReadyQueueEntriesForSearchKeys(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+      queue_name = :queueName
+      and processing_state = 'AVAILABLE'
+      and search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyQueueEntriesForSearchKey2(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+      queue_name = :queueName
+      and processing_state = 'AVAILABLE'
+      and effective_date \< cast(coalesce(:maxEffectiveDate, '2100-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyOrInProcessingQueueEntriesForSearchKeys(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+      queue_name = :queueName
+      and processing_state in ('AVAILABLE', 'IN_PROCESSING')
+      and search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getReadyOrInProcessingQueueEntriesForSearchKey2(tableName) ::= <<
+    select
+      <allTableFields()>
+    from <tableName>
+    where
+      queue_name = :queueName
+      and processing_state in ('AVAILABLE', 'IN_PROCESSING')
+      and effective_date \< cast(coalesce(:maxEffectiveDate, '2100-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getHistoricalQueueEntriesForSearchKeys(historyTableName) ::= <<
+    select
+      <allTableFields()>
+    from <historyTableName>
+    where
+      queue_name = :queueName
+      and search_key1 = :searchKey1
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+getHistoricalQueueEntriesForSearchKey2(historyTableName) ::= <<
+    select
+      <allTableFields()>
+    from <historyTableName>
+    where
+          queue_name = :queueName
+      and effective_date >= cast(coalesce(:minEffectiveDate, '1970-01-01') as datetime)
+      and search_key2 = :searchKey2
+    order by
+      <readyOrderByClause()>
+;
+>>
+
+updateEntry(tableName) ::= <<
+    update <tableName>
+    set event_json = :eventJson
+    where
+    record_id = :recordId
+    and search_key1 = :searchKey1
+    and search_key2 = :searchKey2
+;
+>>

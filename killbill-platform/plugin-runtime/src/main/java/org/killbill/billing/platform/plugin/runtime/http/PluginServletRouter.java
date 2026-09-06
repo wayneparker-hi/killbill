@@ -1,0 +1,170 @@
+/*
+ * Copyright 2010-2014 Ning, Inc.
+ * Copyright 2014-2020 Groupon, Inc
+ * Copyright 2020-2020 Equinix, Inc
+ * Copyright 2014-2020 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.platform.plugin.runtime.http;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import jakarta.inject.Singleton;
+import jakarta.servlet.Servlet;
+
+import org.killbill.billing.platform.plugin.api.PluginServiceDescriptor;
+import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Routes {@code /plugins/...} requests to the servlet a plugin registered.
+ * <p>
+ * Carried over from the OSGi layer essentially unchanged, because it never had anything to do with
+ * OSGi: it is a prefix-to-servlet map plus longest-prefix matching, expressed in plain
+ * {@code jakarta.servlet} types.
+ */
+@Singleton
+public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
+
+    private static final Logger logger = LoggerFactory.getLogger(PluginServletRouter.class);
+
+    // Internal Servlet routing table: map of plugin prefixes to servlet instances.
+    // A plugin prefix can be /foo, /foo/bar, /foo/bar/baz, ... and is mounted on /plugins/<pluginPrefix>
+    private final Map<String, Servlet> pluginPathServlets = new HashMap<String, Servlet>();
+    private final Map<String, PluginServiceDescriptor> pluginRegistrations = new HashMap<String, PluginServiceDescriptor>();
+
+    @Override
+    public void registerService(final PluginServiceDescriptor desc, final Servlet httpServlet) {
+        // Enforce each route to start with /
+        final String pathPrefix = getPathPrefixFromDescriptor(desc);
+        if (pathPrefix == null) {
+            logger.warn("Skipping registration of plugin servlet for service {} (service info is not specified)", desc.getRegistrationName());
+            return;
+        }
+
+        logger.info("Registering plugin servlet at " + pathPrefix);
+        synchronized (this) {
+            registerServletInternal(pathPrefix, httpServlet);
+            registerServiceInternal(desc);
+        }
+    }
+
+    public void registerServiceFromPath(final String path, final Servlet httpServlet) {
+        final String pathPrefix = sanitizePathPrefix(path);
+        registerServletInternal(pathPrefix, httpServlet);
+    }
+
+    private void registerServletInternal(final String pathPrefix, final Servlet httpServlet) {
+        pluginPathServlets.put(pathPrefix, httpServlet);
+    }
+
+    private void registerServiceInternal(final PluginServiceDescriptor desc) {
+        pluginRegistrations.put(desc.getRegistrationName(), desc);
+    }
+
+    @Override
+    public void unregisterService(final String serviceName) {
+        synchronized (this) {
+            final PluginServiceDescriptor desc = pluginRegistrations.get(serviceName);
+            if (desc != null) {
+                final String pathPrefix = getPathPrefixFromDescriptor(desc);
+                if (pathPrefix == null) {
+                    logger.warn("Skipping unregistration of plugin servlet for service {} (service info is not specified)", desc.getRegistrationName());
+                    return;
+                }
+
+                logger.info("Unregistering plugin servlet " + desc.getRegistrationName() + " at path " + pathPrefix);
+                synchronized (this) {
+                    unRegisterServletInternal(pathPrefix);
+                    unRegisterServiceInternal(desc);
+                }
+            }
+        }
+    }
+
+    public void unregisterServiceFromPath(final String path) {
+        final String pathPrefix = sanitizePathPrefix(path);
+        unRegisterServletInternal(pathPrefix);
+    }
+
+    private Servlet unRegisterServletInternal(final String pathPrefix) {
+        return pluginPathServlets.remove(pathPrefix);
+    }
+
+    private PluginServiceDescriptor unRegisterServiceInternal(final PluginServiceDescriptor desc) {
+        return pluginRegistrations.remove(desc.getRegistrationName());
+    }
+
+    @Override
+    public Servlet getServiceForName(final String serviceName) {
+        final PluginServiceDescriptor desc = pluginRegistrations.get(serviceName);
+        if (desc == null) {
+            return null;
+        }
+        final String registeredPath = getPathPrefixFromDescriptor(desc);
+        return pluginPathServlets.get(registeredPath);
+    }
+
+    private String getPathPrefixFromDescriptor(final PluginServiceDescriptor desc) {
+        return sanitizePathPrefix(desc.getRegistrationName());
+    }
+
+    public Servlet getServiceForPath(final String path) {
+        return getServletForPathPrefix(path);
+    }
+
+    @Override
+    public Set<String> getAllServices() {
+        return pluginRegistrations.keySet();
+    }
+
+    @Override
+    public Class<Servlet> getServiceType() {
+        return Servlet.class;
+    }
+
+    // TODO PIERRE Naive implementation - we should rather switch to e.g. heap tree
+    public String getPluginPrefixForPath(final String pathPrefix) {
+        String bestMatch = null;
+        for (final String potentialMatch : pluginPathServlets.keySet()) {
+            if (pathPrefix.startsWith(potentialMatch) && (bestMatch == null || bestMatch.length() < potentialMatch.length())) {
+                bestMatch = potentialMatch;
+            }
+        }
+        return bestMatch;
+    }
+
+    private Servlet getServletForPathPrefix(final String pathPrefix) {
+        final String bestMatch = getPluginPrefixForPath(pathPrefix);
+        return bestMatch == null ? null : pluginPathServlets.get(bestMatch);
+    }
+
+    private static String sanitizePathPrefix(final String inputPath) {
+        if (inputPath == null) {
+            return null;
+        }
+
+        final String pathPrefix;
+        if (inputPath.charAt(0) != '/') {
+            pathPrefix = "/" + inputPath;
+        } else {
+            pathPrefix = inputPath;
+        }
+        return pathPrefix;
+    }
+}

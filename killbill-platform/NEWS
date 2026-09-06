@@ -1,0 +1,446 @@
+0.40.11
+    Update to killbill-oss-parent 0.144.67
+
+0.40.10
+    Look-up properties from environment variables
+
+0.40.9
+    Update to killbill-oss-parent 0.144.61
+
+0.40.8
+    Add support for JDK 11
+    Update to killbill-oss-parent 0.144.56
+
+0.40.7
+    Update to killbill-oss-parent 0.144.50
+
+0.40.6
+    Update to killbill-oss-parent 0.144.46 (Jersey 2.x)
+
+0.40.5
+    Update to killbill-oss-parent 0.144.40
+
+0.40.4
+    Update to killbill-oss-parent 0.144.36
+
+0.40.3
+    Update parent pom.xml
+
+0.40.2
+    Update to killbill-oss-parent 0.144.26
+
+0.40.1
+    Update to killbill-oss-parent 0.144.21
+
+0.40.0
+    Remove usage of OSGIKillbillLogService (slf4j should be used directly instead)
+    Update to killbill-oss-parent 0.144.12
+
+0.39.17
+    Add missing exported OSGI package
+
+0.39.16
+    Add missing exported OSGI package
+
+0.39.15
+    Update to killbill-oss-parent 0.143.59
+
+0.39.14
+    Update to new MySQL embeddedD
+    Add a new START_BUS lifecyle level
+
+0.39.13
+    Update oss parent pom.xml (plugin-api change)
+
+0.39.12
+    KPM OSGI Bundle bugfixes
+
+0.39.11
+    KPM OSGI Bundle bugfixes
+    Update to killbill-oss-parent 0.143.47
+
+0.39.10
+    KPM OSGI Bundle bugfixes
+    Update killbill-oss-parent to 0.143.43
+
+0.39.9
+    KPM OSGI Bundle
+
+0.39.8
+    Latest change introduced in master
+
+0.39.7
+    Update killbill-oss-parent to 0.143.29
+
+0.39.6
+    Fix wiring for usage plugin api
+
+0.39.5
+    Update parent oss pom.xml (common queue update)
+
+0.39.4
+    Update to reflect latest queue config changes
+
+0.39.3
+    Better logging in KillbillQueuesHealthcheck for graphing
+    Update to killbill-oss-parent 0.143.14
+
+0.39.2
+    Bump oss parent pom.xml to pull latest commons
+
+0.39.1
+    Fix dependencies in a better way
+
+0.39.0
+    Add support for ruby framework for new usage plugin api
+
+0.38.4
+  Cleanup DataSource wiring
+
+0.38.3
+    Update to killbill-oss-parent 0.142.6 (jdk 1.8)
+    Support for Redis-based clock
+    Export shiro-core to OSGI plugins
+
+0.38.2
+    Introduce new ordering among Killbill Services to ensure initialization of services is deterministic
+
+0.38.1
+    Configure jackson Mapper to ignore unknown properties
+
+0.38.0
+    Initial release for Kill Bill 0.20.x
+
+0.37.19
+    Update to killbill-oss-parent 0.141.92
+
+0.37.18
+    New service-registry module with Eureka integration
+    KillbillPluginsHealthcheck registration bugfix
+    Update to killbill-oss-parent 0.141.84
+
+0.37.17
+    Introduce KillbillPluginsHealthcheck
+
+0.37.16
+    Fix issues in DefaultKillbillConfigSource
+
+0.37.15
+    Add Jasypt support
+    Update to killbill-oss-parent 0.141.73
+
+0.37.14
+    Add new ROOSGIKillbillAPI to allow plugins to force RO DB calls
+
+0.37.13
+    Update to killbill-oss-parent 0.141.54
+
+0.37.12
+    Update to killbill-oss-parent 0.141.50
+
+0.37.11
+    Update to killbill-oss-parent 0.141.45
+
+0.37.10
+    Update to killbill-oss-parent 0.141.42
+    Add support for read-only pool
+
+0.37.9
+    Update to killbill-oss-parent 0.141.39
+
+0.37.8
+    Update to killbill-oss-parent 0.141.37
+
+0.37.7
+    Update to killbill-oss-parent 0.141.35
+
+0.37.6
+    Implement healtcheck logic for queues
+
+0.37.5
+    org.killbill.billing.osgi.dao.leakDetectionThreshold to TimeSpan
+
+0.37.4
+    Configure HikariCP leak detection
+    Update to killbill-oss-parent 0.140.21
+
+0.37.3
+    Add new osgi events when plugins are being started/restarted
+
+0.37.2
+    Update parent oss pom.xml to have the correct transitive dependencies in killbill
+
+0.37.1
+    Merge features from master, mostly InfluxDB protocols
+
+0.36.15
+    change org.killbill.billing.osgi.dao.leakDetectionThreshold to TimeSpan
+
+0.36.14
+    Configure HikariCP leak detection
+    Update to killbill-oss-parent 0.140.50
+
+0.36.13
+    Update to killbill-oss-parent 0.140.48
+
+0.36.12
+    metrics: add InfluxDB integration
+    osgi: add new config property org.killbill.billing.osgi.dao.initializationFailFast
+    Update to killbill-oss-parent 0.140.44
+
+0.36.11
+    Multi-regions support
+
+0.36.10
+    Shutdown sequence enhancements
+    Enhance healthcheck support for LB
+
+0.36.9
+    Support unpooled database connections (mainly for PGBouncer)
+    Update to killbill-oss-parent 0.140.33
+
+0.36.8
+    Update to killbill-oss-parent 0.140.31 (jDBI performance patches)
+
+0.36.7
+    Update various third-party dependencies
+    Update to killbill-oss-parent 0.140.23
+
+0.36.6
+    Update killbill-oss-parent to 0.140.20 (update to Ehcache 3)
+
+0.36.5
+    osgi: bump version of exported org.joda.time dependencies
+
+0.36.4
+    Update killbill-oss-parent to 0.140.16
+
+0.36.3
+    add indexes for historical queries
+    Update parent OSS pom.xml
+
+0.36.2
+    Fix ClassLoaderInvocationHandler#equals implementation
+    Update killbill-oss-parent to 0.140.4
+
+0.36.1
+    Fix import/export for javax.naming.ldap
+
+0.36
+    Update oss released version
+
+0.35
+    Use UUID for KillBill session id
+    storage_engine is deprecated in mysql 5.7.5+
+
+0.34.1
+    Fix ClassLoaderInvocationHandler#equals implementation
+
+0.34
+    Update oss pom.xml to pull correct plugin-api
+
+0.33
+    osgi-bundles: prettify OSGI log output
+
+0.32
+    Update killbill-oss-parent to 0.120
+
+0.31
+    jruby: add Ruby 2.0 support
+    Update killbill-oss-parent to 0.113
+
+0.30
+    osgi: remove deprecated methods getOSGIKillbillEventHandler and getOSGIFrameworkEventHandler
+    Improve config logging
+
+0.29
+    Merge with HA feature branch
+
+0.28
+    0.26.1 merge for 0.17.x
+    Update killbill-oss-parent to 0.103
+
+0.27
+    Rename org.killbill.killbill.osgi to org.killbill.billing.osgi
+    New jruby.jar detection
+
+0.26.2
+    Fix ClassLoaderInvocationHandler#equals implementation
+
+0.26.1
+    jruby: import org.postgresql
+    Update killbill-oss-parent to 0.94.2
+
+0.26
+    Add work-around for Guice bug (tests only)
+
+0.25
+    Add support for MDC in KillbillLogWriter
+
+0.24
+    Refactor platform test base class to allow supporting STICKY_EVENTS queue mode and connection pooling
+
+0.23
+    OSGI bug fix for registration/unregistration of killbill handlers
+
+0.22
+    Improve logger name for OSGI bundles
+    Update killbill-oss-parent to 0.87
+
+0.21
+    Add missing org.killbill.billing.invoice.api.formatters OSGI export
+
+0.20
+    Fix PostgreSQL wiring in EmbeddedDBFactory
+
+0.19
+    Fix issue when restarting pure OSGI bundle and update base pom
+
+0.18
+    Add support for pluginKey for all plugin commands
+    Rename plugin marker file stop.txt to disabled.txt
+    Rename plugin symlink ACTIVE to SET_DEFAULT
+
+0.17
+    Bug fixes in osgi and add new isSelectedForStart field support for PluginInfo
+
+0.16
+    Add new OSGI Clock service
+
+0.15
+    Add support for start/stop/restart OSGI plugins
+    Handle broadcast events to react to start/stop/restart
+    Add /plugins/killbill-osgi-logger endpoint to logger bundle
+
+0.14
+    Metrics code optimization
+
+0.12
+    Update transitive metrics dependencies (updated oss pom version with latest commons)
+
+0.11
+    Fix OSGI bundle restart
+    Logging fixes for bundle
+
+0.10
+    New BundleRegistry and PluginsInfoApi
+
+0.9
+    Improve metrics for registered OSGI services
+    Redirect SLF4J to OSGIKillbillLogService in plugins by default
+    Send OSGI event when all bundles have started
+    Add option to stream metric values to Graphite
+    Update killbill-oss-parent to 0.50
+
+0.8
+    Update killbill-oss-parent to 0.36
+    Fix config changes for queue
+
+0.7
+    Update killbill-oss-parent to 0.34
+    Add RUBY support for entitlement plugin api
+
+0.6
+    PostgreSQL support
+    Update killbill-oss-parent to 0.30
+    Rename PaymentRoutingPluginApi to PaymentControlPluginApi
+
+0.5
+    Add support for new EntitlementPluginApi (no ruby yet)
+    Update killbill-oss-parent to 0.25
+
+0.4
+    Add missing import/export package in OSGIConfig and for the JRuby MANIFEST plugin
+
+0.3
+    Add JRuby support for catalog and control plugins
+    Expose KILLBILL_PLATFORM_VERSION constant for JRuby plugins
+    Add missing import/export javax packages
+
+0.2
+    Upgrade Dropwizard metrics (3.1.1)
+    - enable JVM, servlet and jDBI metrics
+    - install ThreadDeadlockHealthCheck
+    OSGI
+    - export servlet API v3.1.0
+    - fix issue in JRuby plugins lifecycle
+    Update killbill-oss-parent to 0.11
+    https://github.com/killbill/killbill-platform/issues/5
+    https://github.com/killbill/killbill-platform/issues/6
+    JRuby: add support for boot.rb script (https://github.com/killbill/killbill-plugin-framework-ruby/pull/36)
+
+0.1.5
+    Update oss pom to include latest api and plugin-api (and not create transitive dependency issues)
+
+0.1.4
+    OSGI support
+    Add ability for any plugin to receive bus ext events
+
+0.1.3
+    osgi: add missing imports/exports
+    platform-test: enhance DBI mocking
+    Update killbill-oss-parent to 0.9.11
+
+0.1.2
+    Add support for invoice plugins
+    Update killbill-oss-parent to 0.9.6
+
+0.1.1
+    Minor fix on the default hardcoded value for the property org.killbill.osgi.system.bundle.export.packages
+
+0.1.0
+    Package/module renaming for retry -> routing
+    Fix broken test compilation
+
+0.0.14
+    Enforce user.timezone is set to GMT
+    Introduce org.killbill.server.baseUrl
+    Update killbill-oss-parent to 0.8.2
+    Fix for osgi (PaymentControlPluginApi, missing exports)
+
+0.0.13
+    Switch to HikariCP and MariaDB JDBC driver
+    Update killbill-commons to 0.2.25 (switch to HikariCP)
+
+0.0.12
+    Minor bug fixes for properties and metric names
+
+0.0.11
+    Prevous version is garbled (misson pom for server ?)
+
+0.0.10
+    Perf improvement/Profiling query parameters/Metrics
+    JDBC logging (log4jdbc-log4j2)
+
+0.0.9
+    Update killbill-oss-parent to 0.7.21 (queue performance improvements)
+    Deprecate org.killbill.billing.osgi.dao.transactionHandler property
+
+0.0.8
+    Integrate log4jdbc-log4j2
+    Update killbill-oss-parent to 0.7.20
+
+0.0.7
+    Add support for profiling data
+    Fix for https://github.com/killbill/killbill/issues/216
+    jruby: performance optimizations
+    osgi: export OSGI datasource to JNDI (killbill/osgi/jdbc)
+
+0.0.6
+    Minor change in the queue framework to inject a separate IDBI instance
+
+0.0.5
+    Update ruby test tar.gz after payment API change
+
+0.0.4
+    Remove integration with https://bintray.com/
+    Update killbill-oss-parent to 0.7.14
+
+0.0.3
+    Integration with https://bintray.com/
+
+0.0.2
+    Update killbill-oss-parent to 0.7.13
+
+0.0.1
+    Initial extraction from killbill

@@ -1,0 +1,255 @@
+/*
+ * Copyright 2020-2023 Equinix, Inc
+ * Copyright 2020-2023 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.plugin.vertex;
+
+import org.killbill.billing.lpr.api.PluginContext;
+
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
+
+import org.killbill.billing.account.api.Account;
+import org.killbill.billing.catalog.api.CatalogApiException;
+import org.killbill.billing.catalog.api.CatalogUserApi;
+import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.catalog.api.StaticCatalog;
+import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.invoice.api.InvoiceItemType;
+import org.killbill.billing.invoice.api.InvoiceUserApi;
+import org.killbill.billing.invoice.plugin.api.boilerplate.plugin.InvoiceContextImp;
+import org.killbill.billing.plugin.runtime.PluginConfigProperties;
+import org.killbill.billing.plugin.runtime.KillbillApi;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.plugin.TestUtils;
+import org.killbill.billing.plugin.api.PluginCallContext;
+import org.killbill.billing.plugin.vertex.base.VertexRemoteTestBase;
+import org.killbill.billing.util.api.CustomFieldUserApi;
+import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.clock.Clock;
+import org.killbill.clock.DefaultClock;
+import org.mockito.Mockito;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+// Note: the test assumes all California authorities are set up to collect sales and use tax (270+)
+public class VertexInvoicePluginApiITest extends VertexRemoteTestBase {
+
+    private KillbillApi killbillApi;
+    private Collection<PluginProperty> pluginProperties;
+    private VertexTaxCalculator vertexTaxCalculator;
+    private VertexInvoicePluginApi vertexInvoicePluginApi;
+    private Account account;
+    private CallContext callContext;
+
+    @BeforeMethod(groups = "integration")
+    public void setUp() throws Exception {
+        final Clock clock = new DefaultClock();
+
+        pluginProperties = new LinkedList<>();
+        pluginProperties.add(new PluginProperty(VertexTaxCalculator.SELLER_DIVISION, "328", false));
+        pluginProperties.add(new PluginProperty(VertexTaxCalculator.SELLER_COUNTRY, "USA", false));
+        pluginProperties.add(new PluginProperty(VertexConfigProperties.VERTEX_OSERIES_COMPANY_NAME_PROPERTY, "Kill Bill Parent", false));
+
+        account = TestUtils.buildAccount(Currency.USD, "45 Fremont Street", null, "San Francisco", "CA", "94105", "US");
+
+        callContext = new PluginCallContext(VertexPlugin.PLUGIN_NAME, clock.getUTCNow(), account.getId(), UUID.randomUUID());
+
+        killbillApi = TestUtils.buildKillbillApi(account);
+        Mockito.when(killbillApi.getCustomFieldUserApi()).thenReturn(Mockito.mock(CustomFieldUserApi.class));
+        Mockito.when(killbillApi.getInvoiceUserApi()).thenReturn(Mockito.mock(InvoiceUserApi.class));
+        final CatalogUserApi catalogUserApi = Mockito.mock(CatalogUserApi.class);
+        final StaticCatalog staticCatalog = Mockito.mock(StaticCatalog.class);
+        Mockito.doThrow(CatalogApiException.class).when(staticCatalog).findPlan(Mockito.anyString());
+        Mockito.when(catalogUserApi.getCurrentCatalog(Mockito.any(), Mockito.any())).thenReturn(staticCatalog);
+        Mockito.when(killbillApi.getCatalogUserApi()).thenReturn(catalogUserApi);
+
+    }
+
+    @Test(groups = "integration")
+    public void testItemAdjustments() {
+
+        final Clock clock = new DefaultClock();
+        final VertexApiConfigurationHandler vertexApiConfigurationHandler = new VertexApiConfigurationHandler(VertexPlugin.PLUGIN_NAME, killbillApi);
+        vertexApiConfigurationHandler.setDefaultConfigurable(vertexApiClient);
+        vertexTaxCalculator = new VertexTaxCalculator(vertexApiConfigurationHandler, dao, clock, killbillApi);
+        vertexInvoicePluginApi = new VertexInvoicePluginApi(vertexApiConfigurationHandler,
+                                                            killbillApi,
+                                                            new PluginConfigProperties(Mockito.mock(PluginContext.class)),
+                                                            vertexTaxCalculator,
+                                                            dao,
+                                                            clock);
+
+        final Invoice invoice = TestUtils.buildInvoice(account);
+        final List<InvoiceItem> invoiceItems = new LinkedList<>();
+        Mockito.when(invoice.getInvoiceItems()).thenReturn(invoiceItems);
+
+        /*
+         * Scenario 1A: new item on new invoice
+         *     $100 Taxable item I1
+         */
+        final InvoiceItem taxableItem1 = TestUtils.buildInvoiceItem(invoice, InvoiceItemType.EXTERNAL_CHARGE, new BigDecimal("100"), null);
+        invoiceItems.add(taxableItem1);
+        pluginProperties.add(new PluginProperty(String.format("%s_%s", VertexTaxCalculator.TAX_CODE, taxableItem1.getId()), "D9999999", false));
+        List<InvoiceItem> additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        // TAX expected (total $8.63)
+        checkTaxes(additionalInvoiceItems, new BigDecimal("8.63"));
+
+        /*
+         * Scenario 1B: re-invoice of 1A (should be idempotent)
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         */
+        invoiceItems.addAll(additionalInvoiceItems);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, BigDecimal.ZERO);
+
+        /*
+         * Scenario 2A: item adjustment on existing invoice
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         *     -$50    Item adjustment I2
+         *   -$4.32    Tax
+         */
+        final InvoiceItem itemAdjustment2 = TestUtils.buildInvoiceItem(invoice, InvoiceItemType.ITEM_ADJ, new BigDecimal("-50"), taxableItem1.getId());
+        invoiceItems.add(itemAdjustment2);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        // TAX expected (total -$4.32)
+        checkTaxes(additionalInvoiceItems, new BigDecimal("-4.31"));
+
+        /*
+         * Scenario 2B: re-invoice of 2A (should be idempotent)
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         *     -$50    Item adjustment I2
+         *   -$4.32    Tax
+         */
+        invoiceItems.addAll(additionalInvoiceItems);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, BigDecimal.ZERO);
+
+        /*
+         * Scenario 3A: second item adjustment on existing invoice
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         *     -$50    Item adjustment I2
+         *   -$4.32    Tax
+         *     -$50    Item adjustment I3
+         */
+        final InvoiceItem itemAdjustment3 = TestUtils.buildInvoiceItem(invoice, InvoiceItemType.ITEM_ADJ, new BigDecimal("-50"), taxableItem1.getId());
+        invoiceItems.add(itemAdjustment3);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, new BigDecimal("-4.31"));
+
+        /*
+         * Scenario 3B: re-invoice of 3A (should be idempotent)
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         *     -$50    Item adjustment I2
+         *   -$4.32    Tax
+         *     -$50    Item adjustment I3
+         *   -$4.32    Tax
+         */
+        invoiceItems.addAll(additionalInvoiceItems);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice, false, pluginProperties, invoiceContext(invoice)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, BigDecimal.ZERO);
+    }
+
+    @Test(groups = "integration")
+    public void testRepair() throws Exception {
+
+        final Clock clock = new DefaultClock();
+        final VertexApiConfigurationHandler vertexApiConfigurationHandler = new VertexApiConfigurationHandler(VertexPlugin.PLUGIN_NAME, killbillApi);
+        vertexApiConfigurationHandler.setDefaultConfigurable(vertexApiClient);
+        vertexTaxCalculator = new VertexTaxCalculator(vertexApiConfigurationHandler, dao, clock, killbillApi);
+        vertexInvoicePluginApi = new VertexInvoicePluginApi(vertexApiConfigurationHandler,
+                                                            killbillApi,
+                                                            new PluginConfigProperties(Mockito.mock(PluginContext.class)),
+                                                            vertexTaxCalculator,
+                                                            dao,
+                                                            clock);
+
+        final Invoice invoice1 = TestUtils.buildInvoice(account);
+        final List<InvoiceItem> invoiceItems1 = new LinkedList<>();
+        Mockito.when(invoice1.getInvoiceItems()).thenReturn(invoiceItems1);
+
+        /*
+         * Scenario 1A: new item on new invoice
+         *     $100 Taxable item I1
+         */
+        final InvoiceItem taxableItem1 = TestUtils.buildInvoiceItem(invoice1, InvoiceItemType.RECURRING, new BigDecimal("100"), null);
+        invoiceItems1.add(taxableItem1);
+        pluginProperties.add(new PluginProperty(String.format("%s_%s", VertexTaxCalculator.TAX_CODE, taxableItem1.getId()), "D9999999", false));
+        List<InvoiceItem> additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice1, false, pluginProperties, invoiceContext(invoice1)).getAdditionalItems();
+        // TAX expected (total $8.63)
+        checkTaxes(additionalInvoiceItems, new BigDecimal("8.63"));
+
+        /*
+         * Scenario 1B: re-invoice of 1A (should be idempotent)
+         *     $100    Taxable item I1
+         *    $8.63    Tax
+         */
+        invoiceItems1.addAll(additionalInvoiceItems);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice1, false, pluginProperties, invoiceContext(invoice1)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, BigDecimal.ZERO);
+
+        /*
+         * Scenario 2A: repair on new invoice (CBA_ADJ on both invoices are omitted)
+         *     -$50   Repair I2 (points to I1 on previous invoice)
+         */
+        final Invoice invoice2 = TestUtils.buildInvoice(account);
+        final List<InvoiceItem> invoiceItems2 = new LinkedList<>();
+        Mockito.when(invoice2.getInvoiceItems()).thenReturn(invoiceItems2);
+        final InvoiceItem repair2 = TestUtils.buildInvoiceItem(invoice2, InvoiceItemType.REPAIR_ADJ, new BigDecimal("-50"), taxableItem1.getId());
+        invoiceItems2.add(repair2);
+        Mockito.when(killbillApi.getInvoiceUserApi().getInvoiceByInvoiceItem(Mockito.eq(taxableItem1.getId()), Mockito.any()))
+               .thenReturn(invoice1);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice2, false, pluginProperties, invoiceContext(invoice1)).getAdditionalItems();
+        // TAX expected (total -$4.32)
+        checkTaxes(additionalInvoiceItems, new BigDecimal("-4.31"));
+
+        /*
+         * Scenario 2B: re-invoice of 2A (should be idempotent)
+         *     -$50    Repair I2 (points to I1 on previous invoice)
+         *   -$4.32    Tax
+         */
+        invoiceItems2.addAll(additionalInvoiceItems);
+        additionalInvoiceItems = vertexInvoicePluginApi.getAdditionalInvoiceItems(invoice2, false, pluginProperties, invoiceContext(invoice1)).getAdditionalItems();
+        checkTaxes(additionalInvoiceItems, BigDecimal.ZERO);
+    }
+
+    private void checkTaxes(final Collection<InvoiceItem> additionalInvoiceItems, final BigDecimal totalTax) {
+        BigDecimal computedTax = BigDecimal.ZERO;
+        for (final InvoiceItem invoiceItem : additionalInvoiceItems) {
+            Assert.assertEquals(invoiceItem.getInvoiceItemType(), InvoiceItemType.TAX);
+            computedTax = computedTax.add(invoiceItem.getAmount());
+        }
+        Assert.assertEquals(computedTax.compareTo(totalTax), 0, String.format("Computed tax: %s, Expected tax: %s", computedTax, totalTax));
+    }
+
+    private InvoiceContextImp invoiceContext(final Invoice invoice) {
+        return new InvoiceContextImp.Builder<>()
+                .withInvoice(invoice)
+                .withIsDryRun(false)
+                .withTenantId(callContext.getTenantId())
+                .build();
+    }
+}

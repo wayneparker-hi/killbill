@@ -1,0 +1,86 @@
+/*
+ * Copyright 2016 Groupon, Inc
+ * Copyright 2016 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.plugin.payment.retries.config;
+
+import java.util.Map;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
+import org.killbill.billing.plugin.runtime.KillbillApi;
+import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.payment.api.PaymentMethod;
+import org.killbill.billing.payment.api.PaymentTransaction;
+import org.killbill.billing.plugin.payment.retries.KillbillApiWrapper;
+import org.killbill.billing.plugin.payment.retries.api.AuthorizationDeclineCode;
+import org.killbill.billing.plugin.payment.retries.api.PaymentRetriesApi;
+import org.killbill.billing.plugin.payment.retries.rules.RulesComputer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DefaultPaymentRetriesApi implements PaymentRetriesApi {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultPaymentRetriesApi.class);
+
+    private final RulesComputer rulesComputer = new RulesComputer();
+    private final KillbillApiWrapper killbillApiWrapper;
+
+    public DefaultPaymentRetriesApi(final KillbillApi killbillApi) {
+        killbillApiWrapper = new KillbillApiWrapper(killbillApi);
+    }
+
+    @Override
+    public AuthorizationDeclineCode getAuthorizationDeclineCode(final UUID accountId, final UUID paymentMethodId, final UUID tenantId) {
+        final PaymentTransaction failedAuthorization = killbillApiWrapper.getLastAuthorizationIfFailed(accountId, paymentMethodId, tenantId);
+        return getAuthorizationDeclineCode(failedAuthorization, paymentMethodId, tenantId);
+    }
+
+    @Override
+    public AuthorizationDeclineCode getAuthorizationDeclineCode(final String paymentExternalKey, final UUID tenantId) {
+        final Payment payment = killbillApiWrapper.getPayment(paymentExternalKey, tenantId);
+        if (payment == null) {
+            return null;
+        }
+        final PaymentTransaction failedAuthorization = killbillApiWrapper.getLastAuthorizationIfFailed(payment);
+        return getAuthorizationDeclineCode(failedAuthorization, payment.getPaymentMethodId(), tenantId);
+    }
+
+    @Override
+    public Map<String, Map<Integer, AuthorizationDeclineCode>> getPerPluginDeclineCodes() {
+        return rulesComputer.getPerPluginDeclineCodes();
+    }
+
+    private AuthorizationDeclineCode getAuthorizationDeclineCode(@Nullable final PaymentTransaction failedAuthorization, final UUID paymentMethodId, final UUID tenantId) {
+        if (failedAuthorization == null || failedAuthorization.getPaymentInfoPlugin() == null) {
+            // Last payment was successful -- the payment method is most likely still valid
+            return null;
+        }
+
+        // If the last payment wasn't successful, check if the failure was temporary
+        final PaymentMethod paymentMethod = killbillApiWrapper.getPaymentMethod(paymentMethodId, tenantId);
+        final AuthorizationDeclineCode authorizationDeclineCode = rulesComputer.lookupAuthorizationDeclineCode(paymentMethod, failedAuthorization.getPaymentInfoPlugin());
+        if (authorizationDeclineCode == null) {
+            return null;
+        } else {
+            logger.info("PaymentRetriesApi paymentTransactionId='{}', paymentTransactionExternalKey='{}', gatewayErrorCode='{}', gatewayErrorMsg='{}', processorMessage='{}', processorCode='{}', isRetryable='{}'",
+                        failedAuthorization.getId(), failedAuthorization.getExternalKey(), failedAuthorization.getGatewayErrorCode(), failedAuthorization.getGatewayErrorMsg(),
+                        authorizationDeclineCode.getMessage(), authorizationDeclineCode.getCode(), authorizationDeclineCode.isRetryable());
+            return authorizationDeclineCode;
+        }
+    }
+}

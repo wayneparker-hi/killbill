@@ -1,0 +1,532 @@
+/*
+ * Copyright 2010-2013 Ning, Inc.
+ * Copyright 2014-2018 Groupon, Inc
+ * Copyright 2014-2018 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.jaxrs.resources;
+
+import java.net.URI;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriInfo;
+
+import org.joda.time.LocalDate;
+import org.killbill.billing.ObjectType;
+import org.killbill.billing.account.api.Account;
+import org.killbill.billing.account.api.AccountApiException;
+import org.killbill.billing.account.api.AccountUserApi;
+import org.killbill.billing.catalog.api.BillingActionPolicy;
+import org.killbill.billing.catalog.api.CatalogApiException;
+import org.killbill.billing.entitlement.api.BcdTransfer;
+import org.killbill.billing.entitlement.api.BlockingStateType;
+import org.killbill.billing.entitlement.api.EntitlementApi;
+import org.killbill.billing.entitlement.api.EntitlementApiException;
+import org.killbill.billing.entitlement.api.SubscriptionApi;
+import org.killbill.billing.entitlement.api.SubscriptionApiException;
+import org.killbill.billing.entitlement.api.SubscriptionBundle;
+import org.killbill.billing.jaxrs.json.AuditLogJson;
+import org.killbill.billing.jaxrs.json.BlockingStateJson;
+import org.killbill.billing.jaxrs.json.BundleJson;
+import org.killbill.billing.jaxrs.json.CustomFieldJson;
+import org.killbill.billing.jaxrs.json.SubscriptionJson;
+import org.killbill.billing.jaxrs.json.TagJson;
+import org.killbill.billing.jaxrs.util.Context;
+import org.killbill.billing.jaxrs.util.JaxrsUriBuilder;
+import org.killbill.billing.payment.api.InvoicePaymentApi;
+import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.util.api.AuditLevel;
+import org.killbill.billing.util.api.AuditUserApi;
+import org.killbill.billing.util.api.CustomFieldApiException;
+import org.killbill.billing.util.api.CustomFieldUserApi;
+import org.killbill.billing.util.api.TagApiException;
+import org.killbill.billing.util.api.TagDefinitionApiException;
+import org.killbill.billing.util.api.TagUserApi;
+import org.killbill.billing.util.audit.AccountAuditLogs;
+import org.killbill.billing.util.audit.AuditLogWithHistory;
+import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.callcontext.TenantContext;
+import org.killbill.billing.util.customfield.CustomField;
+import org.killbill.billing.util.entity.Pagination;
+import org.killbill.clock.Clock;
+import org.killbill.commons.metrics.api.annotation.TimedResource;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+@Singleton
+@Path(JaxrsResource.BUNDLES_PATH)
+@Tag(name = "Bundle", description = "Operations on bundles")
+public class BundleResource extends JaxRsResourceBase {
+
+    private static final String ID_PARAM_NAME = "bundleId";
+
+    private final SubscriptionApi subscriptionApi;
+    private final EntitlementApi entitlementApi;
+
+    @Inject
+    public BundleResource(final JaxrsUriBuilder uriBuilder,
+                          final TagUserApi tagUserApi,
+                          final CustomFieldUserApi customFieldUserApi,
+                          final AuditUserApi auditUserApi,
+                          final AccountUserApi accountUserApi,
+                          final SubscriptionApi subscriptionApi,
+                          final EntitlementApi entitlementApi,
+                          final PaymentApi paymentApi,
+                          final InvoicePaymentApi invoicePaymentApi,
+                          final Clock clock,
+                          final Context context) {
+        super(uriBuilder, tagUserApi, customFieldUserApi, auditUserApi, accountUserApi, paymentApi, invoicePaymentApi, subscriptionApi, clock, context);
+        this.entitlementApi = entitlementApi;
+        this.subscriptionApi = subscriptionApi;
+    }
+
+    @TimedResource
+    @GET
+    @Path("/{bundleId:" + UUID_PATTERN + "}")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve a bundle by id")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BundleJson.class))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response getBundle(@PathParam("bundleId") final UUID bundleId,
+                              @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                              @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException, AccountApiException, CatalogApiException {
+        final TenantContext tenantContext = this.context.createTenantContextNoAccountId(request);
+        final SubscriptionBundle bundle = subscriptionApi.getSubscriptionBundle(bundleId, tenantContext);
+        final Account account = accountUserApi.getAccountById(bundle.getAccountId(), tenantContext);
+        final AccountAuditLogs accountAuditLogs = auditUserApi.getAccountAuditLogs(bundle.getAccountId(), auditMode.getLevel(), tenantContext);
+        final BundleJson json = new BundleJson(bundle, account.getCurrency(), accountAuditLogs);
+        return Response.status(Status.OK).entity(json).build();
+    }
+
+    @TimedResource
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve a bundle by external key")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = BundleJson.class)))),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response getBundleByKey(@Parameter(required = true) @QueryParam(QUERY_EXTERNAL_KEY) final String externalKey,
+                                   @QueryParam(QUERY_INCLUDED_DELETED) @DefaultValue("false") final Boolean includedDeleted,
+                                   @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                                   @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException, AccountApiException, CatalogApiException {
+
+        final TenantContext tenantContext = this.context.createTenantContextNoAccountId(request);
+
+        final List<SubscriptionBundle> bundles;
+        if (includedDeleted) {
+            bundles = subscriptionApi.getSubscriptionBundlesForExternalKey(externalKey, tenantContext);
+        } else {
+            final SubscriptionBundle activeBundle = subscriptionApi.getActiveSubscriptionBundleForExternalKey(externalKey, tenantContext);
+            bundles = List.of(activeBundle);
+        }
+        final List<BundleJson> result = new ArrayList<>(bundles.size());
+        for (final SubscriptionBundle bundle : bundles) {
+            final Account account = accountUserApi.getAccountById(bundle.getAccountId(), tenantContext);
+            final AccountAuditLogs accountAuditLogs = auditUserApi.getAccountAuditLogs(bundle.getAccountId(), auditMode.getLevel(), tenantContext);
+            final BundleJson json = new BundleJson(bundle, account.getCurrency(), accountAuditLogs);
+            result.add(json);
+        }
+        return Response.status(Status.OK).entity(result).build();
+    }
+
+    @TimedResource
+    @GET
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + AUDIT_LOG_WITH_HISTORY)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve bundle audit logs with history by id")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = AuditLogJson.class)))),
+                           @ApiResponse(responseCode = "404", description = "Subscription bundle not found")})
+    public Response getBundleAuditLogsWithHistory(@PathParam("bundleId") final UUID bundleId,
+                                                  @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final List<AuditLogWithHistory> auditLogWithHistory = subscriptionApi.getSubscriptionBundleAuditLogsWithHistoryForId(bundleId, AuditLevel.FULL, tenantContext);
+        return Response.status(Status.OK).entity(getAuditLogsWithHistory(auditLogWithHistory)).build();
+    }
+
+    @TimedResource
+    @GET
+    @Path("/" + PAGINATION)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "List bundles")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = BundleJson.class))))})
+    public Response getBundles(@QueryParam(QUERY_SEARCH_OFFSET) @DefaultValue("0") final Long offset,
+                               @QueryParam(QUERY_SEARCH_LIMIT) @DefaultValue("100") final Long limit,
+                               @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                               @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final Pagination<SubscriptionBundle> bundles = subscriptionApi.getSubscriptionBundles(offset, limit, tenantContext);
+        final URI nextPageUri = uriBuilder.nextPage(BundleResource.class,
+                                                    "getBundles",
+                                                    bundles.getNextOffset(),
+                                                    limit,
+                                                    Map.of(QUERY_AUDIT, auditMode.getLevel().toString()),
+                                                    Collections.emptyMap());
+        return buildBundleStreamPaginationResponse(bundles, auditMode, nextPageUri, tenantContext);
+    }
+
+
+    private Response buildBundleStreamPaginationResponse(final Pagination<SubscriptionBundle> bundles,
+                                                         final AuditMode auditMode,
+                                                         final URI nextPageUri,
+                                                         final TenantContext tenantContext) {
+        final AtomicReference<Map<UUID, AccountAuditLogs>> accountsAuditLogs = new AtomicReference<>(new HashMap<UUID, AccountAuditLogs>());
+        return buildStreamingPaginationResponse(bundles,
+                                                bundle -> {
+                                                    // Cache audit logs per account
+                                                    if (accountsAuditLogs.get().get(bundle.getAccountId()) == null) {
+                                                        accountsAuditLogs.get().put(bundle.getAccountId(), auditUserApi.getAccountAuditLogs(bundle.getAccountId(), auditMode.getLevel(), tenantContext));
+                                                    }
+
+                                                    try {
+                                                        return new BundleJson(bundle, null, accountsAuditLogs.get().get(bundle.getAccountId()));
+                                                    } catch (final CatalogApiException unused) {
+                                                        // Does not happen because we pass a null Currency
+                                                        throw new RuntimeException(unused);
+                                                    }
+                                                },
+                                                nextPageUri);
+    }
+
+    @TimedResource
+    @GET
+    @Path("/" + SEARCH + "/{searchKey:" + ANYTHING_PATTERN + "}")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Search bundles")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = BundleJson.class))))})
+    public Response searchBundles(@PathParam("searchKey") final String searchKey,
+                                  @QueryParam(QUERY_SEARCH_OFFSET) @DefaultValue("0") final Long offset,
+                                  @QueryParam(QUERY_SEARCH_LIMIT) @DefaultValue("100") final Long limit,
+                                  @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                                  @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final Pagination<SubscriptionBundle> bundles = subscriptionApi.searchSubscriptionBundles(searchKey, offset, limit, tenantContext);
+        final URI nextPageUri = uriBuilder.nextPage(BundleResource.class,
+                                                    "searchBundles",
+                                                    bundles.getNextOffset(),
+                                                    limit,
+                                                    Map.of(QUERY_AUDIT, auditMode.getLevel().toString()),
+                                                    Map.of("searchKey", searchKey));
+        return buildBundleStreamPaginationResponse(bundles, auditMode, nextPageUri, tenantContext);
+    }
+
+    @TimedResource
+    @PUT
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + PAUSE)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Pause a bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response pauseBundle(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                @QueryParam(QUERY_REQUESTED_DT) final String requestedDate,
+                                @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
+                                @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                @HeaderParam(HDR_REASON) final String reason,
+                                @HeaderParam(HDR_COMMENT) final String comment,
+                                @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException, EntitlementApiException, AccountApiException {
+        final Iterable<PluginProperty> pluginProperties = extractPluginProperties(pluginPropertiesString);
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+        final LocalDate inputLocalDate = toLocalDate(requestedDate);
+        entitlementApi.pause(bundleId, inputLocalDate, pluginProperties, callContext);
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @TimedResource
+    @PUT
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + RESUME)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Resume a bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response resumeBundle(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                 @QueryParam(QUERY_REQUESTED_DT) final String requestedDate,
+                                 @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
+                                 @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                 @HeaderParam(HDR_REASON) final String reason,
+                                 @HeaderParam(HDR_COMMENT) final String comment,
+                                 @jakarta.ws.rs.core.Context final HttpServletRequest request) throws SubscriptionApiException, EntitlementApiException, AccountApiException {
+        final Iterable<PluginProperty> pluginProperties = extractPluginProperties(pluginPropertiesString);
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+        final LocalDate inputLocalDate = toLocalDate(requestedDate);
+        entitlementApi.resume(bundleId, inputLocalDate, pluginProperties, callContext);
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @TimedResource
+    @POST
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + BLOCK)
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Block a bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Blocking state created successfully", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = BlockingStateJson.class)))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response addBundleBlockingState(@PathParam(ID_PARAM_NAME) final UUID id,
+                                           final BlockingStateJson json,
+                                           @QueryParam(QUERY_REQUESTED_DT) final String requestedDate,
+                                           @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
+                                           @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                           @HeaderParam(HDR_REASON) final String reason,
+                                           @HeaderParam(HDR_COMMENT) final String comment,
+                                           @jakarta.ws.rs.core.Context final HttpServletRequest request,
+                                           @jakarta.ws.rs.core.Context final UriInfo uriInfo) throws SubscriptionApiException, EntitlementApiException, AccountApiException {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final SubscriptionBundle bundle = subscriptionApi.getSubscriptionBundle(id, tenantContext);
+        return addBlockingState(json, bundle.getAccountId(), id, BlockingStateType.SUBSCRIPTION_BUNDLE, requestedDate, pluginPropertiesString, createdBy, reason, comment, request, uriInfo);
+    }
+
+
+
+    @TimedResource
+    @GET
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + CUSTOM_FIELDS)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve bundle custom fields", operationId = "getBundleCustomFields")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = CustomFieldJson.class)))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response getCustomFields(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                    @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                                    @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        return super.getCustomFields(bundleId, auditMode, context.createTenantContextNoAccountId(request));
+    }
+
+    @TimedResource
+    @POST
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + CUSTOM_FIELDS)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Add custom fields to bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Custom field created successfully", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = CustomField.class)))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response createBundleCustomFields(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                             final List<CustomFieldJson> customFields,
+                                             @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                             @HeaderParam(HDR_REASON) final String reason,
+                                             @HeaderParam(HDR_COMMENT) final String comment,
+                                             @jakarta.ws.rs.core.Context final HttpServletRequest request,
+                                             @jakarta.ws.rs.core.Context final UriInfo uriInfo) throws CustomFieldApiException {
+        return super.createCustomFields(bundleId, customFields,
+                                        context.createCallContextNoAccountId(createdBy, reason, comment, request), uriInfo, request);
+    }
+
+    @TimedResource
+    @PUT
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + CUSTOM_FIELDS)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Modify custom fields to bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response modifyBundleCustomFields(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                             final List<CustomFieldJson> customFields,
+                                             @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                             @HeaderParam(HDR_REASON) final String reason,
+                                             @HeaderParam(HDR_COMMENT) final String comment,
+                                             @jakarta.ws.rs.core.Context final HttpServletRequest request) throws CustomFieldApiException {
+        return super.modifyCustomFields(bundleId, customFields,
+                                        context.createCallContextNoAccountId(createdBy, reason, comment, request));
+    }
+
+
+
+
+    @TimedResource
+    @DELETE
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + CUSTOM_FIELDS)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Remove custom fields from bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response deleteBundleCustomFields(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                             @QueryParam(QUERY_CUSTOM_FIELD) final List<UUID> customFieldList,
+                                             @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                             @HeaderParam(HDR_REASON) final String reason,
+                                             @HeaderParam(HDR_COMMENT) final String comment,
+                                             @jakarta.ws.rs.core.Context final HttpServletRequest request) throws CustomFieldApiException {
+        return super.deleteCustomFields(bundleId, customFieldList,
+                                        context.createCallContextNoAccountId(createdBy, reason, comment, request));
+    }
+
+    @TimedResource
+    @GET
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + TAGS)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve bundle tags", operationId = "getBundleTags")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = TagJson.class)))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response getTags(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                            @QueryParam(QUERY_INCLUDED_DELETED) @DefaultValue("false") final Boolean includedDeleted,
+                            @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
+                            @jakarta.ws.rs.core.Context final HttpServletRequest request) throws TagDefinitionApiException, SubscriptionApiException {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final SubscriptionBundle bundle = subscriptionApi.getSubscriptionBundle(bundleId, tenantContext);
+        return super.getTags(bundle.getAccountId(), bundleId, auditMode, includedDeleted, tenantContext);
+    }
+
+    @TimedResource
+    @POST
+    @Path("/{bundleId:" + UUID_PATTERN + "}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Transfer a bundle to another account")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Bundle transferred successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BundleJson.class))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id, requested date or policy supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response transferBundle(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                   final BundleJson json,
+                                   @QueryParam(QUERY_REQUESTED_DT) final String requestedDate,
+                                   @QueryParam(QUERY_BILLING_POLICY) @DefaultValue("END_OF_TERM") final BillingActionPolicy billingPolicy,
+                                   @QueryParam(QUERY_BCD_TRANSFER) @DefaultValue("USE_EXISTING") final BcdTransfer bcdTransfer,
+                                   @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
+                                   @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                   @HeaderParam(HDR_REASON) final String reason,
+                                   @HeaderParam(HDR_COMMENT) final String comment,
+                                   @jakarta.ws.rs.core.Context final UriInfo uriInfo,
+                                   @jakarta.ws.rs.core.Context final HttpServletRequest request) throws EntitlementApiException, SubscriptionApiException, AccountApiException {
+        verifyNonNullOrEmpty(json, "BundleJson body should be specified");
+        verifyNonNullOrEmpty(json.getAccountId(), "BundleJson accountId needs to be set");
+
+        // Extract possible key mapping for new subscriptions (the subscription#id points to the existing subscription and the subscription#externalKey is the new key to use for the transferred subscription)
+        final Map<UUID, String> subExtKeys = json.getSubscriptions() == null ?
+                                             Collections.emptyMap() :
+                                             json.getSubscriptions()
+                                                 .stream()
+                                                 .filter(s -> s.getSubscriptionId() != null && s.getExternalKey() != null)
+                                                 .map(new Function<SubscriptionJson, SimpleEntry<UUID, String>>() {
+                                                     @Override
+                                                     public SimpleEntry<UUID, String> apply(final SubscriptionJson sub) {
+                                                         return new SimpleEntry<>(sub.getSubscriptionId(), sub.getExternalKey());
+                                                     }
+                                                 }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        final Iterable<PluginProperty> pluginProperties = extractPluginProperties(pluginPropertiesString);
+
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+        final SubscriptionBundle bundle = subscriptionApi.getSubscriptionBundle(bundleId, callContext);
+        final LocalDate inputLocalDate = toLocalDate(requestedDate);
+
+        final UUID newBundleId = entitlementApi.transferEntitlementsOverrideBillingPolicy(bundle.getAccountId(), json.getAccountId(), bundle.getExternalKey(), inputLocalDate, subExtKeys, billingPolicy, bcdTransfer, pluginProperties, callContext);
+        return uriBuilder.buildResponse(uriInfo, BundleResource.class, "getBundle", newBundleId, request);
+    }
+
+
+    @TimedResource
+    @PUT
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + RENAME_KEY)
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Update a bundle externalKey")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid argumnent supplied"),
+                           @ApiResponse(responseCode = "404", description = "Bundle not found")})
+    public Response renameExternalKey(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                      final BundleJson json,
+                                      /* @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString, */
+                                      @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                      @HeaderParam(HDR_REASON) final String reason,
+                                      @HeaderParam(HDR_COMMENT) final String comment,
+                                      @jakarta.ws.rs.core.Context final UriInfo uriInfo,
+                                      @jakarta.ws.rs.core.Context final HttpServletRequest request) throws EntitlementApiException {
+
+        verifyNonNullOrEmpty(json, "BundleJson body should be specified");
+        verifyNonNullOrEmpty(json.getExternalKey(), "BundleJson externalKey needs to be set");
+
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+        subscriptionApi.updateExternalKey(bundleId, json.getExternalKey(), callContext);
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+
+
+    @TimedResource
+    @POST
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + TAGS)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Add tags to bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Tag created successfully", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = TagJson.class)))),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response createBundleTags(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                     final List<UUID> tagList,
+                                     @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                     @HeaderParam(HDR_REASON) final String reason,
+                                     @HeaderParam(HDR_COMMENT) final String comment,
+                                     @jakarta.ws.rs.core.Context final UriInfo uriInfo,
+                                     @jakarta.ws.rs.core.Context final HttpServletRequest request) throws TagApiException {
+        return super.createTags(bundleId, tagList, uriInfo,
+                                context.createCallContextNoAccountId(createdBy, reason, comment, request), request);
+    }
+
+    @TimedResource
+    @DELETE
+    @Path("/{bundleId:" + UUID_PATTERN + "}/" + TAGS)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Remove tags from bundle")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid bundle id supplied")})
+    public Response deleteBundleTags(@PathParam(ID_PARAM_NAME) final UUID bundleId,
+                                     @QueryParam(QUERY_TAG) final List<UUID> tagList,
+                                     @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                     @HeaderParam(HDR_REASON) final String reason,
+                                     @HeaderParam(HDR_COMMENT) final String comment,
+                                     @jakarta.ws.rs.core.Context final HttpServletRequest request) throws TagApiException {
+        return super.deleteTags(bundleId, tagList,
+                                context.createCallContextNoAccountId(createdBy, reason, comment, request));
+    }
+
+    @Override
+    protected ObjectType getObjectType() {
+        return ObjectType.BUNDLE;
+    }
+}

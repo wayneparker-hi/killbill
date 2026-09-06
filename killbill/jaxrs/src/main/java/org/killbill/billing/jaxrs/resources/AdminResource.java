@@ -1,0 +1,552 @@
+/*
+ * Copyright 2014-2018 Groupon, Inc
+ * Copyright 2014-2018 The Billing Project, LLC
+ *
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.killbill.billing.jaxrs.resources;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
+
+import javax.annotation.Nullable;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.StreamingOutput;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.killbill.billing.ErrorCode;
+import org.killbill.billing.ObjectType;
+import org.killbill.billing.account.api.AccountUserApi;
+import org.killbill.billing.account.api.ImmutableAccountData;
+import org.killbill.billing.catalog.api.VersionedCatalog;
+import org.killbill.billing.invoice.api.InvoiceApiException;
+import org.killbill.billing.invoice.api.InvoiceUserApi;
+import org.killbill.billing.jaxrs.json.AdminPaymentJson;
+import org.killbill.billing.jaxrs.util.Context;
+import org.killbill.billing.jaxrs.util.JaxrsUriBuilder;
+import org.killbill.billing.payment.api.AdminPaymentApi;
+import org.killbill.billing.payment.api.InvoicePaymentApi;
+import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.payment.api.PaymentTransaction;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.payment.api.TransactionStatus;
+import org.killbill.billing.server.healthchecks.KillbillHealthcheck;
+import org.killbill.billing.tenant.api.Tenant;
+import org.killbill.billing.tenant.api.TenantApiException;
+import org.killbill.billing.tenant.api.TenantUserApi;
+import org.killbill.commons.utils.Strings;
+import org.killbill.billing.util.api.AuditUserApi;
+import org.killbill.billing.util.api.CustomFieldUserApi;
+import org.killbill.billing.util.api.RecordIdApi;
+import org.killbill.billing.util.api.TagUserApi;
+import org.killbill.billing.util.cache.Cachable.CacheType;
+import org.killbill.billing.util.cache.CacheController;
+import org.killbill.billing.util.cache.CacheControllerDispatcher;
+import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.callcontext.TenantContext;
+import org.killbill.commons.utils.collect.Iterables;
+import org.killbill.billing.util.config.tenant.PerTenantConfig;
+import org.killbill.billing.util.entity.Pagination;
+import org.killbill.billing.util.tag.Tag;
+import org.killbill.billing.util.tag.dao.SystemTags;
+import org.killbill.bus.api.BusEvent;
+import org.killbill.bus.api.BusEventWithMetadata;
+import org.killbill.bus.api.PersistentBus;
+import org.killbill.clock.Clock;
+import org.killbill.notificationq.api.NotificationEvent;
+import org.killbill.notificationq.api.NotificationEventWithMetadata;
+import org.killbill.notificationq.api.NotificationQueue;
+import org.killbill.notificationq.api.NotificationQueueService;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+
+@Singleton
+@Path(JaxrsResource.ADMIN_PATH)
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Admin", description = "Admin operations (will require special privileges)")
+public class AdminResource extends JaxRsResourceBase {
+
+    private static final String OK = "OK";
+
+    private final AdminPaymentApi adminPaymentApi;
+    private final InvoiceUserApi invoiceUserApi;
+    private final TenantUserApi tenantApi;
+    private final CacheControllerDispatcher cacheControllerDispatcher;
+    private final RecordIdApi recordIdApi;
+    private final PersistentBus persistentBus;
+    private final NotificationQueueService notificationQueueService;
+    private final KillbillHealthcheck killbillHealthcheck;
+
+    @Inject
+    public AdminResource(final JaxrsUriBuilder uriBuilder,
+                         final TagUserApi tagUserApi,
+                         final CustomFieldUserApi customFieldUserApi,
+                         final AuditUserApi auditUserApi,
+                         final AccountUserApi accountUserApi,
+                         final PaymentApi paymentApi,
+                         final InvoicePaymentApi invoicePaymentApi,
+                         final AdminPaymentApi adminPaymentApi,
+                         final InvoiceUserApi invoiceUserApi,
+                         final CacheControllerDispatcher cacheControllerDispatcher,
+                         final TenantUserApi tenantApi,
+                         final RecordIdApi recordIdApi,
+                         final PersistentBus persistentBus,
+                         final NotificationQueueService notificationQueueService,
+                         final KillbillHealthcheck killbillHealthcheck,
+                         final Clock clock,
+                         final Context context) {
+        super(uriBuilder, tagUserApi, customFieldUserApi, auditUserApi, accountUserApi, paymentApi, invoicePaymentApi, null, clock, context);
+        this.adminPaymentApi = adminPaymentApi;
+        this.invoiceUserApi = invoiceUserApi;
+        this.tenantApi = tenantApi;
+        this.recordIdApi = recordIdApi;
+        this.cacheControllerDispatcher = cacheControllerDispatcher;
+        this.persistentBus = persistentBus;
+        this.notificationQueueService = notificationQueueService;
+        this.killbillHealthcheck = killbillHealthcheck;
+    }
+
+    @GET
+    @Path("/queues")
+    @Produces(APPLICATION_OCTET_STREAM)
+    @Operation(summary = "Get queues entries")
+    //
+    // Why schema-less @ApiResponse?
+    //   Swagger Core 1.x had built-in filtering for javax.ws.rs.core.Response — it never
+    //   introspected it. Swagger Core 2.x does NOT filter: an explicit
+    //   @Schema(implementation = Response.class) recursively introspects the entire JAX-RS
+    //   Response hierarchy (EntityTag, Link, MediaType, NewCookie, StatusType, UriBuilder),
+    //   polluting the spec with framework internals. The 0.24.x spec had no response schema
+    //   here, so we keep it schema-less to preserve generated-client backward compatibility.
+    //
+    // Why explicit @Content(mediaType)?
+    //   Swagger Core 2.x only records media types inside OAS3 "content" maps, which require
+    //   @Content. Without it, @Produces(APPLICATION_OCTET_STREAM) is invisible to the scanner
+    //   and the Swagger 2.0 converter defaults to produces:["application/json"] — breaking
+    //   codegen (loses OutputStream parameter, wrong Accept header). The @Content here (no
+    //   schema) makes OAS3 truthful AND gives the converter the correct media type.
+    //
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successful operation",
+                                        content = @Content(mediaType = APPLICATION_OCTET_STREAM)),
+                           @ApiResponse(responseCode = "400", description = "Invalid account id supplied"),
+                           @ApiResponse(responseCode = "404", description = "Account not found")})
+    public Response getQueueEntries(@QueryParam("accountId") final UUID accountId,
+                                    @QueryParam("queueName") final String queueName,
+                                    @QueryParam("serviceName") final String serviceName,
+                                    @QueryParam("withHistory") @DefaultValue("true") final Boolean withHistory,
+                                    @QueryParam("minDate") final String minDateOrNull,
+                                    @QueryParam("maxDate") final String maxDateOrNull,
+                                    @QueryParam("withInProcessing") @DefaultValue("true") final Boolean withInProcessing,
+                                    @QueryParam("withBusEvents") @DefaultValue("true") final Boolean withBusEvents,
+                                    @QueryParam("withNotifications") @DefaultValue("true") final Boolean withNotifications,
+                                    @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+        final Long tenantRecordId = recordIdApi.getRecordId(tenantContext.getTenantId(), ObjectType.TENANT, tenantContext);
+        final Long accountRecordId = accountId == null ? null : recordIdApi.getRecordId(accountId, ObjectType.ACCOUNT, tenantContext);
+
+        // Limit search results by default
+        final DateTime minDate = Strings.isNullOrEmpty(minDateOrNull) ? clock.getUTCNow().minusDays(2) : DATE_TIME_FORMATTER.parseDateTime(minDateOrNull).toDateTime(DateTimeZone.UTC);
+        final DateTime maxDate = Strings.isNullOrEmpty(maxDateOrNull) ? clock.getUTCNow().plusDays(2) : DATE_TIME_FORMATTER.parseDateTime(maxDateOrNull).toDateTime(DateTimeZone.UTC);
+
+        final StreamingOutput json = new StreamingOutput() {
+            @Override
+            public void write(final OutputStream output) throws IOException, WebApplicationException {
+                Iterator<BusEventWithMetadata<BusEvent>> busEventsIterator = null;
+                Iterator<NotificationEventWithMetadata<NotificationEvent>> notificationsIterator = null;
+
+                try {
+                    final JsonGenerator generator = mapper.getFactory().createGenerator(output);
+                    generator.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+
+                    generator.writeStartObject();
+
+                    if (withBusEvents) {
+                        generator.writeFieldName("busEvents");
+                        generator.writeStartArray();
+                        busEventsIterator = getBusEvents(withInProcessing, withHistory, minDate, maxDate, accountRecordId, tenantRecordId).iterator();
+                        while (busEventsIterator.hasNext()) {
+                            final BusEventWithMetadata<BusEvent> busEvent = busEventsIterator.next();
+                            generator.writeObject(new BusEventWithRichMetadata(busEvent));
+                        }
+                        generator.writeEndArray();
+                    }
+
+                    if (withNotifications) {
+                        generator.writeFieldName("notifications");
+                        generator.writeStartArray();
+
+                        notificationsIterator = getNotifications(queueName, serviceName, withInProcessing, withHistory, minDate, maxDate, accountRecordId, tenantRecordId).iterator();
+                        while (notificationsIterator.hasNext()) {
+                            final NotificationEventWithMetadata<NotificationEvent> notification = notificationsIterator.next();
+                            generator.writeObject(notification);
+                        }
+                        generator.writeEndArray();
+                    }
+
+                    generator.writeEndObject();
+                    generator.close();
+                } finally {
+                    // In case the client goes away (IOException), make sure to close the underlying DB connection
+                    if (busEventsIterator != null) {
+                        while (busEventsIterator.hasNext()) {
+                            busEventsIterator.next();
+                        }
+                    }
+                    if (notificationsIterator != null) {
+                        while (notificationsIterator.hasNext()) {
+                            notificationsIterator.next();
+                        }
+                    }
+                }
+            }
+        };
+
+        return Response.status(Status.OK).entity(json).build();
+    }
+
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/payments/{paymentId:" + UUID_PATTERN + "}/transactions/{paymentTransactionId:" + UUID_PATTERN + "}")
+    @Operation(summary = "Update existing paymentTransaction and associated payment state")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid account data supplied")})
+    public Response updatePaymentTransactionState(@PathParam("paymentId") final UUID paymentId,
+                                                  @PathParam("paymentTransactionId") final UUID paymentTransactionId,
+                                                  final AdminPaymentJson json,
+                                                  @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                                  @HeaderParam(HDR_REASON) final String reason,
+                                                  @HeaderParam(HDR_COMMENT) final String comment,
+                                                  @jakarta.ws.rs.core.Context final HttpServletRequest request) throws PaymentApiException {
+
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+
+        final Payment payment = paymentApi.getPayment(paymentId, false, false, Collections.emptyList(), callContext);
+        final PaymentTransaction paymentTransaction = payment.getTransactions()
+                .stream()
+                .filter(input -> paymentTransactionId.equals(input.getId()))
+                .findFirst().orElse(null);
+
+        adminPaymentApi.fixPaymentTransactionState(payment, paymentTransaction, TransactionStatus.valueOf(json.getTransactionStatus()),
+                                                   json.getLastSuccessPaymentState(), json.getCurrentPaymentStateName(), Collections.emptyList(), callContext);
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @POST
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/invoices")
+    @Operation(summary = "Trigger an invoice generation for all parked accounts")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Successful operation")})
+    public Response triggerInvoiceGenerationForParkedAccounts(@QueryParam(QUERY_SEARCH_OFFSET) @DefaultValue("0") final Long offset,
+                                                              @QueryParam(QUERY_SEARCH_LIMIT) @DefaultValue("100") final Long limit,
+                                                              @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
+                                                              @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                                              @HeaderParam(HDR_REASON) final String reason,
+                                                              @HeaderParam(HDR_COMMENT) final String comment,
+                                                              @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        final CallContext callContext = context.createCallContextNoAccountId(createdBy, reason, comment, request);
+        final Iterable<PluginProperty> pluginProperties = extractPluginProperties(pluginPropertiesString);
+
+        // TODO Consider adding a real invoice API post 0.18.x
+        final Pagination<Tag> tags = tagUserApi.searchTags(SystemTags.PARK_TAG_DEFINITION_NAME, offset, limit, callContext);
+        final Iterator<Tag> iterator = tags.iterator();
+
+        final StreamingOutput json = new StreamingOutput() {
+            @Override
+            public void write(final OutputStream output) throws IOException, WebApplicationException {
+                try {
+                    final JsonGenerator generator = mapper.getFactory().createGenerator(output);
+                    generator.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+
+                    generator.writeStartObject();
+                    while (iterator.hasNext()) {
+                        final Tag tag = iterator.next();
+                        final UUID accountId = tag.getObjectId();
+                        try {
+                            invoiceUserApi.triggerInvoiceGeneration(accountId, clock.getUTCToday(), pluginProperties, callContext);
+                            generator.writeStringField(accountId.toString(), OK);
+                        } catch (final InvoiceApiException e) {
+                            if (e.getCode() != ErrorCode.INVOICE_NOTHING_TO_DO.getCode()) {
+                                log.warn("Unable to trigger invoice generation for accountId='{}'", accountId);
+                            }
+                            generator.writeStringField(accountId.toString(), ErrorCode.fromCode(e.getCode()).toString());
+                        }
+                    }
+                    generator.writeEndObject();
+                    generator.close();
+                } finally {
+                    // In case the client goes away (IOException), make sure to close the underlying DB connection
+                    tags.close();
+                }
+            }
+        };
+
+        final URI nextPageUri = uriBuilder.nextPage(AdminResource.class,
+                                                    "triggerInvoiceGenerationForParkedAccounts",
+                                                    tags.getNextOffset(),
+                                                    limit,
+                                                    Collections.emptyMap(),
+                                                    Collections.emptyMap());
+        return Response.status(Status.OK)
+                       .entity(json)
+                       .header(HDR_PAGINATION_CURRENT_OFFSET, tags.getCurrentOffset())
+                       .header(HDR_PAGINATION_NEXT_OFFSET, tags.getNextOffset())
+                       .header(HDR_PAGINATION_TOTAL_NB_RECORDS, tags.getTotalNbRecords())
+                       .header(HDR_PAGINATION_MAX_NB_RECORDS, tags.getMaxNbRecords())
+                       .header(HDR_PAGINATION_NEXT_PAGE_URI, nextPageUri)
+                       .build();
+    }
+
+    @DELETE
+    @Path("/" + CACHE)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Invalidates the given Cache if specified, otherwise invalidates all caches")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Cache name does not exist or is not alive")})
+    public Response invalidatesCache(@QueryParam("cacheName") final String cacheName,
+                                     @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        if (null != cacheName && !cacheName.isEmpty()) {
+            // Clear given cache
+            final CacheType cacheType = CacheType.findByName(cacheName);
+            if (cacheType != null) {
+                cacheControllerDispatcher.getCacheController(cacheType).removeAll();
+            } else {
+                log.warn("Cache for specified cacheName='{}' does not exist or is not alive", cacheName);
+                return Response.status(Status.BAD_REQUEST).build();
+            }
+        } else {
+            // if not given a specific cacheName, clear all
+            cacheControllerDispatcher.clearAll();
+        }
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @DELETE
+    @Path("/" + CACHE + "/" + ACCOUNTS + "/{accountId:" + UUID_PATTERN + "}/")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Invalidates Caches per account level")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation"),
+                           @ApiResponse(responseCode = "400", description = "Invalid account id supplied")})
+    public Response invalidatesCacheByAccount(@PathParam("accountId") final UUID accountId,
+                                              @jakarta.ws.rs.core.Context final HttpServletRequest request) {
+
+        final TenantContext tenantContext = context.createTenantContextWithAccountId(accountId, request);
+        final Long accountRecordId = recordIdApi.getRecordId(accountId, ObjectType.ACCOUNT, tenantContext);
+
+        // clear account-record-id cache by accountId (note: String!)
+        final CacheController<String, Long> accountRecordIdCacheController = cacheControllerDispatcher.getCacheController(CacheType.ACCOUNT_RECORD_ID);
+        accountRecordIdCacheController.remove(accountId.toString());
+
+        // clear account-immutable cache by account record id
+        final CacheController<Long, ImmutableAccountData> accountImmutableCacheController = cacheControllerDispatcher.getCacheController(CacheType.ACCOUNT_IMMUTABLE);
+        accountImmutableCacheController.remove(accountRecordId);
+
+        // clear account-bcd cache by accountId (note: UUID!)
+        final CacheController<UUID, Integer> accountBCDCacheController = cacheControllerDispatcher.getCacheController(CacheType.ACCOUNT_BCD);
+        accountBCDCacheController.remove(accountId);
+
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @DELETE
+    @Path("/" + CACHE + "/" + TENANTS)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Invalidates Caches per tenant level")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation")})
+    public Response invalidatesCacheByTenant(@jakarta.ws.rs.core.Context final HttpServletRequest request) throws TenantApiException {
+
+        // creating Tenant Context from Request
+        final TenantContext tenantContext = context.createTenantContextNoAccountId(request);
+
+        final Tenant currentTenant = tenantApi.getTenantById(tenantContext.getTenantId());
+
+        // getting Tenant Record Id
+        final Long tenantRecordId = recordIdApi.getRecordId(tenantContext.getTenantId(), ObjectType.TENANT, tenantContext);
+
+        final Function<String, Boolean> tenantKeysMatcher = key -> key != null && key.endsWith("::" + tenantRecordId);
+
+        // clear tenant-record-id cache by tenantId
+        final CacheController<String, Long> tenantRecordIdCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_RECORD_ID);
+        tenantRecordIdCacheController.remove(currentTenant.getId().toString());
+
+        // clear tenant-payment-state-machine-config cache by tenantRecordId
+        final CacheController<String, Object> tenantPaymentStateMachineConfigCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_PAYMENT_STATE_MACHINE_CONFIG);
+        tenantPaymentStateMachineConfigCacheController.remove(tenantKeysMatcher);
+
+        // clear tenant cache by tenantApiKey
+        final CacheController<String, Tenant> tenantCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT);
+        tenantCacheController.remove(currentTenant.getApiKey());
+
+        // clear tenant-kv cache by tenantRecordId
+        final CacheController<String, String> tenantKVCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_KV);
+        tenantKVCacheController.remove(tenantKeysMatcher);
+
+        // clear tenant-config cache by tenantRecordId
+        final CacheController<Long, PerTenantConfig> tenantConfigCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_CONFIG);
+        tenantConfigCacheController.remove(tenantRecordId);
+
+        // clear tenant-overdue-config cache by tenantRecordId
+        final CacheController<Long, Object> tenantOverdueConfigCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_OVERDUE_CONFIG);
+        tenantOverdueConfigCacheController.remove(tenantRecordId);
+
+        // clear tenant-catalog cache by tenantRecordId
+        final CacheController<Long, VersionedCatalog> tenantCatalogCacheController = cacheControllerDispatcher.getCacheController(CacheType.TENANT_CATALOG);
+        tenantCatalogCacheController.remove(tenantRecordId);
+
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @PUT
+    @Path("/" + HEALTHCHECK)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Put the host back into rotation")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation")})
+    public Response putInRotation(@jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        killbillHealthcheck.putInRotation();
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    @DELETE
+    @Path("/" + HEALTHCHECK)
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Put the host out of rotation")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Successful operation")})
+    public Response putOutOfRotation(@jakarta.ws.rs.core.Context final HttpServletRequest request) {
+        killbillHealthcheck.putOutOfRotation();
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+    private Iterable<NotificationEventWithMetadata<NotificationEvent>> getNotifications(@Nullable final String queueName,
+                                                                                        @Nullable final String serviceName,
+                                                                                        final boolean includeInProcessing,
+                                                                                        final boolean includeHistory,
+                                                                                        @Nullable final DateTime minEffectiveDate,
+                                                                                        @Nullable final DateTime maxEffectiveDate,
+                                                                                        @Nullable final Long accountRecordId,
+                                                                                        final Long tenantRecordId) {
+        Iterable<NotificationEventWithMetadata<NotificationEvent>> notifications = Collections.emptyList();
+        for (final NotificationQueue notificationQueue : notificationQueueService.getNotificationQueues()) {
+            if (queueName != null && !queueName.equals(notificationQueue.getQueueName())) {
+                continue;
+            } else if (serviceName != null && !serviceName.equals(notificationQueue.getServiceName())) {
+                continue;
+            }
+
+            if (includeInProcessing) {
+                if (accountRecordId != null) {
+                    notifications = Iterables.concat(notifications, notificationQueue.getFutureOrInProcessingNotificationForSearchKeys(accountRecordId, tenantRecordId));
+                } else {
+                    notifications = Iterables.concat(notifications, notificationQueue.getFutureOrInProcessingNotificationForSearchKey2(maxEffectiveDate, tenantRecordId));
+                }
+            } else {
+                if (accountRecordId != null) {
+                    notifications = Iterables.concat(notifications, notificationQueue.getFutureNotificationForSearchKeys(accountRecordId, tenantRecordId));
+                } else {
+                    notifications = Iterables.concat(notifications, notificationQueue.getFutureNotificationForSearchKey2(maxEffectiveDate, tenantRecordId));
+                }
+            }
+
+            if (includeHistory) {
+                if (accountRecordId != null) {
+                    notifications = Iterables.concat(notificationQueue.getHistoricalNotificationForSearchKeys(accountRecordId, tenantRecordId), notifications);
+                } else {
+                    notifications = Iterables.concat(notificationQueue.getHistoricalNotificationForSearchKey2(minEffectiveDate, tenantRecordId), notifications);
+                }
+            }
+        }
+
+        // Note: entries are properly ordered by queue, but not cross queues unfortunately
+        return notifications;
+    }
+
+    private Iterable<BusEventWithMetadata<BusEvent>> getBusEvents(final boolean includeInProcessing,
+                                                                  final boolean includeHistory,
+                                                                  @Nullable final DateTime minCreatedDate,
+                                                                  @Nullable final DateTime maxCreatedDate,
+                                                                  @Nullable final Long accountRecordId,
+                                                                  final Long tenantRecordId) {
+        Iterable<BusEventWithMetadata<BusEvent>> busEvents = Collections.emptyList();
+        if (includeInProcessing) {
+            if (accountRecordId != null) {
+                busEvents = Iterables.concat(busEvents, persistentBus.getAvailableOrInProcessingBusEventsForSearchKeys(accountRecordId, tenantRecordId));
+            } else {
+                busEvents = Iterables.concat(busEvents, persistentBus.getAvailableOrInProcessingBusEventsForSearchKey2(maxCreatedDate, tenantRecordId));
+            }
+        } else {
+            if (accountRecordId != null) {
+                busEvents = Iterables.concat(busEvents, persistentBus.getAvailableBusEventsForSearchKeys(accountRecordId, tenantRecordId));
+            } else {
+                busEvents = Iterables.concat(busEvents, persistentBus.getAvailableBusEventsForSearchKey2(maxCreatedDate, tenantRecordId));
+            }
+        }
+
+        if (includeHistory) {
+            if (accountRecordId != null) {
+                busEvents = Iterables.concat(persistentBus.getHistoricalBusEventsForSearchKeys(accountRecordId, tenantRecordId), busEvents);
+            } else {
+                busEvents = Iterables.concat(persistentBus.getHistoricalBusEventsForSearchKey2(minCreatedDate, tenantRecordId), busEvents);
+            }
+        }
+
+        // Note: entries are properly ordered by queue, but not cross queues unfortunately
+        return busEvents;
+    }
+
+    private static class BusEventWithRichMetadata extends BusEventWithMetadata<BusEvent> {
+
+        private final String className;
+
+        public BusEventWithRichMetadata(final BusEventWithMetadata<BusEvent> event) {
+            super(event.getRecordId(), event.getUserToken(), event.getCreatedDate(), event.getSearchKey1(), event.getSearchKey2(), event.getEvent());
+            this.className = event.getEvent().getClass().getName();
+        }
+
+        public String getClassName() {
+            return className;
+        }
+    }
+}

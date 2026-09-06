@@ -1,0 +1,163 @@
+<!--
+  ~ Copyright 2020-2020 Equinix, Inc
+  ~ Copyright 2014-2020 The Billing Project, LLC
+  ~
+  ~ The Billing Project licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<FindBugsFilter
+        xmlns="https://github.com/spotbugs/filter/3.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0
+                            https://raw.githubusercontent.com/spotbugs/spotbugs/4.6.0/spotbugs/etc/findbugsfilter.xsd">
+    <Match>
+        <!-- Exclude ANTLR generated files -->
+        <Class name="~org\.skife\.jdbi\.rewriter\..*"/>
+    </Match>
+    <Match>
+        <Field type="java.lang.Class" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="java.lang.reflect.Method" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="java.sql.Connection" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="java.sql.PreparedStatement" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="java.sql.ResultSet" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="javax.sql.DataSource" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="org.skife.jdbi.v2.StatementContext" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+    <!-- Most Joda time classes are immutable -->
+    <Match>
+        <Field type="org.joda.time.DateTime" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <!-- Most Joda time classes are immutable -->
+        <Field type="org.joda.time.DateTimeZone" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+    <Match>
+        <Field type="org.stringtemplate.v4.STGroup" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="org.killbill.commons.metrics.api.MetricRegistry" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Field type="org.killbill.commons.embeddeddb.EmbeddedDB" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+
+    <Match>
+        <!--
+        Supposed to be mutable class that shared its state with other jdbi classes.
+        To test this, create copy constructor that copy its attributes, running test with "mvn -Pjdbi test verify" will fail.
+        -->
+        <Field type="org.skife.jdbi.v2.Binding" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+    <Match>
+        <Class name="org.skife.jdbi.v2.ConcreteStatementContext" />
+        <!--
+        Try simple fix by wrapping with new Arraylist<>(cleanables) result with a lot of:
+        ".... org.skife.jdbi.v2.TestIterator.<xxx> .... java.lang.AssertionError: Handle was not closed correctly!"
+        when running test with: "mvn -Pjdbi test verify".
+        -->
+        <Method name="getCleanables" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+
+    <Match>
+        <!--
+        PreparedBatchPart, along with PreparedBatch supposed to be mutable classes that interact each other
+        -->
+        <Class name="org.skife.jdbi.v2.PreparedBatchPart" />
+        <Method name="submit" returns="org.skife.jdbi.v2.PreparedBatch" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+
+    <Match>
+        <!-- justification: all operations in returned object do nothing -->
+        <Class name="org.skife.jdbi.v2.logging.NoOpLog" />
+        <Method name="logBatch" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+
+    <Match>
+        <!-- justification: client supposed to manage supplied PrintStream -->
+        <Class name="org.skife.jdbi.v2.logging.PrintStreamLog" />
+        <Method name="&lt;init&gt;" params="java.io.PrintStream" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+
+    <Match>
+        <!-- justification: Iterator created inside for-loop, NoSuchElementException unlikely to happen -->
+        <Class name="org.skife.jdbi.v2.sqlobject.BatchHandler$5" />
+        <Method name="next" />
+        <Bug pattern="IT_NO_SUCH_ELEMENT" />
+    </Match>
+
+    <Match>
+        <!-- justification: See: https://github.com/jdbi/jdbi/issues/93, https://github.com/jdbi/jdbi/pull/125 -->
+        <Class name="org.skife.jdbi.v2.ClasspathStatementLocator" />
+        <Method name="locate" />
+        <Bug pattern="DM_STRING_CTOR" />
+    </Match>
+
+    <Match>
+        <!--
+        Vendored jDBI helper types eagerly validate mapper, template, and SQL-object metadata in
+        their constructors and intentionally fail fast when that reflective/configuration setup is
+        invalid. SpotBugs reports these as CT_CONSTRUCTOR_THROW on Java 21, but changing the
+        constructor behavior would be invasive framework work across the forked jDBI surface.
+        -->
+        <Class name="~(org\.killbill\.commons\.jdbi\.ReusableStringTemplate3StatementLocator|org\.killbill\.commons\.jdbi\.mapper\.LowerToCamelBeanMapper|org\.skife\.jdbi\.v2\.BeanMapper|org\.skife\.jdbi\.v2\.BeanPropertyArguments|org\.skife\.jdbi\.v2\.BuiltInArgumentFactory\\$P|org\.skife\.jdbi\.v2\.Cleanables|org\.skife\.jdbi\.v2\.DBI|org\.skife\.jdbi\.v2\.GeneratedKeys|org\.skife\.jdbi\.v2\.InferredMapperFactory|org\.skife\.jdbi\.v2\.ReflectionBeanMapper|org\.skife\.jdbi\.v2\.ResultSetResultIterator|org\.skife\.jdbi\.v2\.sqlobject\.BatchHandler|org\.skife\.jdbi\.v2\.sqlobject\.CallHandler|org\.skife\.jdbi\.v2\.sqlobject\.CustomizingStatementHandler|org\.skife\.jdbi\.v2\.sqlobject\.ResultReturnThing\\$SingleValueResultReturnThing|org\.skife\.jdbi\.v2\.sqlobject\.UpdateHandler|org\.skife\.jdbi\.v2\.sqlobject\.customizers\.RegisterContainerMapper\\$MyCustomizer|org\.skife\.jdbi\.v2\.sqlobject\.stringtemplate\.StringTemplate3StatementLocator)" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <Match>
+        <Class name="org.skife.jdbi.v2.BuiltInArgumentFactory$P" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <Match>
+        <Class name="org.skife.jdbi.v2.sqlobject.ResultReturnThing$SingleValueResultReturnThing" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <Match>
+        <Class name="org.skife.jdbi.v2.sqlobject.customizers.RegisterContainerMapper$MyCustomizer" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+</FindBugsFilter>
