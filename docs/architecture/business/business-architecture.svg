@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 630" width="1400" height="630">
+<style>text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; } .title{font-size:20px;font-weight:600;fill:#111827}.layer{font-size:14px;font-weight:600;fill:#374151}.grp{font-size:13px;font-weight:600;fill:#4b5563}.obj{font-size:14px;font-weight:600;fill:#111827}.cell{font-size:13px;fill:#1f2937}.leaf{font-size:12px;fill:#374151}.wing{font-size:14px;font-weight:600;fill:#111827}.witem{font-size:13px;fill:#374151}.sub{font-size:13px;fill:#6b7280}</style>
+<rect width="1400" height="630" fill="#ffffff"/>
+<text x="700" y="32" text-anchor="middle" class="title">订阅计费业务架构分层图</text>
+
+<!-- ===== 左翼 运营平台 ===== -->
+<rect x="24" y="56" width="176" height="510" rx="8" fill="#fff7ed" fill-opacity="0.6" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="112" y="82" text-anchor="middle" class="wing">运营平台</text>
+<rect x="36" y="98" width="152" height="72" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/>
+<text x="112" y="138" text-anchor="middle" class="witem">租户与商户接入</text>
+<rect x="36" y="190" width="152" height="72" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/>
+<text x="112" y="230" text-anchor="middle" class="witem">目录版本发布</text>
+<rect x="36" y="282" width="152" height="72" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/>
+<text x="112" y="322" text-anchor="middle" class="witem">发票试算与预览</text>
+<rect x="36" y="374" width="152" height="72" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/>
+<text x="112" y="414" text-anchor="middle" class="witem">逾期规则配置</text>
+<rect x="36" y="466" width="152" height="72" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/>
+<text x="112" y="506" text-anchor="middle" class="witem">人工调整与信用</text>
+
+<!-- ===== 右翼 数据平台 ===== -->
+<rect x="1200" y="56" width="176" height="510" rx="8" fill="#f0fdfa" fill-opacity="0.6" stroke="#99f6e4" stroke-width="1.5"/>
+<text x="1288" y="82" text-anchor="middle" class="wing">数据平台</text>
+<rect x="1212" y="98" width="152" height="72" rx="6" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+<text x="1288" y="138" text-anchor="middle" class="witem">收入与 MRR</text>
+<rect x="1212" y="190" width="152" height="72" rx="6" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+<text x="1288" y="230" text-anchor="middle" class="witem">订阅留存与流失</text>
+<rect x="1212" y="282" width="152" height="72" rx="6" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+<text x="1288" y="322" text-anchor="middle" class="witem">支付成功率分析</text>
+<rect x="1212" y="374" width="152" height="72" rx="6" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+<text x="1288" y="414" text-anchor="middle" class="witem">应收与逾期账龄</text>
+<rect x="1212" y="466" width="152" height="72" rx="6" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+<text x="1288" y="506" text-anchor="middle" class="witem">对账与审计报表</text>
+
+<!-- ===== 场景层 ===== -->
+<rect x="222" y="56" width="964" height="104" rx="8" fill="#eff6ff" fill-opacity="0.5" stroke="#bfdbfe" stroke-width="1.5"/>
+<text x="236" y="78" class="layer">场景层</text>
+
+<rect x="236" y="88" width="304" height="66" rx="6" fill="#ffffff" fill-opacity="0.7" stroke="#bfdbfe" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="244" y="104" class="grp">订阅签约</text>
+<rect x="244" y="110" width="67" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="277.5" y="134" text-anchor="middle" class="cell">新签订阅</text>
+<rect x="317" y="110" width="67" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="350.5" y="134" text-anchor="middle" class="cell">试用转正</text>
+<rect x="390" y="110" width="67" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="423.5" y="134" text-anchor="middle" class="cell">套餐升降</text>
+<rect x="463" y="110" width="67" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="496.5" y="134" text-anchor="middle" class="cell">取消订阅</text>
+
+<rect x="552" y="88" width="304" height="66" rx="6" fill="#ffffff" fill-opacity="0.7" stroke="#bfdbfe" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="560" y="104" class="grp">计费出账</text>
+<rect x="560" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="606" y="134" text-anchor="middle" class="cell">周期出账</text>
+<rect x="658" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="704" y="134" text-anchor="middle" class="cell">用量计费</text>
+<rect x="756" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="802" y="134" text-anchor="middle" class="cell">按比例折算</text>
+
+<rect x="868" y="88" width="304" height="66" rx="6" fill="#ffffff" fill-opacity="0.7" stroke="#bfdbfe" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="876" y="104" class="grp">收款与催收</text>
+<rect x="876" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="922" y="134" text-anchor="middle" class="cell">自动扣款</text>
+<rect x="974" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="1020" y="134" text-anchor="middle" class="cell">逾期升级</text>
+<rect x="1072" y="110" width="92" height="38" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+<text x="1118" y="134" text-anchor="middle" class="cell">退款与信用</text>
+
+<!-- ===== 产品功能层 ===== -->
+<rect x="222" y="170" width="964" height="110" rx="8" fill="#f0fdf4" fill-opacity="0.5" stroke="#bbf7d0" stroke-width="1.5"/>
+<text x="236" y="192" class="layer">产品功能层</text>
+
+<rect x="236" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="291" y="222" text-anchor="middle" class="cell">账户管理</text>
+<rect x="354" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="409" y="222" text-anchor="middle" class="cell">目录版本</text>
+<rect x="472" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="527" y="222" text-anchor="middle" class="cell">订阅生命周期</text>
+<rect x="590" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="645" y="222" text-anchor="middle" class="cell">用量归集</text>
+<rect x="708" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="763" y="222" text-anchor="middle" class="cell">发票生成</text>
+<rect x="826" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="881" y="222" text-anchor="middle" class="cell">支付受理与路由</text>
+<rect x="944" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="999" y="222" text-anchor="middle" class="cell">支付重试</text>
+<rect x="1062" y="200" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="1117" y="222" text-anchor="middle" class="cell">逾期状态推进</text>
+
+<rect x="236" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="291" y="262" text-anchor="middle" class="cell">试用与折扣</text>
+<rect x="354" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="409" y="262" text-anchor="middle" class="cell">变更对齐策略</text>
+<rect x="472" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="527" y="262" text-anchor="middle" class="cell">税费与调整项</text>
+<rect x="590" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="645" y="262" text-anchor="middle" class="cell">信用与退款</text>
+<rect x="708" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="763" y="262" text-anchor="middle" class="cell">发票渲染与投递</text>
+<rect x="826" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="881" y="262" text-anchor="middle" class="cell">多租户隔离</text>
+<rect x="944" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="999" y="262" text-anchor="middle" class="cell">事件通知</text>
+<rect x="1062" y="240" width="110" height="34" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><text x="1117" y="262" text-anchor="middle" class="cell">审计与自定义字段</text>
+
+<!-- ===== 领域模型层 ===== -->
+<rect x="222" y="290" width="964" height="190" rx="8" fill="#faf5ff" fill-opacity="0.5" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="236" y="312" class="layer">领域模型层</text>
+
+<rect x="236" y="322" width="556" height="146" rx="6" fill="#fdf4ff" fill-opacity="0.8" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="514" y="344" text-anchor="middle" class="obj">订阅 Subscription</text>
+
+<rect x="246" y="354" width="173" height="104" rx="5" fill="#ffffff" fill-opacity="0.85" stroke="#e9d5ff" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="254" y="372" class="grp">目录约定</text>
+<rect x="254" y="380" width="49" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="278.5" y="402" text-anchor="middle" class="leaf">产品</text>
+<rect x="308" y="380" width="49" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="332.5" y="402" text-anchor="middle" class="leaf">套餐</text>
+<rect x="362" y="380" width="49" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="386.5" y="402" text-anchor="middle" class="leaf">阶段</text>
+<rect x="254" y="418" width="157" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="332.5" y="439" text-anchor="middle" class="leaf">目录版本与价目表</text>
+
+<rect x="427" y="354" width="173" height="104" rx="5" fill="#ffffff" fill-opacity="0.85" stroke="#e9d5ff" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="435" y="372" class="grp">计费约定</text>
+<rect x="435" y="380" width="76" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="473" y="402" text-anchor="middle" class="leaf">账单日</text>
+<rect x="516" y="380" width="76" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="554" y="402" text-anchor="middle" class="leaf">计费周期</text>
+<rect x="435" y="418" width="157" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="513.5" y="439" text-anchor="middle" class="leaf">计费事件流</text>
+
+<rect x="608" y="354" width="173" height="104" rx="5" fill="#ffffff" fill-opacity="0.85" stroke="#e9d5ff" stroke-dasharray="5,3" stroke-width="1.2"/>
+<text x="616" y="372" class="grp">生效约束</text>
+<rect x="616" y="380" width="76" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="654" y="402" text-anchor="middle" class="leaf">变更策略</text>
+<rect x="697" y="380" width="76" height="34" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="735" y="402" text-anchor="middle" class="leaf">取消策略</text>
+<rect x="616" y="418" width="157" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="694.5" y="439" text-anchor="middle" class="leaf">租户与目录版本</text>
+
+<rect x="802" y="322" width="86" height="146" rx="6" fill="#fdf4ff" fill-opacity="0.8" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="845" y="346" text-anchor="middle" class="obj">发票</text>
+<rect x="808" y="360" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="845" y="381" text-anchor="middle" class="leaf">发票项</text>
+<rect x="808" y="398" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="845" y="419" text-anchor="middle" class="leaf">调整与税费</text>
+<rect x="808" y="436" width="74" height="26" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="845" y="454" text-anchor="middle" class="leaf">应收余额</text>
+
+<rect x="896" y="322" width="86" height="146" rx="6" fill="#fdf4ff" fill-opacity="0.8" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="939" y="346" text-anchor="middle" class="obj">支付</text>
+<rect x="902" y="360" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="939" y="381" text-anchor="middle" class="leaf">交易尝试</text>
+<rect x="902" y="398" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="939" y="419" text-anchor="middle" class="leaf">支付方式</text>
+<rect x="902" y="436" width="74" height="26" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="939" y="454" text-anchor="middle" class="leaf">资金结果</text>
+
+<rect x="990" y="322" width="86" height="146" rx="6" fill="#fdf4ff" fill-opacity="0.8" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="1033" y="346" text-anchor="middle" class="obj">账户</text>
+<rect x="996" y="360" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1033" y="381" text-anchor="middle" class="leaf">账单周期</text>
+<rect x="996" y="398" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1033" y="419" text-anchor="middle" class="leaf">币种与时区</text>
+<rect x="996" y="436" width="74" height="26" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1033" y="454" text-anchor="middle" class="leaf">余额与信用</text>
+
+<rect x="1084" y="322" width="86" height="146" rx="6" fill="#fdf4ff" fill-opacity="0.8" stroke="#e9d5ff" stroke-width="1.5"/>
+<text x="1127" y="346" text-anchor="middle" class="obj">逾期</text>
+<rect x="1090" y="360" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1127" y="381" text-anchor="middle" class="leaf">逾期状态</text>
+<rect x="1090" y="398" width="74" height="32" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1127" y="419" text-anchor="middle" class="leaf">条件判定</text>
+<rect x="1090" y="436" width="74" height="26" rx="4" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.1"/><text x="1127" y="454" text-anchor="middle" class="leaf">阻断动作</text>
+
+<!-- ===== 依赖层 ===== -->
+<rect x="222" y="490" width="964" height="76" rx="8" fill="#f9fafb" fill-opacity="0.7" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="236" y="512" class="layer">依赖层 · 全部经由插件扩展点接入</text>
+<rect x="236" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="309.5" y="544" text-anchor="middle" class="cell">支付网关</text>
+<rect x="393" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="466.5" y="544" text-anchor="middle" class="cell">税费服务</text>
+<rect x="550" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="623.5" y="544" text-anchor="middle" class="cell">汇率来源</text>
+<rect x="707" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="780.5" y="544" text-anchor="middle" class="cell">外部目录与用量源</text>
+<rect x="864" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="937.5" y="544" text-anchor="middle" class="cell">通知与投递渠道</text>
+<rect x="1021" y="520" width="147" height="38" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/><text x="1094.5" y="544" text-anchor="middle" class="cell">指标与监控后端</text>
+
+<text x="700" y="600" text-anchor="middle" class="sub">主体自上而下逐层承接；依赖层没有一条硬编码集成——外部系统一律以插件形态挂在 13 个扩展点上，由 LPR 运行时装载</text>
+</svg>

@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 830" width="1400" height="830">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .panel { fill:#374151; font-size:14px; font-weight:600; }
+    .grp { fill:#4b5563; font-size:13px; font-weight:600; }
+    .cell { fill:#1f2937; font-size:12px; }
+    .item { fill:#111827; font-size:13px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+    .nfr { fill:#111827; font-size:12px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="a-gray" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="1400" height="830" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">场景视图 —— 参与方、用例与非功能需求</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">左列是谁驱动系统，中间是系统做什么，右列是这些用例对其余四个视图提出的约束；每个用例左侧色条标出它的驱动源</text>
+
+  <!-- ===== 左：参与方 ===== -->
+  <rect x="24" y="80" width="210" height="620" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="40" y="104" class="panel">参与方</text>
+
+  <rect x="36" y="116" width="186" height="210" rx="6" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="48" y="138" class="grp">人类参与者</text>
+  <rect x="48" y="148" width="162" height="48" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="129" y="168" text-anchor="middle" class="item">商户系统</text><text x="129" y="185" text-anchor="middle" class="small">REST 调用方</text>
+  <rect x="48" y="208" width="162" height="48" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="129" y="228" text-anchor="middle" class="item">运营人员</text><text x="129" y="245" text-anchor="middle" class="small">目录、发票与人工处置</text>
+  <rect x="48" y="268" width="162" height="48" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="129" y="288" text-anchor="middle" class="item">平台管理员</text><text x="129" y="305" text-anchor="middle" class="small">插件与集群运维</text>
+
+  <rect x="36" y="344" width="186" height="210" rx="6" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="48" y="366" class="grp">非人类参与者</text>
+  <rect x="48" y="376" width="162" height="48" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="129" y="396" text-anchor="middle" class="item">计费调度器</text><text x="129" y="413" text-anchor="middle" class="small">通知队列 · 周期定时器</text>
+  <rect x="48" y="436" width="162" height="48" rx="5" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="129" y="456" text-anchor="middle" class="item">支付网关回调</text><text x="129" y="473" text-anchor="middle" class="small">异步、可能迟到或重复</text>
+  <rect x="48" y="496" width="162" height="48" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="129" y="516" text-anchor="middle" class="item">集群节点命令</text><text x="129" y="533" text-anchor="middle" class="small">nodesInfo 广播到每个节点</text>
+
+  <rect x="36" y="572" width="186" height="112" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.2"/>
+  <text x="48" y="594" class="grp">读法</text>
+  <text x="48" y="616" class="small">绝大部分状态变化不是</text>
+  <text x="48" y="634" class="small">REST 调用触发的，而是</text>
+  <text x="48" y="652" class="small">定时器、网关回调与集群</text>
+  <text x="48" y="670" class="small">命令触发的。</text>
+
+  <path d="M222 172 L252 172" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+  <path d="M222 232 L252 232" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+  <path d="M222 292 L252 292" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+  <path d="M222 400 L252 400" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+  <path d="M222 460 L252 460" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+  <path d="M222 520 L252 520" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a-gray)"/>
+
+  <!-- ===== 中：系统与用例 ===== -->
+  <rect x="258" y="80" width="830" height="620" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.8"/>
+  <text x="274" y="104" class="panel">Kill Bill 计费平台（LPR fork）</text>
+
+  <rect x="274" y="116" width="798" height="170" rx="6" fill="#eff6ff" fill-opacity="0.45" stroke="#bfdbfe" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="286" y="138" class="grp">A · 订阅与目录</text>
+  <rect x="286" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="286" y="150" width="5" height="60" rx="2" fill="#2563eb"/><text x="350" y="186" text-anchor="middle" class="cell">创建订阅</text>
+  <rect x="418" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="418" y="150" width="5" height="60" rx="2" fill="#2563eb"/><text x="482" y="186" text-anchor="middle" class="cell">变更套餐</text>
+  <rect x="550" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="550" y="150" width="5" height="60" rx="2" fill="#2563eb"/><text x="614" y="186" text-anchor="middle" class="cell">取消与暂停</text>
+  <rect x="682" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="682" y="150" width="5" height="60" rx="2" fill="#2563eb"/><text x="746" y="186" text-anchor="middle" class="cell">发布目录版本</text>
+  <rect x="814" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="814" y="150" width="5" height="60" rx="2" fill="#2563eb"/><text x="878" y="186" text-anchor="middle" class="cell">上报用量</text>
+  <rect x="946" y="150" width="124" height="60" rx="5" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/><rect x="946" y="150" width="5" height="60" rx="2" fill="#7c3aed"/><text x="1010" y="186" text-anchor="middle" class="cell">阶段自动推进</text>
+  <text x="286" y="238" class="small">扩展关系：创建订阅 与 变更套餐 均可 &lt;&lt;extend&gt;&gt; 触发一次即时出账（立即出账 / 按比例折算）</text>
+  <text x="286" y="262" class="small">目录版本一经发布即冻结：存量订阅继续按签约时的版本计费，这是「变更不影响历史账单」的前提</text>
+
+  <rect x="274" y="306" width="798" height="170" rx="6" fill="#f0fdf4" fill-opacity="0.45" stroke="#bbf7d0" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="286" y="328" class="grp">B · 计费与收款</text>
+  <rect x="286" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="286" y="340" width="5" height="60" rx="2" fill="#7c3aed"/><text x="350" y="376" text-anchor="middle" class="cell">生成发票草稿</text>
+  <rect x="418" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="418" y="340" width="5" height="60" rx="2" fill="#2563eb"/><text x="482" y="376" text-anchor="middle" class="cell">试算与提交</text>
+  <rect x="550" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="550" y="340" width="5" height="60" rx="2" fill="#16a34a"/><text x="614" y="376" text-anchor="middle" class="cell">发起自动扣款</text>
+  <rect x="682" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="682" y="340" width="5" height="60" rx="2" fill="#ea580c"/><text x="746" y="376" text-anchor="middle" class="cell">确认支付结果</text>
+  <rect x="814" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="814" y="340" width="5" height="60" rx="2" fill="#7c3aed"/><text x="878" y="376" text-anchor="middle" class="cell">支付重试编排</text>
+  <rect x="946" y="340" width="124" height="60" rx="5" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.2"/><rect x="946" y="340" width="5" height="60" rx="2" fill="#2563eb"/><text x="1010" y="376" text-anchor="middle" class="cell">退款与信用</text>
+  <text x="286" y="428" class="small">包含关系：提交发票 &lt;&lt;include&gt;&gt; 发起自动扣款 &lt;&lt;include&gt;&gt; 确认支付结果；支付重试同样 &lt;&lt;include&gt;&gt; 扣款</text>
+  <text x="286" y="452" class="small">「发起」与「确认」必须是两个用例：网关结果可能异步返回、迟到或重复，把它们合成一个就会重复扣款</text>
+
+  <rect x="274" y="496" width="798" height="170" rx="6" fill="#fff7ed" fill-opacity="0.45" stroke="#fed7aa" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="286" y="518" class="grp">C · 逾期处置与插件运维</text>
+  <rect x="286" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="286" y="530" width="5" height="60" rx="2" fill="#7c3aed"/><text x="348" y="566" text-anchor="middle" class="cell">推进逾期状态</text>
+  <rect x="418" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="418" y="530" width="5" height="60" rx="2" fill="#16a34a"/><text x="480" y="566" text-anchor="middle" class="cell">阻断与恢复</text>
+  <rect x="550" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="550" y="530" width="5" height="60" rx="2" fill="#16a34a"/><text x="612" y="566" text-anchor="middle" class="cell">外发业务事件</text>
+  <rect x="682" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="682" y="530" width="5" height="60" rx="2" fill="#0d9488"/><text x="744" y="566" text-anchor="middle" class="cell">安装插件</text>
+  <rect x="814" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="814" y="530" width="5" height="60" rx="2" fill="#0d9488"/><text x="876" y="558" text-anchor="middle" class="cell">启停 · 升级</text><text x="876" y="578" text-anchor="middle" class="cell">回滚</text>
+  <rect x="946" y="530" width="124" height="60" rx="5" fill="#ffffff" stroke="#fed7aa" stroke-width="1.2"/><rect x="946" y="530" width="5" height="60" rx="2" fill="#2563eb"/><text x="1008" y="558" text-anchor="middle" class="cell">插件状态与</text><text x="1008" y="578" text-anchor="middle" class="cell">健康度</text>
+  <text x="286" y="618" class="small">包含关系：启停 / 升级 / 回滚 &lt;&lt;include&gt;&gt; 查询插件状态——不先确认磁盘上有哪些版本，就无法决定回滚到哪一个</text>
+  <text x="286" y="642" class="small">安装与启动被刻意拆成两个用例：「让一个版本可见」和「让它接管流量」是两个决定，分开才有回滚余地</text>
+
+  <!-- ===== 右：非功能需求 ===== -->
+  <rect x="1112" y="80" width="264" height="620" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="1128" y="104" class="panel">非功能需求 · 分配到视图</text>
+
+  <rect x="1124" y="118" width="240" height="106" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.3"/>
+  <text x="1136" y="140" class="nfr">NFR-1 升级无空窗</text>
+  <text x="1136" y="162" class="small">新旧版本同时加载，服务按</text>
+  <text x="1136" y="180" class="small">(pluginId, version) 撤销</text>
+  <text x="1136" y="206" class="small">→ 逻辑视图 · 进程视图</text>
+
+  <rect x="1124" y="234" width="240" height="106" rx="6" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.3"/>
+  <text x="1136" y="256" class="nfr">NFR-2 插件隔离</text>
+  <text x="1136" y="278" class="small">依赖冲突互不影响，卸载后</text>
+  <text x="1136" y="296" class="small">ClassLoader 可被 GC</text>
+  <text x="1136" y="322" class="small">→ 逻辑视图 · 开发视图</text>
+
+  <rect x="1124" y="350" width="240" height="106" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.3"/>
+  <text x="1136" y="372" class="nfr">NFR-3 插件故障不拖垮核心</text>
+  <text x="1136" y="394" class="small">单个插件抛异常只记 warn</text>
+  <text x="1136" y="412" class="small">并跳过，出账流程继续</text>
+  <text x="1136" y="438" class="small">→ 进程视图</text>
+
+  <rect x="1124" y="466" width="240" height="106" rx="6" fill="#ffffff" stroke="#5eead4" stroke-width="1.3"/>
+  <text x="1136" y="488" class="nfr">NFR-4 集群一致</text>
+  <text x="1136" y="510" class="small">节点命令广播到每个节点，</text>
+  <text x="1136" y="528" class="small">各自在本地磁盘执行一次</text>
+  <text x="1136" y="554" class="small">→ 物理视图</text>
+
+  <rect x="1124" y="582" width="240" height="106" rx="6" fill="#ffffff" stroke="#fca5a5" stroke-width="1.3"/>
+  <text x="1136" y="604" class="nfr">NFR-5 核心不认识具体插件</text>
+  <text x="1136" y="626" class="small">不存在 core → 具体插件的</text>
+  <text x="1136" y="644" class="small">依赖，也不存在 instanceof</text>
+  <text x="1136" y="670" class="small">→ 开发视图</text>
+
+  <!-- ===== 图例 ===== -->
+  <rect x="24" y="722" width="1352" height="44" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+  <text x="44" y="750" class="grp">驱动源</text>
+  <rect x="110" y="738" width="5" height="18" rx="2" fill="#2563eb"/><text x="124" y="752" class="small">人工请求</text>
+  <rect x="200" y="738" width="5" height="18" rx="2" fill="#7c3aed"/><text x="214" y="752" class="small">定时器 / 通知队列</text>
+  <rect x="340" y="738" width="5" height="18" rx="2" fill="#ea580c"/><text x="354" y="752" class="small">外部异步回调</text>
+  <rect x="470" y="738" width="5" height="18" rx="2" fill="#16a34a"/><text x="484" y="752" class="small">系统内部事件（持久总线）</text>
+  <rect x="660" y="738" width="5" height="18" rx="2" fill="#0d9488"/><text x="674" y="752" class="small">集群节点命令</text>
+  <text x="1360" y="752" text-anchor="end" class="small">18 个用例中只有 7 个由人工请求驱动</text>
+
+  <text x="700" y="800" text-anchor="middle" class="subtitle">场景视图的作用是给出验证标准：后四个视图必须能解释这 18 个用例怎么跑、以及右列 5 条约束落在哪里</text>
+</svg>

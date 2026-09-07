@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 920" width="1400" height="920">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .tier { fill:#374151; font-size:14px; font-weight:600; }
+    .node { fill:#111827; font-size:13px; font-weight:600; }
+    .cell { fill:#111827; font-size:12px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+    .edge { fill:#4b5563; font-size:10px; font-weight:600; }
+    .spof { fill:#dc2626; font-size:11px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="v-gray" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#4b5563"/></marker>
+    <marker id="v-orange" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ea580c"/></marker>
+  </defs>
+
+  <rect width="1400" height="920" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">物理视图 —— 部署拓扑（标注单点与副本数）</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">左侧是纵向的四层部署，右侧是横向的外部依赖；插件与核心同进程，唯一的节点本地状态是插件目录，唯一的共享状态与协调点是数据库</text>
+
+  <!-- ===== T1 调用方 ===== -->
+  <rect x="24" y="86" width="880" height="90" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="40" y="108" class="tier">① 调用方</text>
+  <rect x="40" y="118" width="424" height="48" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="252" y="139" text-anchor="middle" class="cell">商户系统 / 自助门户</text><text x="252" y="157" text-anchor="middle" class="small">REST · 每租户一套 API Key</text>
+  <rect x="476" y="118" width="424" height="48" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="688" y="139" text-anchor="middle" class="cell">运营控制台</text><text x="688" y="157" text-anchor="middle" class="small">目录发布 · 发票试算 · 人工处置 · 插件运维</text>
+
+  <path d="M460 176 L460 200" fill="none" stroke="#4b5563" stroke-width="1.6" marker-end="url(#v-gray)"/>
+  <rect x="466" y="180" width="44" height="16" rx="3" fill="#ffffff"/><text x="470" y="192" class="edge">HTTPS</text>
+
+  <!-- ===== T2 边缘层 ===== -->
+  <rect x="24" y="206" width="880" height="90" rx="8" fill="#eff6ff" fill-opacity="0.5" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="40" y="228" class="tier">② 边缘层　<tspan fill="#2563eb">副本 ≥ 2</tspan></text>
+  <rect x="40" y="238" width="848" height="48" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="464" y="259" text-anchor="middle" class="cell">负载均衡 / 反向代理　—— 无会话粘性</text>
+  <text x="464" y="277" text-anchor="middle" class="small">应用侧无会话状态，任意节点可处理任意请求；唯一的例外是插件目录，靠节点命令广播保持一致</text>
+
+  <path d="M300 296 L300 320" fill="none" stroke="#4b5563" stroke-width="1.6" marker-end="url(#v-gray)"/>
+
+  <!-- ===== T3 应用层 ===== -->
+  <rect x="24" y="326" width="880" height="300" rx="8" fill="#f0fdf4" fill-opacity="0.5" stroke="#86efac" stroke-width="1.5"/>
+  <text x="40" y="348" class="tier">③ 应用层 · Kill Bill 节点 ×N　<tspan fill="#16a34a">建议 N ≥ 2，节点同构且无状态（插件目录除外）</tspan></text>
+
+  <rect x="40" y="358" width="520" height="252" rx="6" fill="#ffffff" stroke="#4ade80" stroke-width="1.6"/>
+  <text x="300" y="380" text-anchor="middle" class="node">kb-node-1（单个 JVM 进程）</text>
+  <rect x="52" y="390" width="240" height="48" rx="5" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+  <text x="172" y="410" text-anchor="middle" class="cell">Jetty · profiles/killbill.war</text><text x="172" y="428" text-anchor="middle" class="small">/1.0/kb/** 与 /plugins/**</text>
+  <rect x="302" y="390" width="246" height="48" rx="5" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+  <text x="425" y="410" text-anchor="middle" class="cell">Core services</text><text x="425" y="428" text-anchor="middle" class="small">account · catalog · subscription · invoice · payment</text>
+  <rect x="52" y="446" width="496" height="52" rx="5" fill="#fff7ed" stroke="#fdba74" stroke-width="1.4"/>
+  <text x="300" y="466" text-anchor="middle" class="cell">LPR 插件运行时　—— 进程内，不是独立进程</text>
+  <text x="300" y="486" text-anchor="middle" class="small">每个插件一个 ClassLoader；所有外部系统调用都从这里发起（见右侧）</text>
+  <rect x="52" y="506" width="240" height="48" rx="5" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+  <text x="172" y="526" text-anchor="middle" class="cell">三个线程池</text><text x="172" y="544" text-anchor="middle" class="small">通知队列 · 持久总线 · HTTP</text>
+  <rect x="302" y="506" width="246" height="48" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.4"/>
+  <text x="425" y="526" text-anchor="middle" class="cell">plugins/ 节点本地磁盘</text><text x="425" y="544" text-anchor="middle" class="small">&lt;id&gt;/&lt;version&gt;/ + ACTIVE（active / previous）</text>
+  <text x="300" y="580" text-anchor="middle" class="small">插件与核心共享同一个 JVM 堆：换来零 IPC 开销与同步调用语义，代价是内存与 CPU 不受隔离。</text>
+  <text x="300" y="598" text-anchor="middle" class="small">这靠 ClassLoader 隔离 + 调用点 try/catch + kb_plugin_latency 埋点来缓解，不是消除。</text>
+
+  <rect x="576" y="358" width="150" height="252" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.3" stroke-dasharray="5,4"/>
+  <text x="651" y="380" text-anchor="middle" class="node">kb-node-2</text>
+  <text x="651" y="470" text-anchor="middle" class="small">与 node-1 同构</text>
+  <text x="651" y="492" text-anchor="middle" class="small">各自持有一份</text>
+  <text x="651" y="514" text-anchor="middle" class="small">plugins/ 副本</text>
+
+  <rect x="740" y="358" width="148" height="252" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.3" stroke-dasharray="5,4"/>
+  <text x="814" y="380" text-anchor="middle" class="node">kb-node-N</text>
+  <text x="814" y="470" text-anchor="middle" class="small">INSTALL_PLUGIN</text>
+  <text x="814" y="492" text-anchor="middle" class="small">必须广播到每一台，</text>
+  <text x="814" y="514" text-anchor="middle" class="small">不能只装一台</text>
+
+  <path d="M300 626 L300 650" fill="none" stroke="#4b5563" stroke-width="1.6" marker-end="url(#v-gray)"/>
+  <rect x="306" y="630" width="34" height="16" rx="3" fill="#ffffff"/><text x="310" y="642" class="edge">JDBC</text>
+  <path d="M640 626 L640 650" fill="none" stroke="#4b5563" stroke-width="1.6" marker-end="url(#v-gray)"/>
+  <rect x="646" y="630" width="88" height="16" rx="3" fill="#ffffff"/><text x="650" y="642" class="edge">轮询队列表</text>
+
+  <!-- ===== T4 数据层 ===== -->
+  <rect x="24" y="656" width="880" height="190" rx="8" fill="#fef2f2" fill-opacity="0.5" stroke="#fca5a5" stroke-width="1.5"/>
+  <text x="40" y="678" class="tier">④ 数据层 · 关系数据库（MySQL 或 PostgreSQL）　<tspan fill="#dc2626">单点：整个集群唯一的共享状态与协调点</tspan></text>
+  <rect x="40" y="688" width="848" height="146" rx="6" fill="#ffffff" stroke="#f87171" stroke-width="1.6"/>
+  <text x="464" y="710" text-anchor="middle" class="node">主库 ×1 　+ 　只读副本 ≥1　（HA 由托管服务或主从承担，应用侧不做协调）</text>
+  <rect x="52" y="722" width="200" height="64" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="152" y="746" text-anchor="middle" class="cell">业务表</text><text x="152" y="766" text-anchor="middle" class="small">账户 / 订阅 / 发票 / 支付 / 逾期</text>
+  <rect x="262" y="722" width="200" height="64" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="362" y="742" text-anchor="middle" class="cell">persistent_bus + 通知队列</text><text x="362" y="762" text-anchor="middle" class="small">事件与定时器都是表</text><text x="362" y="778" text-anchor="middle" class="small">没有独立 MQ</text>
+  <rect x="472" y="722" width="200" height="64" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="572" y="746" text-anchor="middle" class="cell">global_locks</text><text x="572" y="766" text-anchor="middle" class="small">账户级锁，进程视图里的红色竖条</text>
+  <rect x="682" y="722" width="194" height="64" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="779" y="742" text-anchor="middle" class="cell">nodes + 命令广播</text><text x="779" y="762" text-anchor="middle" class="small">INSTALL / START / STOP /</text><text x="779" y="778" text-anchor="middle" class="small">RESTART_PLUGIN</text>
+  <text x="464" y="812" text-anchor="middle" class="small">集群协调的全部手段就是这套库：没有 ZooKeeper、没有 Redis、没有独立消息中间件——扩容方向是读写分离 + 托管高可用，不是引入新的中间件</text>
+
+  <!-- ===== 右：外部系统 ===== -->
+  <rect x="920" y="86" width="456" height="400" rx="8" fill="#fff7ed" fill-opacity="0.5" stroke="#fdba74" stroke-width="1.5"/>
+  <text x="936" y="108" class="tier">外部系统 · 全部经插件接入，核心不直连</text>
+  <rect x="936" y="120" width="424" height="56" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="948" y="142" class="cell">支付网关</text><text x="948" y="162" class="small">Stripe · Adyen · GoCardless · Qualpay　→ PaymentPluginApi</text>
+  <rect x="936" y="184" width="424" height="56" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="948" y="206" class="cell">税费服务</text><text x="948" y="226" class="small">AvaTax · Vertex　→ InvoicePluginApi</text>
+  <rect x="936" y="248" width="424" height="56" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="948" y="270" class="cell">通知投递</text><text x="948" y="290" class="small">SMTP · Webhook 接收方　→ NotificationPluginApi</text>
+  <rect x="936" y="312" width="424" height="56" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="948" y="334" class="cell">指标后端</text><text x="948" y="354" class="small">Prometheus · Graphite · InfluxDB　→ MetricRegistry 扩展点</text>
+  <rect x="936" y="376" width="424" height="56" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="948" y="398" class="cell">服务注册中心</text><text x="948" y="418" class="small">Eureka　→ ServiceDiscoveryRegistry 扩展点</text>
+  <text x="936" y="460" class="small">换一个支付网关 = 换一个插件，核心与数据库结构都不动</text>
+
+  <path d="M904 400 L930 400" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#v-orange)"/>
+
+  <!-- ===== 右：制品源 ===== -->
+  <rect x="920" y="506" width="456" height="130" rx="8" fill="#f5f3ff" fill-opacity="0.5" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="936" y="528" class="tier">插件制品源</text>
+  <rect x="936" y="540" width="424" height="80" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="948" y="562" class="cell">Maven 仓库 / 对象存储 / 本地 file:</text>
+  <text x="948" y="582" class="small">INSTALL_PLUGIN 的 uri 指向这里；下载后校验 sha1，校验不过则整个安装回滚，</text>
+  <text x="948" y="600" class="small">不留残骸。每个节点各自拉取一次——这是取代 KPM 的那条路径。</text>
+  <path d="M904 570 L930 570" fill="none" stroke="#4b5563" stroke-width="1.6" marker-end="url(#v-gray)"/>
+
+  <!-- ===== 右：单点评估 ===== -->
+  <rect x="920" y="656" width="456" height="190" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="936" y="678" class="tier">单点与副本数一览</text>
+  <rect x="936" y="690" width="424" height="30" rx="4" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="948" y="710" class="small">负载均衡　　　　　副本 ≥ 2　　　　　无状态，可水平扩</text>
+  <rect x="936" y="724" width="424" height="30" rx="4" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="948" y="744" class="small">Kill Bill 节点　　 N ≥ 2　　　　　　同构，任意节点可接任意请求</text>
+  <rect x="936" y="758" width="424" height="30" rx="4" fill="#fef2f2" stroke="#fca5a5"/>
+  <text x="948" y="778" class="spof">数据库主库　　　　单点　　　　　　不可用 = 集群不可用</text>
+  <rect x="936" y="792" width="424" height="30" rx="4" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="948" y="812" class="small">plugins/ 目录　　　每节点一份　　　 不一致 = 同一请求在不同节点行为不同</text>
+
+  <text x="700" y="890" text-anchor="middle" class="subtitle">对齐检查：NFR-4（集群一致）落在「命令广播 + 每节点各自落盘」；进程视图里的账户锁与持久总线，在这里都是数据库上的表</text>
+</svg>

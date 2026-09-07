@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 940" width="1200" height="940">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .section { fill:#374151; font-size:14px; font-weight:600; }
+    .header { fill:#111827; font-size:13px; font-weight:600; }
+    .cap { fill:#111827; font-size:11px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+    .axis { fill:#374151; font-size:12px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2563eb"/></marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#16a34a"/></marker>
+  </defs>
+
+  <rect width="1200" height="940" fill="#ffffff"/>
+  <text x="600" y="36" text-anchor="middle" class="title">订阅计费业务能力地图</text>
+  <text x="600" y="58" text-anchor="middle" class="subtitle">以价值流组织稳定业务责任；能力不等于 Maven 模块、流程步骤或某个插件</text>
+
+  <text x="56" y="102" class="section">价值流主轴</text>
+  <path d="M170 118 L1084 118" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <circle cx="200" cy="118" r="7" fill="#2563eb"/><circle cx="414" cy="118" r="7" fill="#2563eb"/><circle cx="628" cy="118" r="7" fill="#2563eb"/><circle cx="842" cy="118" r="7" fill="#2563eb"/><circle cx="1056" cy="118" r="7" fill="#2563eb"/>
+  <text x="200" y="142" text-anchor="middle" class="small">确定计费约定</text><text x="414" y="142" text-anchor="middle" class="small">形成订阅事实</text><text x="628" y="142" text-anchor="middle" class="small">生成应收</text><text x="842" y="142" text-anchor="middle" class="small">确认资金结果</text><text x="1056" y="142" text-anchor="middle" class="small">完成收入或处置应收</text>
+
+  <text x="38" y="450" transform="rotate(-90 38 450)" text-anchor="middle" class="axis">一级能力域 · 稳定业务责任</text>
+  <rect x="62" y="170" width="1096" height="566" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+
+  <rect x="62" y="170" width="178" height="566" rx="8" fill="#f9fafb"/>
+  <line x1="240" y1="170" x2="240" y2="736" stroke="#d1d5db"/>
+  <line x1="424" y1="170" x2="424" y2="736" stroke="#d1d5db"/>
+  <line x1="608" y1="170" x2="608" y2="736" stroke="#d1d5db"/>
+  <line x1="792" y1="170" x2="792" y2="736" stroke="#d1d5db"/>
+  <line x1="976" y1="170" x2="976" y2="736" stroke="#d1d5db"/>
+
+  <rect x="62" y="170" width="1096" height="72" rx="8" fill="#f9fafb"/>
+  <line x1="62" y1="242" x2="1158" y2="242" stroke="#d1d5db"/>
+  <text x="151" y="202" text-anchor="middle" class="header">能力层级</text><text x="151" y="222" text-anchor="middle" class="small">L1 能力域 / L2 能力</text>
+  <text x="332" y="202" text-anchor="middle" class="header">目录与定价</text><text x="332" y="222" text-anchor="middle" class="small">能以什么价格计费</text>
+  <text x="516" y="202" text-anchor="middle" class="header">订阅与生命周期</text><text x="516" y="222" text-anchor="middle" class="small">形成并维护订阅承诺</text>
+  <text x="700" y="202" text-anchor="middle" class="header">计费与应收生成</text><text x="700" y="222" text-anchor="middle" class="small">把订阅变成可确认应收</text>
+  <text x="884" y="202" text-anchor="middle" class="header">支付与资金确认</text><text x="884" y="222" text-anchor="middle" class="small">受理并确认资金结果</text>
+  <text x="1067" y="202" text-anchor="middle" class="header">应收处置与催收</text><text x="1067" y="222" text-anchor="middle" class="small">收不回时如何了结</text>
+
+  <rect x="82" y="266" width="138" height="438" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="151" y="304" text-anchor="middle" class="header">核心计费能力</text>
+  <text x="151" y="332" text-anchor="middle" class="small">围绕订阅主链路</text>
+  <text x="151" y="352" text-anchor="middle" class="small">形成稳定的财务事实</text>
+  <line x1="104" y1="378" x2="198" y2="378" stroke="#bfdbfe"/>
+  <text x="151" y="414" text-anchor="middle" class="cap">定义价格</text>
+  <text x="151" y="448" text-anchor="middle" class="cap">维护承诺</text>
+  <text x="151" y="482" text-anchor="middle" class="cap">生成应收</text>
+  <text x="151" y="516" text-anchor="middle" class="cap">确认资金</text>
+  <text x="151" y="550" text-anchor="middle" class="cap">处置差额</text>
+  <line x1="104" y1="578" x2="198" y2="578" stroke="#bfdbfe"/>
+  <text x="151" y="612" text-anchor="middle" class="small">由业务方负责</text>
+  <text x="151" y="632" text-anchor="middle" class="small">可由核心或插件承载</text>
+
+  <g>
+    <rect x="260" y="266" width="144" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/><text x="332" y="294" text-anchor="middle" class="cap">目录建模与版本</text><text x="332" y="316" text-anchor="middle" class="small">产品、套餐、阶段与生效期</text>
+    <rect x="260" y="352" width="144" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/><text x="332" y="380" text-anchor="middle" class="cap">价目与定价规则</text><text x="332" y="402" text-anchor="middle" class="small">价目表、币种与阶梯</text>
+    <rect x="260" y="438" width="144" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/><text x="332" y="466" text-anchor="middle" class="cap">试用与折扣策略</text><text x="332" y="488" text-anchor="middle" class="small">试用期、固定期与常规期</text>
+    <rect x="260" y="524" width="144" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/><text x="332" y="552" text-anchor="middle" class="cap">税费与汇率规则</text><text x="332" y="574" text-anchor="middle" class="small">税区判定与汇率来源</text>
+    <rect x="260" y="610" width="144" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/><text x="332" y="638" text-anchor="middle" class="cap">目录变更影响评估</text><text x="332" y="660" text-anchor="middle" class="small">存量订阅的迁移与兼容</text>
+  </g>
+
+  <g>
+    <rect x="444" y="266" width="144" height="70" rx="8" fill="#faf5ff" stroke="#ddd6fe"/><text x="516" y="294" text-anchor="middle" class="cap">订阅创建与生效</text><text x="516" y="316" text-anchor="middle" class="small">准入校验、幂等与生效时点</text>
+    <rect x="444" y="352" width="144" height="70" rx="8" fill="#faf5ff" stroke="#ddd6fe"/><text x="516" y="380" text-anchor="middle" class="cap">阶段与计划推进</text><text x="516" y="402" text-anchor="middle" class="small">试用到期、续期与到期</text>
+    <rect x="444" y="438" width="144" height="70" rx="8" fill="#faf5ff" stroke="#ddd6fe"/><text x="516" y="466" text-anchor="middle" class="cap">变更与对齐策略</text><text x="516" y="488" text-anchor="middle" class="small">升降级时点与账单日对齐</text>
+    <rect x="444" y="524" width="144" height="70" rx="8" fill="#faf5ff" stroke="#ddd6fe"/><text x="516" y="552" text-anchor="middle" class="cap">取消、暂停与恢复</text><text x="516" y="574" text-anchor="middle" class="small">立即、期末与策略选择</text>
+    <rect x="444" y="610" width="144" height="70" rx="8" fill="#faf5ff" stroke="#ddd6fe"/><text x="516" y="638" text-anchor="middle" class="cap">计费事件流派生</text><text x="516" y="660" text-anchor="middle" class="small">把订阅变更翻译成计费事实</text>
+  </g>
+
+  <g>
+    <rect x="628" y="266" width="144" height="70" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="700" y="294" text-anchor="middle" class="cap">出账调度</text><text x="700" y="316" text-anchor="middle" class="small">账单日、时区与补跑</text>
+    <rect x="628" y="352" width="144" height="70" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="700" y="380" text-anchor="middle" class="cap">用量归集与聚合</text><text x="700" y="402" text-anchor="middle" class="small">上报、去重与周期聚合</text>
+    <rect x="628" y="438" width="144" height="70" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="700" y="466" text-anchor="middle" class="cap">发票项计算</text><text x="700" y="488" text-anchor="middle" class="small">周期项、折算项与用量项</text>
+    <rect x="628" y="524" width="144" height="70" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="700" y="552" text-anchor="middle" class="cap">调整与信用应用</text><text x="700" y="574" text-anchor="middle" class="small">税费、优惠、账户信用抵扣</text>
+    <rect x="628" y="610" width="144" height="70" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="700" y="638" text-anchor="middle" class="cap">发票渲染与投递</text><text x="700" y="660" text-anchor="middle" class="small">模板、多语言与送达</text>
+  </g>
+
+  <g>
+    <rect x="812" y="266" width="144" height="70" rx="8" fill="#fff7ed" stroke="#fed7aa"/><text x="884" y="294" text-anchor="middle" class="cap">支付方式管理</text><text x="884" y="316" text-anchor="middle" class="small">绑定、默认方式与令牌化</text>
+    <rect x="812" y="352" width="144" height="70" rx="8" fill="#fff7ed" stroke="#fed7aa"/><text x="884" y="380" text-anchor="middle" class="cap">支付路由与控制</text><text x="884" y="402" text-anchor="middle" class="small">渠道选择、风控与前后置</text>
+    <rect x="812" y="438" width="144" height="70" rx="8" fill="#fff7ed" stroke="#fed7aa"/><text x="884" y="466" text-anchor="middle" class="cap">资金结果确认</text><text x="884" y="488" text-anchor="middle" class="small">通知、回查与状态归一</text>
+    <rect x="812" y="524" width="144" height="70" rx="8" fill="#fff7ed" stroke="#fed7aa"/><text x="884" y="552" text-anchor="middle" class="cap">支付重试编排</text><text x="884" y="574" text-anchor="middle" class="small">重试计划、退避与终止条件</text>
+    <rect x="812" y="610" width="144" height="70" rx="8" fill="#fff7ed" stroke="#fed7aa"/><text x="884" y="638" text-anchor="middle" class="cap">退款与冲正</text><text x="884" y="660" text-anchor="middle" class="small">全额、部分与撤销授权</text>
+  </g>
+
+  <g>
+    <rect x="996" y="266" width="142" height="70" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="1067" y="294" text-anchor="middle" class="cap">逾期条件判定</text><text x="1067" y="316" text-anchor="middle" class="small">账龄、金额与豁免规则</text>
+    <rect x="996" y="352" width="142" height="70" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="1067" y="380" text-anchor="middle" class="cap">逾期状态推进</text><text x="1067" y="402" text-anchor="middle" class="small">分级升级与自动降级</text>
+    <rect x="996" y="438" width="142" height="70" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="1067" y="466" text-anchor="middle" class="cap">服务阻断与恢复</text><text x="1067" y="488" text-anchor="middle" class="small">暂停订阅与结清后恢复</text>
+    <rect x="996" y="524" width="142" height="70" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="1067" y="552" text-anchor="middle" class="cap">争议与人工处置</text><text x="1067" y="574" text-anchor="middle" class="small">拒付、协商与人工调整</text>
+    <rect x="996" y="610" width="142" height="70" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="1067" y="638" text-anchor="middle" class="cap">坏账与核销</text><text x="1067" y="660" text-anchor="middle" class="small">作废、信用与收入了结</text>
+  </g>
+
+  <text x="56" y="774" class="section">贯穿能力 · 平台运行与治理</text>
+  <rect x="62" y="790" width="1096" height="104" rx="8" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5"/>
+  <rect x="86" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="164" y="846" text-anchor="middle" class="cap">多租户与配置治理</text>
+  <rect x="264" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="342" y="846" text-anchor="middle" class="cap">插件扩展与运行时装载</text>
+  <rect x="442" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="520" y="846" text-anchor="middle" class="cap">事件通知与外部订阅</text>
+  <rect x="620" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="698" y="846" text-anchor="middle" class="cap">审计、标签与自定义字段</text>
+  <rect x="798" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="876" y="846" text-anchor="middle" class="cap">幂等、对账与一致性</text>
+  <rect x="976" y="816" width="156" height="50" rx="8" fill="#ffffff" stroke="#5eead4"/><text x="1054" y="846" text-anchor="middle" class="cap">指标、健康检查与运维</text>
+
+  <path d="M610 790 L610 754" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <text x="628" y="776" class="small">贯穿所有核心能力</text>
+  <text x="600" y="922" text-anchor="middle" class="subtitle">「插件扩展与运行时装载」是本 fork 相对上游唯一被重建的贯穿能力——它决定其余能力可以被替换到什么程度</text>
+</svg>

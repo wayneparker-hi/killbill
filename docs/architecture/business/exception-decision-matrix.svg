@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill: #111827; font-size: 22px; font-weight: 600; }
+    .subtitle { fill: #6b7280; font-size: 12px; }
+    .section { fill: #374151; font-size: 14px; font-weight: 600; }
+    .header { fill: #111827; font-size: 13px; font-weight: 600; }
+    .main { fill: #111827; font-size: 12px; font-weight: 600; }
+    .body { fill: #4b5563; font-size: 10px; }
+    .small { fill: #6b7280; font-size: 10px; }
+    .axis { fill: #374151; font-size: 12px; font-weight: 600; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/></marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#ffffff"/>
+  <text x="600" y="36" text-anchor="middle" class="title">计费与资金异常处置决策</text>
+  <text x="600" y="58" text-anchor="middle" class="subtitle">先判断资金结果是否确定，再判断剩余应收能否安全自动推进；超时只触发回查与升级，不直接把结果改成失败</text>
+
+  <text x="62" y="104" class="section">核心判断矩阵</text>
+  <text x="640" y="102" text-anchor="middle" class="axis">资金结果确定性</text>
+  <path d="M260 112 L1040 112" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+  <text x="268" y="132" class="small">明确未扣款</text>
+  <text x="1006" y="132" text-anchor="end" class="small">明确已扣款或部分到账</text>
+
+  <rect x="68" y="148" width="1064" height="472" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <rect x="68" y="148" width="194" height="472" rx="8" fill="#f9fafb"/>
+  <rect x="68" y="148" width="1064" height="72" rx="8" fill="#f9fafb"/>
+
+  <line x1="262" y1="148" x2="262" y2="620" stroke="#d1d5db"/>
+  <line x1="552" y1="148" x2="552" y2="620" stroke="#d1d5db"/>
+  <line x1="842" y1="148" x2="842" y2="620" stroke="#d1d5db"/>
+  <line x1="68" y1="220" x2="1132" y2="220" stroke="#d1d5db"/>
+  <line x1="68" y1="420" x2="1132" y2="420" stroke="#d1d5db"/>
+
+  <text x="165" y="190" text-anchor="middle" class="header">剩余应收</text>
+  <text x="407" y="182" text-anchor="middle" class="header">确定失败 / 拒付</text>
+  <text x="407" y="202" text-anchor="middle" class="small">网关明确返回失败</text>
+  <text x="697" y="182" text-anchor="middle" class="header">结果不确定</text>
+  <text x="697" y="202" text-anchor="middle" class="small">请求已发出但无法确认</text>
+  <text x="987" y="182" text-anchor="middle" class="header">已扣款 / 部分到账</text>
+  <text x="987" y="202" text-anchor="middle" class="small">资金事实成立但应收未平</text>
+
+  <text x="165" y="292" text-anchor="middle" class="header">可安全自动推进</text>
+  <text x="165" y="317" text-anchor="middle" class="body">事实清楚</text>
+  <text x="165" y="337" text-anchor="middle" class="body">金额可计算</text>
+  <text x="165" y="357" text-anchor="middle" class="body">有幂等键</text>
+  <text x="165" y="377" text-anchor="middle" class="body">在自动处置额度内</text>
+
+  <rect x="286" y="244" width="242" height="148" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="407" y="273" text-anchor="middle" class="main">记录原因并排期重试</text>
+  <line x1="310" y1="290" x2="504" y2="290" stroke="#bfdbfe"/>
+  <text x="310" y="315" class="body">应收保留，不重复提交同一笔交易</text>
+  <text x="310" y="338" class="body">按退避策略安排下一次重试时点</text>
+  <text x="310" y="361" class="body">示例：余额不足、卡片过期</text>
+
+  <rect x="576" y="244" width="242" height="148" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+  <text x="697" y="273" text-anchor="middle" class="main">回查网关，不重新扣款</text>
+  <line x1="600" y1="290" x2="794" y2="290" stroke="#fed7aa"/>
+  <text x="600" y="315" class="body">以网关为事实来源，本地保持待确认</text>
+  <text x="600" y="338" class="body">设定收敛期限，到期升级人工对账</text>
+  <text x="600" y="361" class="body">示例：网关超时、回调丢失</text>
+
+  <rect x="866" y="244" width="242" height="148" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="987" y="273" text-anchor="middle" class="main">核销已到账，处理差额</text>
+  <line x1="890" y1="290" x2="1084" y2="290" stroke="#bbf7d0"/>
+  <text x="890" y="315" class="body">已到账部分先冲减发票余额</text>
+  <text x="890" y="338" class="body">多收部分自动退款或转为账户信用</text>
+  <text x="890" y="361" class="body">示例：部分收款、重复扣款</text>
+
+  <text x="165" y="486" text-anchor="middle" class="header">需要判断或存在争议</text>
+  <text x="165" y="511" text-anchor="middle" class="body">对账不平</text>
+  <text x="165" y="531" text-anchor="middle" class="body">金额或税费存疑</text>
+  <text x="165" y="551" text-anchor="middle" class="body">大额或高风险</text>
+  <text x="165" y="571" text-anchor="middle" class="body">自动重试已达上限</text>
+
+  <rect x="286" y="444" width="242" height="148" rx="8" fill="#f9fafb" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="407" y="473" text-anchor="middle" class="main">核实计费依据与账户状态</text>
+  <line x1="310" y1="490" x2="504" y2="490" stroke="#d1d5db"/>
+  <text x="310" y="515" class="body">确认是目录、税费还是币种配置问题</text>
+  <text x="310" y="538" class="body">决定作废重开、人工收款还是终止订阅</text>
+  <text x="310" y="561" class="body">示例：税率错误、目录版本用错</text>
+
+  <rect x="576" y="444" width="242" height="148" rx="8" fill="#faf5ff" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="697" y="473" text-anchor="middle" class="main">人工回查与逐笔对账</text>
+  <line x1="600" y1="490" x2="794" y2="490" stroke="#ddd6fe"/>
+  <text x="600" y="515" class="body">与网关对账单逐笔核对，确认真实结果</text>
+  <text x="600" y="538" class="body">超过等待窗口按对账结果定案并留痕</text>
+  <text x="600" y="561" class="body">示例：状态长期未收敛、对账不平</text>
+
+  <rect x="866" y="444" width="242" height="148" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+  <text x="987" y="473" text-anchor="middle" class="main">审核退款、信用与坏账</text>
+  <line x1="890" y1="490" x2="1084" y2="490" stroke="#fecaca"/>
+  <text x="890" y="515" class="body">在退款、开信用票据与坏账核销间选择</text>
+  <text x="890" y="538" class="body">关联原交易，并追踪可能迟到的回调</text>
+  <text x="890" y="561" class="body">示例：拒付争议、大额退款</text>
+
+  <rect x="68" y="650" width="1064" height="154" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="90" y="680" class="section">五个判断维度共同决定处置路径</text>
+  <line x1="90" y1="698" x2="1110" y2="698" stroke="#e5e7eb"/>
+  <g transform="translate(92,720)"><circle cx="18" cy="18" r="18" fill="#dbeafe"/><text x="18" y="22" text-anchor="middle" class="main">1</text><text x="48" y="14" class="main">结果确定性</text><text x="48" y="34" class="small">成功、失败或待确认</text></g>
+  <g transform="translate(294,720)"><circle cx="18" cy="18" r="18" fill="#dcfce7"/><text x="18" y="22" text-anchor="middle" class="main">2</text><text x="48" y="14" class="main">剩余应收</text><text x="48" y="34" class="small">发票还差多少未收回</text></g>
+  <g transform="translate(496,720)"><circle cx="18" cy="18" r="18" fill="#fed7aa"/><text x="18" y="22" text-anchor="middle" class="main">3</text><text x="48" y="14" class="main">影响范围</text><text x="48" y="34" class="small">整张发票、单个发票项或金额</text></g>
+  <g transform="translate(724,720)"><circle cx="18" cy="18" r="18" fill="#ede9fe"/><text x="18" y="22" text-anchor="middle" class="main">4</text><text x="48" y="14" class="main">自动化条件</text><text x="48" y="34" class="small">幂等键、金额上限与可对账</text></g>
+  <g transform="translate(946,720)"><circle cx="18" cy="18" r="18" fill="#fee2e2"/><text x="18" y="22" text-anchor="middle" class="main">5</text><text x="48" y="14" class="main">服务承诺</text><text x="48" y="34" class="small">等待窗口与逾期升级时点</text></g>
+
+  <rect x="146" y="830" width="908" height="42" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+  <path d="M166 851 L208 851" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <text x="228" y="855" class="main">支付超时只触发回查与升级，绝不把“处理中”自动改成“失败”——那会让重试变成重复扣款</text>
+</svg>

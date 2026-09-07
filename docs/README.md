@@ -28,6 +28,19 @@ ClassLoader 默认后端改为自研、EventBus 没有抽 port、`org.killbill.b
 
 ---
 
+## 架构图（architecture/）
+
+[architecture/README.md](architecture/README.md) —— 两套 SVG 图，可直接打开或贴进文档：
+
+- **业务架构** 7 张：整体分层图、价值流、能力地图、对象生命周期协作、扩展点地图、异常决策矩阵、指标树
+- **4+1 视图** 7 张：场景、逻辑、开发、进程（出账链路 + 热升级）、物理、视图整合与对齐
+
+想快速理解「这个 fork 与上游的差别落在哪」，看
+[extension-points.svg](architecture/business/extension-points.svg)（13 个扩展点）和
+[3-development-view.svg](architecture/4plus1/3-development-view.svg)（88 模块六层与两条禁止边）。
+
+---
+
 ## 分析（analysis/）
 
 改造前对现有代码的摸底。**每个结论都标注了文件路径和行号**，实施时直接按图索骥。

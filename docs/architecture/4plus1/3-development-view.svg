@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1100" width="1400" height="1100">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .band { fill:#374151; font-size:14px; font-weight:600; }
+    .grp { fill:#4b5563; font-size:12px; font-weight:600; }
+    .mod { fill:#111827; font-size:12px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+    .edge { fill:#4b5563; font-size:10px; font-weight:600; }
+    .bad { fill:#dc2626; font-size:11px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="d-gray" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#4b5563"/></marker>
+    <marker id="d-blue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#2563eb"/></marker>
+    <marker id="d-red" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#dc2626"/></marker>
+  </defs>
+
+  <rect width="1400" height="1100" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">开发视图 —— 单 reactor 的模块分解与依赖方向（88 模块）</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">箭头指向被依赖方，一律向上；红色虚线是被守卫测试禁止的方向。层内模块之间不画依赖——同层意味着彼此不依赖</text>
+
+  <!-- ================= ① 契约层 ================= -->
+  <rect x="24" y="86" width="1286" height="132" rx="8" fill="#eff6ff" fill-opacity="0.5" stroke="#93c5fd" stroke-width="1.6"/>
+  <text x="40" y="110" class="band">① 契约层 · ABI，一旦发布就改不掉</text>
+
+  <rect x="40" y="120" width="600" height="94" rx="6" fill="#ffffff" fill-opacity="0.75" stroke="#bfdbfe" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="50" y="138" class="grp">Kill Bill 契约</text>
+  <rect x="50" y="146" width="186" height="58" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="143" y="170" text-anchor="middle" class="mod">killbill-api</text><text x="143" y="190" text-anchor="middle" class="small">对外业务 API + 插件元信息</text>
+  <rect x="244" y="146" width="186" height="58" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="337" y="170" text-anchor="middle" class="mod">killbill-plugin-api</text><text x="337" y="190" text-anchor="middle" class="small">12 个扩展点接口</text>
+  <rect x="438" y="146" width="186" height="58" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="531" y="170" text-anchor="middle" class="mod">killbill-commons</text><text x="531" y="190" text-anchor="middle" class="small">queue · jdbi · locker · utils</text>
+
+  <rect x="664" y="120" width="630" height="94" rx="6" fill="#ffffff" fill-opacity="0.75" stroke="#c4b5fd" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="674" y="138" class="grp">LPR 契约 · 与 Kill Bill 无关</text>
+  <rect x="674" y="146" width="300" height="58" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="824" y="170" text-anchor="middle" class="mod">lpr-api</text><text x="824" y="190" text-anchor="middle" class="small">Plugin · PluginContext · ServiceRegistry · EventBus</text>
+  <rect x="986" y="146" width="300" height="58" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="1136" y="170" text-anchor="middle" class="mod">lpr-spi</text><text x="1136" y="190" text-anchor="middle" class="small">PluginClassLoaderFactory · DescriptorParser</text>
+
+  <line x1="652" y1="128" x2="652" y2="206" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <rect x="640" y="150" width="24" height="34" rx="3" fill="#ffffff"/>
+  <text x="652" y="172" text-anchor="middle" class="small">无</text><text x="652" y="184" text-anchor="middle" class="small">依赖</text>
+
+  <!-- ================= ② LPR 实现层 ================= -->
+  <rect x="24" y="258" width="1286" height="132" rx="8" fill="#f5f3ff" fill-opacity="0.45" stroke="#c4b5fd" stroke-width="1.6"/>
+  <text x="40" y="282" class="band">② LPR 实现层 · 模型 + 可替换 adapter（一个 adapter 一个模块）</text>
+
+  <rect x="180" y="292" width="460" height="90" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.2"/>
+  <text x="192" y="312" class="grp">这一层与左上角的 Kill Bill 契约之间没有任何一条边</text>
+  <text x="192" y="332" class="small">lpr/ 是一个通用插件运行时，可以脱离 Kill Bill 单独使用。</text>
+  <text x="192" y="350" class="small">它不知道什么是账户、发票或支付——把 Kill Bill 的知识</text>
+  <text x="192" y="368" class="small">塞进来的那一刻，这个模块就变成了另一个 killbill-platform。</text>
+
+  <rect x="664" y="292" width="96" height="90" rx="5" fill="#ffffff" stroke="#a78bfa" stroke-width="1.6"/>
+  <text x="712" y="316" text-anchor="middle" class="mod">lpr-core</text><text x="712" y="336" text-anchor="middle" class="small">Manager</text><text x="712" y="352" text-anchor="middle" class="small">Lifecycle</text><text x="712" y="368" text-anchor="middle" class="small">Repository</text>
+  <rect x="770" y="292" width="96" height="90" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="818" y="316" text-anchor="middle" class="small">lpr-classloader</text><text x="818" y="332" text-anchor="middle" class="mod">-default</text><text x="818" y="356" text-anchor="middle" class="small">ClassLoader</text><text x="818" y="372" text-anchor="middle" class="small">后端</text>
+  <rect x="876" y="292" width="96" height="90" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="924" y="316" text-anchor="middle" class="small">lpr-descriptor</text><text x="924" y="332" text-anchor="middle" class="mod">-yaml</text><text x="924" y="356" text-anchor="middle" class="small">唯一引入</text><text x="924" y="372" text-anchor="middle" class="small">SnakeYAML</text>
+  <rect x="982" y="292" width="96" height="90" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="1030" y="316" text-anchor="middle" class="small">lpr-event</text><text x="1030" y="332" text-anchor="middle" class="mod">-default</text><text x="1030" y="356" text-anchor="middle" class="small">EventBus</text><text x="1030" y="372" text-anchor="middle" class="small">实现</text>
+  <rect x="1088" y="292" width="96" height="90" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="1136" y="316" text-anchor="middle" class="mod">lpr-</text><text x="1136" y="332" text-anchor="middle" class="mod">management</text><text x="1136" y="356" text-anchor="middle" class="small">取代 KPM 的</text><text x="1136" y="372" text-anchor="middle" class="small">安装能力</text>
+  <rect x="1194" y="292" width="96" height="90" rx="5" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+  <text x="1242" y="316" text-anchor="middle" class="mod">lpr-testkit</text><text x="1242" y="340" text-anchor="middle" class="small">隔离性</text><text x="1242" y="356" text-anchor="middle" class="small">泄漏性</text><text x="1242" y="372" text-anchor="middle" class="small">守卫测试</text>
+
+  <!-- ================= ③ 平台层 ================= -->
+  <rect x="24" y="430" width="1286" height="132" rx="8" fill="#f0fdfa" fill-opacity="0.5" stroke="#5eead4" stroke-width="1.6"/>
+  <text x="40" y="454" class="band">③ 平台层 · killbill-platform，唯一同时认识两边的一层</text>
+  <rect x="40" y="464" width="240" height="90" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="160" y="490" text-anchor="middle" class="mod">platform-api</text><text x="160" y="512" text-anchor="middle" class="small">生命周期级别定义</text><text x="160" y="532" text-anchor="middle" class="small">START_PLUGIN 属于 STARTUP_PRE</text>
+  <rect x="291" y="464" width="240" height="90" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="411" y="490" text-anchor="middle" class="mod">base + lifecycle</text><text x="411" y="512" text-anchor="middle" class="small">配置源、生命周期编排</text><text x="411" y="532" text-anchor="middle" class="small">服务启动顺序</text>
+  <rect x="542" y="464" width="240" height="90" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="662" y="490" text-anchor="middle" class="mod">plugin-api</text><text x="662" y="512" text-anchor="middle" class="small">PluginServiceRegistry&lt;T&gt;</text><text x="662" y="532" text-anchor="middle" class="small">业务模块看见的唯一接口</text>
+  <rect x="793" y="464" width="240" height="90" rx="5" fill="#ffffff" stroke="#14b8a6" stroke-width="1.8"/>
+  <text x="913" y="490" text-anchor="middle" class="mod">plugin-runtime</text><text x="913" y="512" text-anchor="middle" class="small">LPR ↔ Kill Bill 的全部桥接</text><text x="913" y="532" text-anchor="middle" class="small">取代已删除的 osgi 模块树</text>
+  <rect x="1044" y="464" width="240" height="90" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="1164" y="490" text-anchor="middle" class="mod">server</text><text x="1164" y="512" text-anchor="middle" class="small">Jetty 装配与 Guice 根模块</text><text x="1164" y="532" text-anchor="middle" class="small">configurePluginRuntime()</text>
+
+  <!-- ================= ④ 核心业务层 ================= -->
+  <rect x="24" y="602" width="1286" height="132" rx="8" fill="#faf5ff" fill-opacity="0.5" stroke="#ddd6fe" stroke-width="1.6"/>
+  <text x="40" y="626" class="band">④ 核心业务层 · killbill，只表达「需要什么能力」，不认识任何具体插件</text>
+  <rect x="40" y="636" width="240" height="90" rx="5" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="160" y="662" text-anchor="middle" class="mod">account · tenant · util</text><text x="160" y="684" text-anchor="middle" class="small">账户、租户、标签</text><text x="160" y="704" text-anchor="middle" class="small">自定义字段与审计</text>
+  <rect x="291" y="636" width="240" height="90" rx="5" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="411" y="662" text-anchor="middle" class="mod">catalog · subscription</text><text x="411" y="682" text-anchor="middle" class="mod">entitlement</text><text x="411" y="704" text-anchor="middle" class="small">目录版本与订阅生命周期</text>
+  <rect x="542" y="636" width="240" height="90" rx="5" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="662" y="662" text-anchor="middle" class="mod">invoice · payment</text><text x="662" y="682" text-anchor="middle" class="mod">usage · overdue</text><text x="662" y="704" text-anchor="middle" class="small">出账、收款、用量与逾期</text>
+  <rect x="793" y="636" width="240" height="90" rx="5" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="913" y="662" text-anchor="middle" class="mod">junction · jaxrs · beatrix</text><text x="913" y="684" text-anchor="middle" class="small">编排、REST 端点</text><text x="913" y="704" text-anchor="middle" class="small">集成测试</text>
+  <rect x="1044" y="636" width="240" height="90" rx="5" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="1164" y="662" text-anchor="middle" class="mod">profiles/killbill</text><text x="1164" y="684" text-anchor="middle" class="small">可运行的 war</text><text x="1164" y="704" text-anchor="middle" class="small">reactor 的终点</text>
+
+  <!-- ================= ⑤ SDK 层 ================= -->
+  <rect x="24" y="774" width="1286" height="112" rx="8" fill="#fef2f2" fill-opacity="0.45" stroke="#fca5a5" stroke-width="1.6"/>
+  <text x="40" y="798" class="band">⑤ 插件 SDK 层 · killbill-plugin-framework</text>
+  <rect x="40" y="808" width="406" height="68" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="243" y="834" text-anchor="middle" class="mod">PluginBase · KillbillApi · PluginConfigProperties</text><text x="243" y="856" text-anchor="middle" class="small">286 个类，其中只有 21 个原先碰过 OSGi</text>
+  <rect x="458" y="808" width="406" height="68" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="661" y="834" text-anchor="middle" class="mod">依赖 lpr-api + killbill-plugin-api，仅此两项</text><text x="661" y="856" text-anchor="middle" class="small">它不认识 lpr-core，也不认识平台层——插件因此不会被运行时实现绑住</text>
+  <rect x="876" y="808" width="406" height="68" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <text x="1079" y="834" text-anchor="middle" class="mod">插件 pom 的作用域规则</text><text x="1079" y="856" text-anchor="middle" class="small">跨边界传递的类型必须 provided；写成 compile 会在运行时报 ClassCastException</text>
+
+  <!-- ================= ⑥ 插件工程层 ================= -->
+  <rect x="24" y="926" width="1286" height="112" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.6"/>
+  <text x="40" y="950" class="band">⑥ 插件工程层 · 21 个（迁移自上游，全部改为 packaging=jar + plugin.yaml）</text>
+  <rect x="40" y="960" width="240" height="68" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="160" y="986" text-anchor="middle" class="mod">支付网关</text><text x="160" y="1008" text-anchor="middle" class="small">stripe · adyen · gocardless · qualpay</text>
+  <rect x="291" y="960" width="240" height="68" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="411" y="986" text-anchor="middle" class="mod">税费与发票</text><text x="411" y="1008" text-anchor="middle" class="small">avatax · vertex · deposit · formatter</text>
+  <rect x="542" y="960" width="240" height="68" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="662" y="986" text-anchor="middle" class="mod">事件与分析</text><text x="662" y="1008" text-anchor="middle" class="small">analytics · email-notifications</text>
+  <rect x="793" y="960" width="240" height="68" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="913" y="986" text-anchor="middle" class="mod">可观测与注册</text><text x="913" y="1008" text-anchor="middle" class="small">metrics · prometheus · graphite · influxdb · eureka</text>
+  <rect x="1044" y="960" width="240" height="68" rx="5" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+  <text x="1164" y="986" text-anchor="middle" class="mod">参考实现</text><text x="1164" y="1008" text-anchor="middle" class="small">hello-world · hello-world-java</text>
+
+  <!-- ================= 依赖箭头 ================= -->
+  <path d="M760 258 L760 222" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <path d="M1150 258 L1150 222" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <path d="M1150 430 L1150 394" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <rect x="1156" y="404" width="112" height="16" rx="3" fill="#ffffff"/><text x="1160" y="416" class="edge">plugin-runtime → LPR</text>
+  <path d="M110 430 L110 222" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#d-blue)"/>
+  <rect x="116" y="308" width="14" height="106" rx="3" fill="#ffffff"/>
+  <text x="122" y="410" transform="rotate(-90 122 410)" class="edge">平台层 → killbill-api</text>
+  <path d="M400 602 L400 566" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <path d="M900 602 L900 566" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <rect x="406" y="576" width="118" height="16" rx="3" fill="#ffffff"/><text x="410" y="588" class="edge">业务模块只改一行 import</text>
+  <path d="M400 926 L400 890" fill="none" stroke="#4b5563" stroke-width="1.8" marker-end="url(#d-gray)"/>
+  <path d="M1310 842 L1340 842 L1340 152 L1318 152" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#d-blue)"/>
+  <rect x="1346" y="440" width="14" height="120" rx="3" fill="#ffffff"/>
+  <text x="1352" y="556" transform="rotate(-90 1352 556)" class="edge">SDK 只依赖契约层</text>
+
+  <!-- ================= 禁止边 ================= -->
+  <rect x="40" y="740" width="620" height="28" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <circle cx="60" cy="754" r="9" fill="#ffffff" stroke="#dc2626" stroke-width="1.4"/>
+  <text x="60" y="758" text-anchor="middle" class="bad">✕</text>
+  <text x="78" y="758" class="bad">禁止：第 ④ 层依赖第 ⑥ 层——一旦出现 core → 具体插件的 pom 依赖或 instanceof，插件架构就开始腐化</text>
+  <rect x="700" y="740" width="584" height="28" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <circle cx="720" cy="754" r="9" fill="#ffffff" stroke="#dc2626" stroke-width="1.4"/>
+  <text x="720" y="758" text-anchor="middle" class="bad">✕</text>
+  <text x="738" y="758" class="bad">禁止：lpr-core 依赖任何具体基础设施——由 TestArchitecturalConstraints 守护</text>
+
+  <!-- ================= 底部图例与判据 ================= -->
+  <text x="700" y="1072" text-anchor="middle" class="subtitle">违规判据 · 灰箭头由 reactor 的 &lt;modules&gt; 顺序与 pom 保证；蓝箭头是刻意保留的跨层依赖；红虚线由 TestArchitecturalConstraints（lpr-core 的 classpath）与「core 不得依赖具体插件」的 pom 检查守护</text>
+</svg>

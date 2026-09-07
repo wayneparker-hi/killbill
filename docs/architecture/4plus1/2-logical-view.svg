@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1060" width="1400" height="1060">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .band { fill:#374151; font-size:14px; font-weight:600; }
+    .cls { fill:#111827; font-size:12px; font-weight:600; }
+    .sig { fill:#4b5563; font-size:10px; }
+    .small { fill:#6b7280; font-size:10px; }
+    .edge { fill:#4b5563; font-size:10px; font-weight:600; }
+    .nfr { fill:#111827; font-size:12px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="a-blue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#2563eb"/></marker>
+    <marker id="a-purple" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#7c3aed"/></marker>
+    <marker id="a-teal" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#0d9488"/></marker>
+  </defs>
+
+  <rect width="1400" height="1060" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">逻辑视图 —— LPR 插件运行时与 Kill Bill 适配层的类结构</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">分层规则：箭头一律向上，指向被依赖方；契约在最上，实现在中间，认识 Kill Bill 的一层在最下——上层永远不知道下层存在</text>
+
+  <!-- ================= Band 1 · 契约层 ================= -->
+  <rect x="24" y="86" width="480" height="150" rx="8" fill="#f5f3ff" fill-opacity="0.55" stroke="#c4b5fd" stroke-width="1.6"/>
+  <text x="40" y="110" class="band">lpr-spi · 只有运行时调用的 port</text>
+  <rect x="40" y="124" width="148" height="62" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="114" y="146" text-anchor="middle" class="cls">PluginClassLoaderFactory</text><text x="114" y="164" text-anchor="middle" class="sig">create(urls, parent, policy)</text><text x="114" y="180" text-anchor="middle" class="small">«interface»</text>
+  <rect x="196" y="124" width="148" height="62" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="270" y="146" text-anchor="middle" class="cls">DescriptorParser</text><text x="270" y="164" text-anchor="middle" class="sig">parse(in) : PluginDescriptor</text><text x="270" y="180" text-anchor="middle" class="small">«interface»</text>
+  <rect x="352" y="124" width="148" height="62" rx="5" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="426" y="146" text-anchor="middle" class="cls">ClassLoaderPolicy</text><text x="426" y="164" text-anchor="middle" class="sig">parentFirst / childFirst 前缀</text><text x="426" y="180" text-anchor="middle" class="small">«value»</text>
+  <text x="40" y="206" class="small">判据：插件代码里出现 lpr-spi 的类型，说明这个 port 放错了层——它应该在 lpr-api。</text>
+  <text x="40" y="224" class="small">零第三方依赖；曾因声明用不到的 lpr-api 依赖而被构建拒绝。</text>
+
+  <rect x="520" y="86" width="520" height="150" rx="8" fill="#eff6ff" fill-opacity="0.55" stroke="#93c5fd" stroke-width="1.6"/>
+  <text x="536" y="110" class="band">lpr-api · 插件与平台共同看见的契约（ABI，进去就改不掉）</text>
+  <rect x="536" y="124" width="96" height="62" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="584" y="148" text-anchor="middle" class="cls">Plugin</text><text x="584" y="166" text-anchor="middle" class="sig">start / stop</text><text x="584" y="181" text-anchor="middle" class="small">«interface»</text>
+  <rect x="636" y="124" width="96" height="62" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="684" y="144" text-anchor="middle" class="cls">PluginContext</text><text x="684" y="161" text-anchor="middle" class="sig">services / eventBus</text><text x="684" y="176" text-anchor="middle" class="sig">resources / config</text>
+  <rect x="736" y="124" width="96" height="62" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="784" y="144" text-anchor="middle" class="cls">ServiceRegistry</text><text x="784" y="161" text-anchor="middle" class="sig">register(type, impl)</text><text x="784" y="176" text-anchor="middle" class="sig">unregisterAll(id, ver)</text>
+  <rect x="836" y="124" width="96" height="62" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="884" y="148" text-anchor="middle" class="cls">EventBus</text><text x="884" y="166" text-anchor="middle" class="sig">publish / subscribe</text><text x="884" y="181" text-anchor="middle" class="small">«interface»</text>
+  <rect x="936" y="124" width="96" height="62" rx="5" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="984" y="144" text-anchor="middle" class="cls">ResourceRegistry</text><text x="984" y="161" text-anchor="middle" class="sig">manage(closeable)</text><text x="984" y="176" text-anchor="middle" class="sig">closeAll()</text>
+  <text x="536" y="206" class="small">这五个类型会成为所有插件的编译依赖，因此签名里不允许出现任何第三方类型——EventBus 必须是自己定义的，</text>
+  <text x="536" y="224" class="small">不能是 com.google.common.eventbus.EventBus，否则以后再也换不掉。</text>
+
+  <!-- ================= Band 1→2 箭头 ================= -->
+  <path d="M200 292 L200 240" fill="none" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#a-purple)"/>
+  <rect x="206" y="252" width="76" height="16" rx="3" fill="#ffffff"/><text x="210" y="264" class="edge">依赖 port</text>
+  <path d="M800 292 L800 240" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#a-blue)"/>
+  <rect x="806" y="252" width="80" height="16" rx="3" fill="#ffffff"/><text x="810" y="264" class="edge">实现 EventBus</text>
+  <path d="M400 292 L400 266 L640 266 L640 240" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-blue)"/>
+  <path d="M680 292 L680 280 L360 280 L360 240" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-purple)"/>
+  <rect x="430" y="258" width="76" height="16" rx="3" fill="#ffffff"/><text x="434" y="270" class="edge">依赖契约</text>
+  <rect x="470" y="272" width="76" height="16" rx="3" fill="#ffffff"/><text x="474" y="284" class="edge">实现 port</text>
+
+  <!-- ================= Band 2 · 实现层 ================= -->
+  <rect x="24" y="292" width="480" height="250" rx="8" fill="#f0fdf4" fill-opacity="0.55" stroke="#86efac" stroke-width="1.6"/>
+  <text x="40" y="316" class="band">lpr-core · 模型与编排（零第三方依赖）</text>
+  <rect x="40" y="330" width="148" height="70" rx="5" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+  <text x="114" y="352" text-anchor="middle" class="cls">DefaultPluginManager</text><text x="114" y="370" text-anchor="middle" class="sig">install / start / stop</text><text x="114" y="386" text-anchor="middle" class="sig">uninstall</text>
+  <rect x="196" y="330" width="148" height="70" rx="5" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+  <text x="270" y="350" text-anchor="middle" class="cls">DefaultPlugin</text><text x="270" y="366" text-anchor="middle" class="cls">LifecycleManager</text><text x="270" y="386" text-anchor="middle" class="sig">AtomicReference + CAS</text>
+  <rect x="352" y="330" width="148" height="70" rx="5" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+  <text x="426" y="352" text-anchor="middle" class="cls">PluginRepository</text><text x="426" y="370" text-anchor="middle" class="sig">discover() 靠列目录</text><text x="426" y="386" text-anchor="middle" class="sig">activeVersion(id)</text>
+  <rect x="40" y="412" width="148" height="70" rx="5" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+  <text x="114" y="434" text-anchor="middle" class="cls">DefaultServiceRegistry</text><text x="114" y="452" text-anchor="middle" class="sig">键 = (pluginId, version)</text><text x="114" y="468" text-anchor="middle" class="sig">addListener(...)</text>
+  <rect x="196" y="412" width="148" height="70" rx="5" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+  <text x="270" y="430" text-anchor="middle" class="cls">PluginState «enum»</text><text x="270" y="448" text-anchor="middle" class="sig">INSTALLED · RESOLVED</text><text x="270" y="464" text-anchor="middle" class="sig">STARTING · ACTIVE · …</text>
+  <rect x="352" y="412" width="148" height="70" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <text x="426" y="440" text-anchor="middle" class="small">这里没有任何一个</text><text x="426" y="458" text-anchor="middle" class="small">Kill Bill 概念</text>
+  <text x="40" y="508" class="small">违规判据：TestArchitecturalConstraints 检查 classpath 上是否出现 SOFAArk / Guava / Micrometer /</text>
+  <text x="40" y="526" class="small">SnakeYAML / Jackson / OSGi / Felix / Guice，并在报错时指出该放到哪个 port 后面。</text>
+
+  <rect x="520" y="292" width="520" height="250" rx="8" fill="#fff7ed" fill-opacity="0.55" stroke="#fdba74" stroke-width="1.6"/>
+  <text x="536" y="316" class="band">adapter 模块 · 可替换的基础设施实现（一个模块一个实现）</text>
+  <rect x="536" y="330" width="248" height="70" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="660" y="352" text-anchor="middle" class="cls">DefaultPluginClassLoaderFactory</text><text x="660" y="370" text-anchor="middle" class="sig">lpr-classloader-default · 实现 PluginClassLoaderFactory</text><text x="660" y="388" text-anchor="middle" class="sig">API parent-first + 依赖 child-first</text>
+  <rect x="792" y="330" width="248" height="70" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="916" y="352" text-anchor="middle" class="cls">YamlDescriptorParser</text><text x="916" y="370" text-anchor="middle" class="sig">lpr-descriptor-yaml · 实现 DescriptorParser</text><text x="916" y="388" text-anchor="middle" class="sig">唯一引入 SnakeYAML 的模块</text>
+  <rect x="536" y="412" width="248" height="70" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="660" y="434" text-anchor="middle" class="cls">DefaultEventBus</text><text x="660" y="452" text-anchor="middle" class="sig">lpr-event-default · 实现 lpr-api 的 EventBus</text><text x="660" y="470" text-anchor="middle" class="sig">自研，零第三方依赖，但仍独立成模块</text>
+  <rect x="792" y="412" width="248" height="70" rx="5" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+  <text x="916" y="434" text-anchor="middle" class="cls">PluginInstaller</text><text x="916" y="452" text-anchor="middle" class="sig">lpr-management · 取代 KPM 的安装能力</text><text x="916" y="470" text-anchor="middle" class="sig">暂存 + sha1 + ATOMIC_MOVE</text>
+  <text x="536" y="508" class="small">分层判据不是「有没有第三方依赖」，而是「它是模型还是基础设施」。</text>
+  <text x="536" y="526" class="small">DefaultEventBus 自研且零第三方依赖，仍住在独立模块——它是可换掉的实现，不是模型。</text>
+
+  <!-- ================= Band 2→3 箭头 ================= -->
+  <path d="M200 598 L200 546" fill="none" stroke="#0d9488" stroke-width="1.8" marker-end="url(#a-teal)"/>
+  <rect x="206" y="558" width="86" height="16" rx="3" fill="#ffffff"/><text x="210" y="570" class="edge">装配并驱动</text>
+  <path d="M800 598 L800 546" fill="none" stroke="#0d9488" stroke-width="1.8" marker-end="url(#a-teal)"/>
+  <rect x="806" y="558" width="100" height="16" rx="3" fill="#ffffff"/><text x="810" y="570" class="edge">在这里选择实现</text>
+
+  <!-- ================= Band 3 · 桥接层 ================= -->
+  <rect x="24" y="598" width="1016" height="210" rx="8" fill="#f0fdfa" fill-opacity="0.55" stroke="#5eead4" stroke-width="1.6"/>
+  <text x="40" y="622" class="band">killbill-platform / plugin-runtime · 全仓库唯一同时认识 LPR 与 Kill Bill 的模块</text>
+  <rect x="40" y="636" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="158" y="658" text-anchor="middle" class="cls">PluginRuntimeModule «Guice»</text><text x="158" y="676" text-anchor="middle" class="sig">选择 adapter · 声明 Multibinder</text><text x="158" y="692" text-anchor="middle" class="sig">绑定 PluginsInfoApi</text>
+  <rect x="288" y="636" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="406" y="658" text-anchor="middle" class="cls">PluginRuntimeService «Lifecycle»</text><text x="406" y="676" text-anchor="middle" class="sig">挂在 INIT / START / STOP_PLUGIN</text><text x="406" y="692" text-anchor="middle" class="sig">早于所有 Core service（约束 A2）</text>
+  <rect x="536" y="636" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="654" y="658" text-anchor="middle" class="cls">PlatformServices</text><text x="654" y="676" text-anchor="middle" class="sig">把 24 个平台能力发布给插件</text><text x="654" y="692" text-anchor="middle" class="sig">未绑定的类型静默跳过</text>
+  <rect x="784" y="636" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="902" y="658" text-anchor="middle" class="cls">KillbillPluginServiceBridge</text><text x="902" y="676" text-anchor="middle" class="sig">«ServiceListener»</text><text x="902" y="692" text-anchor="middle" class="sig">注册表事件 → 各业务注册表</text>
+  <rect x="40" y="712" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="158" y="734" text-anchor="middle" class="cls">PluginServiceRegistry&lt;T&gt;</text><text x="158" y="752" text-anchor="middle" class="sig">业务模块看见的唯一接口</text><text x="158" y="768" text-anchor="middle" class="sig">13 个具化类型，经 Multibinder 汇入</text>
+  <rect x="288" y="712" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="406" y="734" text-anchor="middle" class="cls">PluginEventDispatcher</text><text x="406" y="752" text-anchor="middle" class="sig">外部总线 → NotificationPluginApi</text><text x="406" y="768" text-anchor="middle" class="sig">取代 Observable + 反射 hack</text>
+  <rect x="536" y="712" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="654" y="734" text-anchor="middle" class="cls">PluginServletRouter</text><text x="654" y="752" text-anchor="middle" class="sig">前缀表 → /plugins/&lt;id&gt;/*</text><text x="654" y="768" text-anchor="middle" class="sig">自身即一个 PluginServiceRegistry</text>
+  <rect x="784" y="712" width="236" height="64" rx="5" fill="#ffffff" stroke="#5eead4" stroke-width="1.2"/>
+  <text x="902" y="734" text-anchor="middle" class="cls">PluginNodeCommandListener</text><text x="902" y="752" text-anchor="middle" class="sig">INSTALL / START / STOP / RESTART</text><text x="902" y="768" text-anchor="middle" class="sig">DefaultPluginsInfoApi 对外暴露状态</text>
+  <text x="40" y="798" class="small">这一层的形状才是关键：Kill Bill 特有的知识全在边界这一侧，它下面的运行时只拿到通用协作者——一个 ClassLoader 工厂、一个描述符解析器、一个目录，不知道什么是 payment。</text>
+
+  <!-- ================= Band 4 · SDK ================= -->
+  <rect x="24" y="864" width="1016" height="130" rx="8" fill="#fef2f2" fill-opacity="0.5" stroke="#fca5a5" stroke-width="1.6"/>
+  <text x="40" y="888" class="band">killbill-plugin-framework · 插件作者用的 SDK（286 个类，只有 21 个原先碰过 OSGi）</text>
+  <rect x="40" y="902" width="320" height="62" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="200" y="924" text-anchor="middle" class="cls">PluginBase  implements Plugin</text><text x="200" y="942" text-anchor="middle" class="sig">startPlugin() / stopPlugin()；registerService(Class, T)</text><text x="200" y="958" text-anchor="middle" class="sig">取代 KillbillActivatorBase</text>
+  <rect x="376" y="902" width="320" height="62" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="536" y="924" text-anchor="middle" class="cls">KillbillApi</text><text x="536" y="942" text-anchor="middle" class="sig">20 个 getter，背后是 context.getPlatformService(type)</text><text x="536" y="958" text-anchor="middle" class="sig">取代 OSGIKillbillAPI 的 ServiceTracker</text>
+  <rect x="712" y="902" width="320" height="62" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+  <text x="872" y="924" text-anchor="middle" class="cls">PluginConfigProperties</text><text x="872" y="942" text-anchor="middle" class="sig">插件描述符优先，其次 killbill.properties</text><text x="872" y="958" text-anchor="middle" class="sig">取代 OSGIConfigPropertiesService</text>
+  <text x="40" y="984" class="small">SDK 只依赖 lpr-api 与 killbill-plugin-api——它不认识 lpr-core，也不认识桥接层；21 个插件工程都依赖它。</text>
+
+  <path d="M1040 930 L1056 930 L1056 200 L1046 200" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#a-blue)"/>
+  <rect x="1062" y="540" width="12" height="90" rx="3" fill="#ffffff"/>
+  <text x="1068" y="600" transform="rotate(-90 1068 600)" class="edge">SDK 只依赖 lpr-api</text>
+
+  <!-- ================= 右侧：不变量 ================= -->
+  <rect x="1076" y="86" width="300" height="880" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="1092" y="110" class="band">这张图守护的四条不变量</text>
+
+  <rect x="1088" y="124" width="276" height="200" rx="6" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.3"/>
+  <text x="1100" y="148" class="nfr">A1 · port 分层</text>
+  <text x="1100" y="172" class="small">插件自己调用的 port 放 lpr-api，</text>
+  <text x="1100" y="190" class="small">只有运行时调用的放 lpr-spi。</text>
+  <text x="1100" y="214" class="small">判据不是「有没有第三方依赖」，</text>
+  <text x="1100" y="232" class="small">而是「它是模型还是基础设施」。</text>
+  <text x="1100" y="262" class="small">违规判据：</text>
+  <text x="1100" y="280" class="small">TestArchitecturalConstraints 失败，</text>
+  <text x="1100" y="298" class="small">并指出该放到哪个 port 后面。</text>
+
+  <rect x="1088" y="340" width="276" height="200" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.3"/>
+  <text x="1100" y="364" class="nfr">A3 · 公共 API 必须 parent-first</text>
+  <text x="1100" y="388" class="small">org.killbill.* / javax.* / jakarta.* /</text>
+  <text x="1100" y="406" class="small">org.joda.time / org.slf4j / shiro</text>
+  <text x="1100" y="424" class="small">走 parent-first；插件依赖 child-first。</text>
+  <text x="1100" y="448" class="small">例外：org.killbill.billing.plugin. 被挖回</text>
+  <text x="1100" y="466" class="small">child-first——那是插件自己的实现包。</text>
+  <text x="1100" y="496" class="small">违规判据：TestClassLoaderIsolation</text>
+  <text x="1100" y="514" class="small">断言两侧是同一个 Class 对象。</text>
+
+  <rect x="1088" y="556" width="276" height="200" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.3"/>
+  <text x="1100" y="580" class="nfr">A4 · 资源必须「释放引用」</text>
+  <text x="1100" y="604" class="small">ResourceRegistry 的契约是丢弃引用，</text>
+  <text x="1100" y="622" class="small">不是调一下 shutdown()。</text>
+  <text x="1100" y="646" class="small">JDK 21 实测：已终止的 Thread 仍强引用</text>
+  <text x="1100" y="664" class="small">它的 Runnable，因而持有 lambda 捕获的</text>
+  <text x="1100" y="682" class="small">一切，钉住插件 ClassLoader。</text>
+  <text x="1100" y="712" class="small">违规判据：TestClassLoaderUnloading</text>
+  <text x="1100" y="730" class="small">的 Phase 3 失败。</text>
+
+  <rect x="1088" y="772" width="276" height="180" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.3"/>
+  <text x="1100" y="796" class="nfr">A5 · 注册按 (pluginId, version)</text>
+  <text x="1100" y="820" class="small">升级时新旧版本同时加载且共享同一个</text>
+  <text x="1100" y="838" class="small">pluginId。若按 pluginId 撤销，停旧版本</text>
+  <text x="1100" y="856" class="small">会把新版本刚注册的服务一并撤掉——</text>
+  <text x="1100" y="874" class="small">插件显示 ACTIVE，却什么都不提供。</text>
+  <text x="1100" y="904" class="small">违规判据：TestPluginRuntimeEndToEnd 的</text>
+  <text x="1100" y="922" class="small">「升级无空窗」与「回滚」两个用例失败。</text>
+
+  <text x="700" y="1030" text-anchor="middle" class="subtitle">与 4 个视图的对齐：NFR-1 落在 DefaultServiceRegistry 的键设计；NFR-2 落在 ClassLoaderPolicy 与 ResourceRegistry；NFR-5 落在 PluginServiceRegistry&lt;T&gt; 这一层间接</text>
+</svg>

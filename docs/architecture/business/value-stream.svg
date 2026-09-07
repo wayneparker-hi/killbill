@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill: #111827; font-size: 22px; font-weight: 600; }
+    .subtitle { fill: #6b7280; font-size: 12px; }
+    .lane-title { fill: #4b5563; font-size: 13px; font-weight: 600; }
+    .node-title { fill: #111827; font-size: 15px; font-weight: 600; }
+    .node-sub { fill: #6b7280; font-size: 11px; }
+    .flow-label { fill: #374151; font-size: 11px; font-weight: 600; }
+  </style>
+  <defs>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#ffffff"/>
+  <text x="600" y="36" text-anchor="middle" class="title">订阅计费价值流</text>
+  <text x="600" y="58" text-anchor="middle" class="subtitle">主线是把「订阅承诺」逐步变成「已收回的收入」，每个阶段都有可验证结果、责任交接和异常退出路径</text>
+
+  <rect x="38" y="86" width="1124" height="316" rx="8" fill="#f0fdf4" fill-opacity="0.62" stroke="#bbf7d0" stroke-width="1.2" stroke-dasharray="6,4"/>
+  <text x="56" y="112" class="lane-title">正常价值形成 · 从计费约定走向收入闭环</text>
+
+  <g>
+    <circle cx="132" cy="183" r="26" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+    <text x="132" y="188" text-anchor="middle" class="node-title">1</text>
+    <rect x="50" y="220" width="164" height="118" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="132" y="247" text-anchor="middle" class="node-title">确定计费约定</text>
+    <text x="132" y="272" text-anchor="middle" class="node-sub">账户 · 目录版本 · 套餐</text>
+    <text x="132" y="293" text-anchor="middle" class="node-sub">价目表 · 账单日 · 币种</text>
+    <line x1="72" y1="307" x2="192" y2="307" stroke="#dcfce7" stroke-width="1"/>
+    <text x="132" y="329" text-anchor="middle" class="flow-label">结果：可执行的订阅约定</text>
+  </g>
+  <g>
+    <circle cx="366" cy="183" r="26" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+    <text x="366" y="188" text-anchor="middle" class="node-title">2</text>
+    <rect x="284" y="220" width="164" height="118" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="366" y="247" text-anchor="middle" class="node-title">形成订阅事实</text>
+    <text x="366" y="272" text-anchor="middle" class="node-sub">生效 · 试用 · 阶段推进</text>
+    <text x="366" y="293" text-anchor="middle" class="node-sub">升降级 · 暂停 · 取消</text>
+    <line x1="306" y1="307" x2="426" y2="307" stroke="#dcfce7" stroke-width="1"/>
+    <text x="366" y="329" text-anchor="middle" class="flow-label">结果：计费事件流</text>
+  </g>
+  <g>
+    <circle cx="600" cy="183" r="26" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+    <text x="600" y="188" text-anchor="middle" class="node-title">3</text>
+    <rect x="518" y="220" width="164" height="118" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="600" y="247" text-anchor="middle" class="node-title">生成应收</text>
+    <text x="600" y="272" text-anchor="middle" class="node-sub">周期出账 · 用量归集</text>
+    <text x="600" y="293" text-anchor="middle" class="node-sub">按比例折算 · 税费调整</text>
+    <line x1="540" y1="307" x2="660" y2="307" stroke="#dcfce7" stroke-width="1"/>
+    <text x="600" y="329" text-anchor="middle" class="flow-label">结果：可确认的发票</text>
+  </g>
+  <g>
+    <circle cx="834" cy="183" r="26" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+    <text x="834" y="188" text-anchor="middle" class="node-title">4</text>
+    <rect x="752" y="220" width="164" height="118" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="834" y="247" text-anchor="middle" class="node-title">确认资金结果</text>
+    <text x="834" y="272" text-anchor="middle" class="node-sub">支付方式 · 网关路由</text>
+    <text x="834" y="293" text-anchor="middle" class="node-sub">成功 · 失败 · 待确认</text>
+    <line x1="774" y1="307" x2="894" y2="307" stroke="#dcfce7" stroke-width="1"/>
+    <text x="834" y="329" text-anchor="middle" class="flow-label">结果：可确认的资金事实</text>
+  </g>
+  <g>
+    <circle cx="1068" cy="183" r="26" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+    <text x="1068" y="188" text-anchor="middle" class="node-title">5</text>
+    <rect x="986" y="220" width="164" height="118" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="1068" y="247" text-anchor="middle" class="node-title">完成收入或处置应收</text>
+    <text x="1068" y="272" text-anchor="middle" class="node-sub">核销 · 续期 · 退款信用</text>
+    <text x="1068" y="293" text-anchor="middle" class="node-sub">逾期升级 · 坏账核销</text>
+    <line x1="1008" y1="307" x2="1128" y2="307" stroke="#dcfce7" stroke-width="1"/>
+    <text x="1068" y="329" text-anchor="middle" class="flow-label">结果：应收责任闭环</text>
+  </g>
+
+  <path d="M158 183 L340 183" fill="none" stroke="#16a34a" stroke-width="2.2" marker-end="url(#arrow-green)"/>
+  <path d="M392 183 L574 183" fill="none" stroke="#16a34a" stroke-width="2.2" marker-end="url(#arrow-green)"/>
+  <path d="M626 183 L808 183" fill="none" stroke="#16a34a" stroke-width="2.2" marker-end="url(#arrow-green)"/>
+  <path d="M860 183 L1042 183" fill="none" stroke="#16a34a" stroke-width="2.2" marker-end="url(#arrow-green)"/>
+  <text x="249" y="172" text-anchor="middle" class="flow-label">订阅创建</text>
+  <text x="483" y="172" text-anchor="middle" class="flow-label">出账日到达</text>
+  <text x="717" y="172" text-anchor="middle" class="flow-label">发票落地</text>
+  <text x="951" y="172" text-anchor="middle" class="flow-label">资金结果形成</text>
+
+  <rect x="38" y="462" width="1124" height="220" rx="8" fill="#fff7ed" fill-opacity="0.7" stroke="#fed7aa" stroke-width="1.2" stroke-dasharray="6,4"/>
+  <text x="56" y="488" class="lane-title">异常退出与应收恢复 · 每个阶段都可能离开主线</text>
+
+  <path d="M132 338 L132 532" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <path d="M366 338 L366 532" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <path d="M600 338 L600 532" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <path d="M834 338 L834 532" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <path d="M1068 338 L1068 532" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <text x="145" y="430" class="flow-label">目录不可用</text>
+  <text x="379" y="430" class="flow-label">中途取消</text>
+  <text x="613" y="430" class="flow-label">出账结果异常</text>
+  <text x="847" y="430" class="flow-label">结果不确定</text>
+  <text x="1081" y="430" class="flow-label">长期未收回</text>
+
+  <g>
+    <path d="M82 532 L182 532 L200 568 L182 604 L82 604 L64 568 Z" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="132" y="561" text-anchor="middle" class="node-title">拒绝或改配</text>
+    <text x="132" y="584" text-anchor="middle" class="node-sub">换套餐 · 拒绝签约</text>
+  </g>
+  <g>
+    <path d="M316 532 L416 532 L434 568 L416 604 L316 604 L298 568 Z" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="366" y="561" text-anchor="middle" class="node-title">终止并折算</text>
+    <text x="366" y="584" text-anchor="middle" class="node-sub">取消 · 按比例退回</text>
+  </g>
+  <g>
+    <path d="M550 532 L650 532 L668 568 L650 604 L550 604 L532 568 Z" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="600" y="561" text-anchor="middle" class="node-title">修正与重开</text>
+    <text x="600" y="584" text-anchor="middle" class="node-sub">试算 · 调整 · 作废重开</text>
+  </g>
+  <g>
+    <path d="M784 532 L884 532 L902 568 L884 604 L784 604 L766 568 Z" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="834" y="561" text-anchor="middle" class="node-title">回查与重试</text>
+    <text x="834" y="584" text-anchor="middle" class="node-sub">待定 · 回查 · 计划重试</text>
+  </g>
+  <g>
+    <path d="M1018 532 L1118 532 L1136 568 L1118 604 L1018 604 L1000 568 Z" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="1068" y="561" text-anchor="middle" class="node-title">催收闭环</text>
+    <text x="1068" y="584" text-anchor="middle" class="node-sub">逾期升级 · 阻断 · 核销</text>
+  </g>
+
+  <rect x="140" y="744" width="920" height="86" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="600" y="774" text-anchor="middle" class="node-title">收入闭环标准</text>
+  <text x="600" y="800" text-anchor="middle" class="node-sub">已形成的订阅约定被履行且应收被收回，或未收回的应收已通过作废、信用、退款或坏账核销得到明确处置——不存在悬空发票</text>
+  <path d="M132 604 L132 704 L420 704 L420 744" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+  <path d="M366 604 L366 682 L510 682 L510 744" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+  <path d="M600 604 L600 744" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+  <path d="M834 604 L834 682 L690 682 L690 744" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+  <path d="M1068 604 L1068 704 L780 704 L780 744" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+
+  <g transform="translate(60,872)">
+    <line x1="0" y1="0" x2="30" y2="0" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text x="40" y="4" class="node-sub">正常价值形成</text>
+    <line x1="180" y1="0" x2="210" y2="0" stroke="#ea580c" stroke-width="2" marker-end="url(#arrow-orange)"/>
+    <text x="220" y="4" class="node-sub">异常退出与恢复</text>
+    <line x1="400" y1="0" x2="430" y2="0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="440" y="4" class="node-sub">责任闭环</text>
+  </g>
+</svg>

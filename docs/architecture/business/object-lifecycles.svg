@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1060" width="1200" height="1060">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill: #111827; font-size: 22px; font-weight: 600; }
+    .subtitle { fill: #6b7280; font-size: 12px; }
+    .lane-title { fill: #374151; font-size: 14px; font-weight: 600; }
+    .state { fill: #111827; font-size: 13px; font-weight: 600; }
+    .state-sub { fill: #6b7280; font-size: 10px; }
+    .label { fill: #4b5563; font-size: 10px; font-weight: 600; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="1060" fill="#ffffff"/>
+  <text x="600" y="34" text-anchor="middle" class="title">订阅计费核心对象生命周期协作</text>
+  <text x="600" y="56" text-anchor="middle" class="subtitle">五条生命周期各自独立推进，跨对象只通过明确的业务结果触发——没有任何一个对象直接驱动另一个对象的状态</text>
+
+  <rect x="38" y="78" width="1124" height="142" rx="8" fill="#eff6ff" fill-opacity="0.68" stroke="#bfdbfe" stroke-width="1.2"/>
+  <text x="56" y="102" class="lane-title">订阅 · 表达一份持续的计费承诺</text>
+  <circle cx="86" cy="153" r="7" fill="#111827"/>
+  <path d="M93 153 L128 153" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="128" y="126" width="138" height="54" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/><text x="197" y="158" text-anchor="middle" class="state">待生效</text></g>
+  <path d="M266 153 L306 153" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="306" y="126" width="138" height="54" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/><text x="375" y="150" text-anchor="middle" class="state">试用或折扣阶段</text><text x="375" y="168" text-anchor="middle" class="state-sub">按目录阶段自动推进</text></g>
+  <path d="M444 153 L484 153" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="484" y="126" width="138" height="54" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/><text x="553" y="158" text-anchor="middle" class="state">常规计费中</text></g>
+  <path d="M622 153 L662 153" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="662" y="126" width="138" height="54" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/><text x="731" y="150" text-anchor="middle" class="state">变更待生效</text><text x="731" y="168" text-anchor="middle" class="state-sub">升降级、暂停与恢复</text></g>
+  <path d="M800 153 L840 153" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="840" y="126" width="138" height="54" rx="8" fill="#ffffff" stroke="#60a5fa" stroke-width="1.8"/><text x="909" y="150" text-anchor="middle" class="state">已取消或到期</text><text x="909" y="168" text-anchor="middle" class="state-sub">停止派生计费事件</text></g>
+  <g><rect x="1008" y="126" width="126" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="1071" y="150" text-anchor="middle" class="state">已阻断</text><text x="1071" y="168" text-anchor="middle" class="state-sub">结清后可恢复</text></g>
+  <path d="M553 180 L553 200 L1071 200 L1071 180" fill="none" stroke="#ea580c" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
+  <text x="812" y="213" text-anchor="middle" class="label">逾期升级触发服务阻断（不改变订阅的目录阶段）</text>
+
+  <rect x="38" y="232" width="1124" height="142" rx="8" fill="#f0fdf4" fill-opacity="0.68" stroke="#bbf7d0" stroke-width="1.2"/>
+  <text x="56" y="256" class="lane-title">发票 · 表达一次已确认的应收</text>
+  <circle cx="210" cy="308" r="7" fill="#111827"/>
+  <path d="M217 308 L256 308" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <g><rect x="256" y="281" width="138" height="54" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/><text x="325" y="305" text-anchor="middle" class="state">草稿</text><text x="325" y="323" text-anchor="middle" class="state-sub">可试算、可修改</text></g>
+  <path d="M394 308 L454 308" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <g><rect x="454" y="281" width="138" height="54" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/><text x="523" y="305" text-anchor="middle" class="state">已提交</text><text x="523" y="323" text-anchor="middle" class="state-sub">金额固化，形成应收</text></g>
+  <path d="M592 308 L652 308" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <g><rect x="652" y="281" width="138" height="54" rx="8" fill="#ffffff" stroke="#4ade80" stroke-width="1.8"/><text x="721" y="313" text-anchor="middle" class="state">已结清</text></g>
+  <path d="M523 335 L523 354 L860 354 L860 335" fill="none" stroke="#ea580c" stroke-width="1.4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="812" y="281" width="96" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="860" y="313" text-anchor="middle" class="state">部分支付</text></g>
+  <path d="M523 281 L523 270 L1018 270 L1018 281" fill="none" stroke="#ea580c" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="956" y="281" width="124" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="1018" y="305" text-anchor="middle" class="state">已作废</text><text x="1018" y="323" text-anchor="middle" class="state-sub">修正后重开</text></g>
+
+  <rect x="38" y="386" width="1124" height="142" rx="8" fill="#fff7ed" fill-opacity="0.65" stroke="#fed7aa" stroke-width="1.2"/>
+  <text x="56" y="410" class="lane-title">支付 · 表达一次资金处理</text>
+  <circle cx="120" cy="462" r="7" fill="#111827"/>
+  <path d="M127 462 L166 462" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="166" y="435" width="126" height="54" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/><text x="229" y="467" text-anchor="middle" class="state">已发起</text></g>
+  <path d="M292 462 L332 462" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="332" y="435" width="126" height="54" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/><text x="395" y="467" text-anchor="middle" class="state">网关处理中</text></g>
+  <path d="M458 462 L498 462" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="498" y="435" width="126" height="54" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/><text x="561" y="467" text-anchor="middle" class="state">成功</text></g>
+  <path d="M624 462 L664 462" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="664" y="435" width="126" height="54" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/><text x="727" y="456" text-anchor="middle" class="state">已核销至发票</text><text x="727" y="476" text-anchor="middle" class="state-sub">冲减应收余额</text></g>
+  <path d="M790 462 L830 462" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="830" y="435" width="126" height="54" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.8"/><text x="893" y="456" text-anchor="middle" class="state">已退款或冲正</text><text x="893" y="476" text-anchor="middle" class="state-sub">资金逆向完成</text></g>
+  <path d="M395 489 L395 508 L1030 508 L1030 489" fill="none" stroke="#ea580c" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="974" y="435" width="112" height="54" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/><text x="1030" y="454" text-anchor="middle" class="state">失败或待确认</text><text x="1030" y="475" text-anchor="middle" class="state-sub">回查后才可重试</text></g>
+
+  <rect x="38" y="540" width="1124" height="142" rx="8" fill="#faf5ff" fill-opacity="0.68" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="56" y="564" class="lane-title">支付重试计划 · 表达一次未收回应收的追偿安排</text>
+  <circle cx="120" cy="616" r="7" fill="#111827"/>
+  <path d="M127 616 L166 616" fill="none" stroke="#9333ea" stroke-width="1.8" marker-end="url(#arrow-purple)"/>
+  <g><rect x="166" y="589" width="126" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/><text x="229" y="621" text-anchor="middle" class="state">已排期</text></g>
+  <path d="M292 616 L332 616" fill="none" stroke="#9333ea" stroke-width="1.8" marker-end="url(#arrow-purple)"/>
+  <g><rect x="332" y="589" width="126" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/><text x="395" y="610" text-anchor="middle" class="state">等待重试时点</text><text x="395" y="630" text-anchor="middle" class="state-sub">按退避策略计算</text></g>
+  <path d="M458 616 L498 616" fill="none" stroke="#9333ea" stroke-width="1.8" marker-end="url(#arrow-purple)"/>
+  <g><rect x="498" y="589" width="126" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/><text x="561" y="621" text-anchor="middle" class="state">执行重试</text></g>
+  <path d="M624 616 L664 616" fill="none" stroke="#9333ea" stroke-width="1.8" marker-end="url(#arrow-purple)"/>
+  <g><rect x="664" y="589" width="126" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/><text x="727" y="610" text-anchor="middle" class="state">收回并终止</text><text x="727" y="630" text-anchor="middle" class="state-sub">发票已结清</text></g>
+  <path d="M790 616 L830 616" fill="none" stroke="#9333ea" stroke-width="1.8" marker-end="url(#arrow-purple)"/>
+  <g><rect x="830" y="589" width="126" height="54" rx="8" fill="#ffffff" stroke="#a78bfa" stroke-width="1.8"/><text x="893" y="610" text-anchor="middle" class="state">达到上限</text><text x="893" y="630" text-anchor="middle" class="state-sub">移交逾期处理</text></g>
+  <path d="M395 643 L395 662 L1030 662 L1030 643" fill="none" stroke="#ea580c" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="974" y="589" width="112" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="1030" y="608" text-anchor="middle" class="state">提前取消</text><text x="1030" y="629" text-anchor="middle" class="state-sub">发票作废或人工结清</text></g>
+
+  <rect x="38" y="694" width="1124" height="142" rx="8" fill="#fef2f2" fill-opacity="0.65" stroke="#fecaca" stroke-width="1.2"/>
+  <text x="56" y="718" class="lane-title">账户逾期状态 · 表达账户整体的欠费程度</text>
+  <circle cx="210" cy="770" r="7" fill="#111827"/>
+  <path d="M217 770 L256 770" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+  <g><rect x="256" y="743" width="138" height="54" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.5"/><text x="325" y="775" text-anchor="middle" class="state">正常</text></g>
+  <path d="M394 770 L454 770" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="454" y="743" width="138" height="54" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.5"/><text x="523" y="767" text-anchor="middle" class="state">逾期观察期</text><text x="523" y="785" text-anchor="middle" class="state-sub">仅提醒，不阻断</text></g>
+  <path d="M592 770 L652 770" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+  <g><rect x="652" y="743" width="138" height="54" rx="8" fill="#ffffff" stroke="#f87171" stroke-width="1.8"/><text x="721" y="767" text-anchor="middle" class="state">逾期阻断</text><text x="721" y="785" text-anchor="middle" class="state-sub">暂停订阅服务</text></g>
+  <path d="M523 797 L523 816 L860 816 L860 797" fill="none" stroke="#ea580c" stroke-width="1.4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="812" y="743" width="96" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="860" y="767" text-anchor="middle" class="state">已恢复</text><text x="860" y="785" text-anchor="middle" class="state-sub">结清后自动降级</text></g>
+  <path d="M721 743 L721 732 L1018 732 L1018 743" fill="none" stroke="#ea580c" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
+  <g><rect x="956" y="743" width="124" height="54" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/><text x="1018" y="767" text-anchor="middle" class="state">坏账核销</text><text x="1018" y="785" text-anchor="middle" class="state-sub">作废或计入损失</text></g>
+
+  <rect x="38" y="858" width="1124" height="140" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="6,4"/>
+  <text x="56" y="882" class="lane-title">关键跨对象业务结果触发</text>
+  <g><rect x="66" y="912" width="154" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="143" y="934" text-anchor="middle" class="state">订阅事件产生</text><text x="143" y="953" text-anchor="middle" class="state-sub">派生可计费事实</text></g>
+  <path d="M220 939 L258 939" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="258" y="912" width="154" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="335" y="934" text-anchor="middle" class="state">出账日到达</text><text x="335" y="953" text-anchor="middle" class="state-sub">生成并提交发票</text></g>
+  <path d="M412 939 L450 939" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="450" y="912" width="154" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="527" y="934" text-anchor="middle" class="state">发票已提交</text><text x="527" y="953" text-anchor="middle" class="state-sub">触发自动扣款</text></g>
+  <path d="M604 939 L642 939" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="642" y="912" width="154" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="719" y="934" text-anchor="middle" class="state">支付失败</text><text x="719" y="953" text-anchor="middle" class="state-sub">创建重试计划</text></g>
+  <path d="M796 939 L834 939" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="834" y="912" width="154" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="911" y="934" text-anchor="middle" class="state">应收长期未收回</text><text x="911" y="953" text-anchor="middle" class="state-sub">推进逾期状态</text></g>
+  <path d="M988 939 L1026 939" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <g><rect x="1026" y="912" width="108" height="54" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.3"/><text x="1080" y="934" text-anchor="middle" class="state">逾期升级</text><text x="1080" y="953" text-anchor="middle" class="state-sub">阻断订阅服务</text></g>
+
+  <g transform="translate(60,1032)">
+    <line x1="0" y1="0" x2="30" y2="0" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/><text x="40" y="4" class="state-sub">对象内正常变化</text>
+    <line x1="190" y1="0" x2="220" y2="0" stroke="#ea580c" stroke-width="1.8" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/><text x="230" y="4" class="state-sub">分支、失败与关闭</text>
+    <line x1="420" y1="0" x2="450" y2="0" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/><text x="460" y="4" class="state-sub">跨对象业务结果触发</text>
+  </g>
+</svg>

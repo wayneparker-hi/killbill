@@ -6,6 +6,21 @@ Kill Bill 计费平台的一个 fork，目标是**用自研的轻量级插件运
 
 ---
 
+## 全局业务架构
+
+![订阅计费业务架构分层图](docs/architecture/business/business-architecture.svg)
+
+自上而下逐层承接：多个场景复用同一产品功能，多个产品功能由同一领域对象支撑。
+
+**最下面那层是这个 fork 的重点**——依赖层没有一条硬编码集成，支付网关、税费服务、汇率来源、
+通知渠道一律以插件形态挂在 13 个扩展点上，由 LPR 运行时装载。核心里不允许出现
+`if (plugin instanceof XxxPlugin)`，也不允许出现 `core → 具体插件` 的 pom 依赖。
+
+其余 13 张图（价值流、能力地图、对象生命周期、扩展点地图、异常决策矩阵、指标树，
+以及 4+1 的五个视图与视图对齐图）见 [docs/architecture/](docs/architecture/README.md)。
+
+---
+
 ## 为什么
 
 Kill Bill 的插件层建立在 OSGi 之上，但实际只用到了 OSGi 的三个能力：ClassLoader 隔离、Service Registry、生命周期管理。为此付出的代价是：
@@ -150,6 +165,7 @@ accertify、bitcoin、bridge、dwolla、feedzai、forte、meter、moneris、paye
 | [CLAUDE.md](CLAUDE.md) | **架构约束与工作规范**。改代码前必读 |
 | [docs/usage.md](docs/usage.md) | **使用指南**：跑起来、装插件、运维、排障 |
 | [docs/README.md](docs/README.md) | 文档索引 |
+| [docs/architecture/README.md](docs/architecture/README.md) | **架构图**：业务架构 7 张 + 4+1 视图 7 张，全部 SVG |
 | [docs/design/lightweight-plugin-runtime.md](docs/design/lightweight-plugin-runtime.md) | **LPR 设计**：模型、自研 vs 复用的边界、以及设计与实现的出入 |
 | [docs/analysis/](docs/analysis/) | 改造前的代码摸底（带文件路径与行号） |
 | [docs/migration/](docs/migration/) | 实施方案与进度 |

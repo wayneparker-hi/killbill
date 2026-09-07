@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1140" width="1400" height="1140">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .lane { fill:#111827; font-size:12px; font-weight:600; }
+    .lanesub { fill:#6b7280; font-size:10px; }
+    .msg { fill:#1f2937; font-size:11px; }
+    .ret { fill:#6b7280; font-size:11px; }
+    .frame { fill:#4b5563; font-size:11px; font-weight:600; }
+    .note { fill:#111827; font-size:11px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+  </style>
+  <defs>
+    <marker id="p-solid" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#374151"/></marker>
+    <marker id="p-open" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#9ca3af"/></marker>
+    <marker id="p-orange" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ea580c"/></marker>
+  </defs>
+
+  <rect width="1400" height="1140" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">进程视图 (1/2) —— 出账 → 自动扣款 → 失败排期重试</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">三个线程池接力完成一次计费：通知队列线程出账，总线线程收款，网关调用是唯一的外部阻塞点。右侧标注锁范围与超时预算</text>
+
+  <!-- 参与者 -->
+  <g>
+    <rect x="40" y="86" width="118" height="56" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.4"/>
+    <text x="99" y="108" text-anchor="middle" class="lane">通知队列线程</text><text x="99" y="126" text-anchor="middle" class="lanesub">NotificationQueue</text>
+    <rect x="168" y="86" width="118" height="56" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+    <text x="227" y="108" text-anchor="middle" class="lane">InvoiceDispatcher</text><text x="227" y="126" text-anchor="middle" class="lanesub">出账编排</text>
+    <rect x="296" y="86" width="118" height="56" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+    <text x="355" y="108" text-anchor="middle" class="lane">GlobalLocker</text><text x="355" y="126" text-anchor="middle" class="lanesub">账户级锁（DB）</text>
+    <rect x="424" y="86" width="118" height="56" rx="6" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.4"/>
+    <text x="483" y="108" text-anchor="middle" class="lane">Plugin</text><text x="483" y="126" text-anchor="middle" class="lanesub">ServiceRegistry</text>
+    <rect x="552" y="86" width="118" height="56" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.4"/>
+    <text x="611" y="108" text-anchor="middle" class="lane">InvoicePluginApi</text><text x="611" y="126" text-anchor="middle" class="lanesub">插件 ClassLoader</text>
+    <rect x="680" y="86" width="118" height="56" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+    <text x="739" y="108" text-anchor="middle" class="lane">持久总线</text><text x="739" y="126" text-anchor="middle" class="lanesub">PersistentBus（表）</text>
+    <rect x="808" y="86" width="118" height="56" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+    <text x="867" y="108" text-anchor="middle" class="lane">PaymentProcessor</text><text x="867" y="126" text-anchor="middle" class="lanesub">收款编排</text>
+    <rect x="936" y="86" width="118" height="56" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.4"/>
+    <text x="995" y="108" text-anchor="middle" class="lane">PaymentPluginApi</text><text x="995" y="126" text-anchor="middle" class="lanesub">→ 支付网关</text>
+  </g>
+
+  <!-- 生命线 -->
+  <g stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="5,4">
+    <line x1="99" y1="142" x2="99" y2="1030"/>
+    <line x1="227" y1="142" x2="227" y2="1030"/>
+    <line x1="355" y1="142" x2="355" y2="1030"/>
+    <line x1="483" y1="142" x2="483" y2="1030"/>
+    <line x1="611" y1="142" x2="611" y2="1030"/>
+    <line x1="739" y1="142" x2="739" y2="1030"/>
+    <line x1="867" y1="142" x2="867" y2="1030"/>
+    <line x1="995" y1="142" x2="995" y2="1030"/>
+  </g>
+
+  <!-- 锁持有区间 -->
+  <rect x="349" y="220" width="12" height="390" rx="2" fill="#fecaca" stroke="#f87171" stroke-width="1"/>
+  <rect x="349" y="690" width="12" height="320" rx="2" fill="#fecaca" stroke="#f87171" stroke-width="1"/>
+  <!-- 活动条 -->
+  <rect x="222" y="180" width="10" height="440" rx="2" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <rect x="862" y="650" width="10" height="360" rx="2" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+
+  <!-- 消息 -->
+  <path d="M99 180 L216 180" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="106" y="174" class="msg">1 · 账单日到达（每账户一条通知）</text>
+  <path d="M232 220 L344 220" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="238" y="214" class="msg">2 · lock(accountId)</text>
+  <path d="M232 260 L272 260 L272 278 L238 278" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="282" y="264" class="msg">3 · 按订阅的计费事件流算出候选发票项</text>
+  <path d="M232 310 L472 310" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="238" y="304" class="msg">4 · getAllServices(InvoicePluginApi)</text>
+  <path d="M472 348 L238 348" fill="none" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#p-open)"/><text x="252" y="342" class="ret">5 · 已注册的插件名列表</text>
+
+  <rect x="196" y="374" width="884" height="152" rx="6" fill="#fffbeb" fill-opacity="0.35" stroke="#fcd34d" stroke-width="1.3"/>
+  <path d="M196 374 L336 374 L336 396 L196 396 Z" fill="#fcd34d" fill-opacity="0.4" stroke="#fcd34d" stroke-width="1.1"/>
+  <text x="206" y="390" class="frame">loop  [每个已注册的 invoice 插件]</text>
+  <path d="M232 424 L600 424" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="238" y="418" class="msg">6 · getAdditionalInvoiceItems(...)　【调用前切换 TCCL 到插件 ClassLoader】</text>
+  <path d="M600 464 L238 464" fill="none" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#p-open)"/><text x="252" y="458" class="ret">7 · 追加 / 调整发票项　【finally 里无条件切回 TCCL】</text>
+  <path d="M232 500 L272 500 L272 516 L238 516" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="282" y="504" class="msg">8 · 校验并消毒插件返回值（插件返回的数据是外部输入）</text>
+
+  <path d="M232 556 L272 556 L272 572 L238 572" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="282" y="560" class="msg">9 · 落库并提交发票（与下一步在同一个事务里）</text>
+  <path d="M232 610 L728 610" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="238" y="604" class="msg">10 · 发布 InvoiceCreation 事件（事务内入队，因此不会出现「发票在但事件丢了」）</text>
+  <path d="M232 650 L344 650" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="238" y="644" class="msg">11 · unlock(accountId)</text>
+
+  <line x1="40" y1="672" x2="1080" y2="672" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3,4"/>
+  <text x="1084" y="676" class="small">↑ 通知队列线程　↓ 总线线程</text>
+
+  <path d="M739 700 L856 700" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="746" y="694" class="msg">12 · 总线线程消费 InvoiceCreation</text>
+  <path d="M862 740 L366 740" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="380" y="734" class="msg">13 · lock(accountId)　—— 同一账户的出账与收款不会并发</text>
+  <path d="M862 780 L494 780" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="508" y="774" class="msg">14 · getServiceForName(PaymentPluginApi, pluginName)</text>
+  <path d="M872 820 L984 820" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="878" y="814" class="msg">15 · purchasePayment(...)</text>
+  <path d="M995 858 L1035 858 L1035 876 L1001 876" fill="none" stroke="#ea580c" stroke-width="1.5" marker-end="url(#p-orange)"/><text x="1045" y="862" class="msg" fill="#ea580c">16 · HTTP</text>
+  <path d="M984 908 L878 908" fill="none" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#p-open)"/><text x="700" y="902" class="ret">17 · PaymentTransactionInfoPlugin(ERROR：余额不足)</text>
+  <path d="M872 946 L912 946 L912 962 L878 962" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="922" y="950" class="msg">18 · 交易落库，状态 = 失败</text>
+  <path d="M862 990 L110 990" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="124" y="984" class="msg">19 · 按 PaymentControlPluginApi 的决策排下一次重试（写回通知队列）</text>
+  <path d="M862 1024 L366 1024" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#p-solid)"/><text x="380" y="1018" class="msg">20 · unlock(accountId)</text>
+
+  <!-- 右侧注释 -->
+  <rect x="1096" y="196" width="280" height="118" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+  <text x="1108" y="218" class="note">锁范围与超时预算</text>
+  <text x="1108" y="240" class="small">粒度是单账户，不同账户完全并行。</text>
+  <text x="1108" y="258" class="small">获取锁的预算是秒级；拿不到就放弃本轮，</text>
+  <text x="1108" y="276" class="small">由通知队列重投，不在这里自旋等待。</text>
+  <text x="1108" y="300" class="small">红色竖条 = 锁被持有的区间。</text>
+  <line x1="1096" y1="240" x2="366" y2="240" stroke="#fca5a5" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <rect x="1096" y="374" width="280" height="152" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.3"/>
+  <text x="1108" y="396" class="note">插件调用点的三条约定</text>
+  <text x="1108" y="418" class="small">① 调用前切 TCCL，finally 里无条件切回；</text>
+  <text x="1108" y="436" class="small">② 埋点 kb_plugin_latency / kb_plugin_errors；</text>
+  <text x="1108" y="454" class="small">③ 插件抛异常只记 warn 然后跳过，</text>
+  <text x="1108" y="472" class="small">　 出账继续（NFR-3）。</text>
+  <text x="1108" y="496" class="small">唯一例外是 InvoicePluginApiRetryException：</text>
+  <text x="1108" y="514" class="small">它是插件明确要求重试的信号，必须向上抛。</text>
+
+  <rect x="1096" y="786" width="280" height="136" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.3"/>
+  <text x="1108" y="808" class="note">网关调用的超时预算</text>
+  <text x="1108" y="830" class="small">这是整条链路唯一的外部阻塞点，</text>
+  <text x="1108" y="848" class="small">必须同时设连接超时与读超时。</text>
+  <text x="1108" y="872" class="small">超时必须返回 UNKNOWN，不能当作失败</text>
+  <text x="1108" y="890" class="small">——判成失败之后重试就会重复扣款，</text>
+  <text x="1108" y="908" class="small">这是异常决策矩阵里最贵的一格。</text>
+  <line x1="1096" y1="858" x2="1041" y2="858" stroke="#fdba74" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <rect x="1096" y="948" width="280" height="82" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.3"/>
+  <text x="1108" y="970" class="note">为什么重试要回到通知队列</text>
+  <text x="1108" y="992" class="small">重试计划是一条持久化的定时任务，</text>
+  <text x="1108" y="1010" class="small">进程重启后仍然存在；放在内存里的</text>
+  <text x="1108" y="1022" class="small">定时器会随节点重启一起丢失。</text>
+
+  <text x="700" y="1090" text-anchor="middle" class="subtitle">对齐检查：步骤 6–8 对应逻辑视图的 PluginServiceRegistry&lt;InvoicePluginApi&gt;；步骤 13 的账户锁对应物理视图里数据库上的 global_locks 表</text>
+</svg>

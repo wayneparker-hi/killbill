@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .section { fill:#374151; font-size:14px; font-weight:600; }
+    .header { fill:#111827; font-size:13px; font-weight:600; }
+    .cap { fill:#111827; font-size:11px; font-weight:600; }
+    .api { fill:#1d4ed8; font-size:10px; }
+    .small { fill:#6b7280; font-size:10px; }
+    .axis { fill:#374151; font-size:12px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2563eb"/></marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#16a34a"/></marker>
+  </defs>
+
+  <rect width="1200" height="800" fill="#ffffff"/>
+  <text x="600" y="36" text-anchor="middle" class="title">业务扩展点地图</text>
+  <text x="600" y="58" text-anchor="middle" class="subtitle">价值流每个阶段留出的可替换位置：外部系统一律以插件形态挂在这 13 个扩展点上，核心不认识任何一个具体插件</text>
+
+  <text x="56" y="102" class="section">价值流主轴</text>
+  <path d="M170 118 L1084 118" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <circle cx="200" cy="118" r="7" fill="#2563eb"/><circle cx="414" cy="118" r="7" fill="#2563eb"/><circle cx="628" cy="118" r="7" fill="#2563eb"/><circle cx="842" cy="118" r="7" fill="#2563eb"/><circle cx="1056" cy="118" r="7" fill="#2563eb"/>
+  <text x="200" y="142" text-anchor="middle" class="small">确定计费约定</text><text x="414" y="142" text-anchor="middle" class="small">形成订阅事实</text><text x="628" y="142" text-anchor="middle" class="small">生成应收</text><text x="842" y="142" text-anchor="middle" class="small">确认资金结果</text><text x="1056" y="142" text-anchor="middle" class="small">完成收入或处置应收</text>
+
+  <text x="38" y="370" transform="rotate(-90 38 370)" text-anchor="middle" class="axis">业务扩展点 · 按阶段归属</text>
+  <rect x="62" y="170" width="1096" height="394" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+
+  <rect x="62" y="170" width="178" height="394" rx="8" fill="#f9fafb"/>
+  <line x1="240" y1="170" x2="240" y2="564" stroke="#d1d5db"/>
+  <line x1="424" y1="170" x2="424" y2="564" stroke="#d1d5db"/>
+  <line x1="608" y1="170" x2="608" y2="564" stroke="#d1d5db"/>
+  <line x1="792" y1="170" x2="792" y2="564" stroke="#d1d5db"/>
+  <line x1="976" y1="170" x2="976" y2="564" stroke="#d1d5db"/>
+
+  <rect x="62" y="170" width="1096" height="72" rx="8" fill="#f9fafb"/>
+  <line x1="62" y1="242" x2="1158" y2="242" stroke="#d1d5db"/>
+  <text x="151" y="202" text-anchor="middle" class="header">扩展点卡片</text><text x="151" y="222" text-anchor="middle" class="small">语义 / 接口 / 现有实现</text>
+  <text x="332" y="202" text-anchor="middle" class="header">目录与定价</text><text x="332" y="222" text-anchor="middle" class="small">价格从哪里来</text>
+  <text x="516" y="202" text-anchor="middle" class="header">订阅与生命周期</text><text x="516" y="222" text-anchor="middle" class="small">订阅操作能否发生</text>
+  <text x="700" y="202" text-anchor="middle" class="header">计费与应收生成</text><text x="700" y="222" text-anchor="middle" class="small">发票由什么构成</text>
+  <text x="884" y="202" text-anchor="middle" class="header">支付与资金确认</text><text x="884" y="222" text-anchor="middle" class="small">钱怎么收、失败怎么办</text>
+  <text x="1067" y="202" text-anchor="middle" class="header">结果外发与处置</text><text x="1067" y="222" text-anchor="middle" class="small">事实如何传出系统</text>
+
+  <rect x="82" y="266" width="138" height="266" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="151" y="300" text-anchor="middle" class="header">读法</text>
+  <line x1="104" y1="318" x2="198" y2="318" stroke="#bfdbfe"/>
+  <text x="151" y="346" text-anchor="middle" class="cap">第一行 · 业务语义</text>
+  <text x="151" y="374" text-anchor="middle" class="api">第二行 · 接口类型</text>
+  <text x="151" y="402" text-anchor="middle" class="small">第三行 · 仓库中的实现</text>
+  <line x1="104" y1="424" x2="198" y2="424" stroke="#bfdbfe"/>
+  <text x="151" y="452" text-anchor="middle" class="small">同一扩展点可有</text>
+  <text x="151" y="470" text-anchor="middle" class="small">多个插件同时注册</text>
+  <text x="151" y="498" text-anchor="middle" class="small">由业务侧的选择器</text>
+  <text x="151" y="516" text-anchor="middle" class="small">决定用哪一个</text>
+
+  <g>
+    <rect x="260" y="266" width="144" height="86" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="332" y="294" text-anchor="middle" class="cap">目录由外部提供</text><text x="332" y="314" text-anchor="middle" class="api">CatalogPluginApi</text><text x="332" y="334" text-anchor="middle" class="small">catalog-plugin-test</text>
+    <rect x="260" y="362" width="144" height="86" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="332" y="390" text-anchor="middle" class="cap">汇率与币种换算</text><text x="332" y="410" text-anchor="middle" class="api">CurrencyPluginApi</text><text x="332" y="430" text-anchor="middle" class="small">currency-plugin</text>
+  </g>
+
+  <g>
+    <rect x="444" y="266" width="144" height="86" rx="8" fill="#faf5ff" stroke="#ddd6fe"/>
+    <text x="516" y="294" text-anchor="middle" class="cap">订阅操作前后置拦截</text><text x="516" y="314" text-anchor="middle" class="api">EntitlementPluginApi</text><text x="516" y="334" text-anchor="middle" class="small">coupon-plugin-demo</text>
+    <rect x="444" y="362" width="144" height="86" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-dasharray="4,3"/>
+    <text x="516" y="400" text-anchor="middle" class="small">可拒绝、可改写参数</text><text x="516" y="420" text-anchor="middle" class="small">是唯一能否决业务操作</text><text x="516" y="440" text-anchor="middle" class="small">的扩展点</text>
+  </g>
+
+  <g>
+    <rect x="628" y="266" width="144" height="86" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="700" y="294" text-anchor="middle" class="cap">出账时增删发票项</text><text x="700" y="314" text-anchor="middle" class="api">InvoicePluginApi</text><text x="700" y="334" text-anchor="middle" class="small">avatax · vertex · deposit</text>
+    <rect x="628" y="362" width="144" height="86" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="700" y="390" text-anchor="middle" class="cap">用量数据由外部提供</text><text x="700" y="410" text-anchor="middle" class="api">UsagePluginApi</text><text x="700" y="430" text-anchor="middle" class="small">替代内置用量表</text>
+    <rect x="628" y="458" width="144" height="86" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="700" y="486" text-anchor="middle" class="cap">发票渲染模板</text><text x="700" y="506" text-anchor="middle" class="api">InvoiceFormatterFactory</text><text x="700" y="526" text-anchor="middle" class="small">custom-email-formatter</text>
+  </g>
+
+  <g>
+    <rect x="812" y="266" width="144" height="86" rx="8" fill="#fff7ed" stroke="#fed7aa"/>
+    <text x="884" y="294" text-anchor="middle" class="cap">对接支付网关</text><text x="884" y="314" text-anchor="middle" class="api">PaymentPluginApi</text><text x="884" y="334" text-anchor="middle" class="small">stripe · adyen · gocardless</text>
+    <rect x="812" y="362" width="144" height="86" rx="8" fill="#fff7ed" stroke="#fed7aa"/>
+    <text x="884" y="390" text-anchor="middle" class="cap">路由、风控与重试决策</text><text x="884" y="410" text-anchor="middle" class="api">PaymentControlPluginApi</text><text x="884" y="430" text-anchor="middle" class="small">payment-retries-plugin</text>
+    <rect x="812" y="458" width="144" height="86" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-dasharray="4,3"/>
+    <text x="884" y="496" text-anchor="middle" class="small">两者可叠加：控制插件</text><text x="884" y="516" text-anchor="middle" class="small">决定调用哪个网关插件</text>
+  </g>
+
+  <g>
+    <rect x="996" y="266" width="142" height="86" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+    <text x="1067" y="294" text-anchor="middle" class="cap">业务事件外发</text><text x="1067" y="314" text-anchor="middle" class="api">NotificationPluginApi</text><text x="1067" y="334" text-anchor="middle" class="small">email-notifications · analytics</text>
+    <rect x="996" y="362" width="142" height="86" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-dasharray="4,3"/>
+    <text x="1067" y="392" text-anchor="middle" class="small">本 fork 已把它并入</text><text x="1067" y="412" text-anchor="middle" class="small">统一服务注册表，与其余</text><text x="1067" y="432" text-anchor="middle" class="small">12 个扩展点形态一致</text>
+  </g>
+
+  <text x="56" y="602" class="section">平台级扩展点 · 与业务阶段无关，由运行时直接消费</text>
+  <rect x="62" y="618" width="1096" height="104" rx="8" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5"/>
+  <rect x="86" y="640" width="248" height="62" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="210" y="664" text-anchor="middle" class="cap">插件自带 HTTP 端点</text><text x="210" y="686" text-anchor="middle" class="small">jakarta.servlet.Servlet → /plugins/&lt;id&gt;/*</text>
+  <rect x="354" y="640" width="248" height="62" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="478" y="664" text-anchor="middle" class="cap">插件健康度</text><text x="478" y="686" text-anchor="middle" class="small">Healthcheck → 并入 /healthcheck</text>
+  <rect x="622" y="640" width="248" height="62" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="746" y="664" text-anchor="middle" class="cap">插件指标</text><text x="746" y="686" text-anchor="middle" class="small">MetricRegistry · 单实例扩展点</text>
+  <rect x="890" y="640" width="248" height="62" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="1014" y="664" text-anchor="middle" class="cap">服务发现登记</text><text x="1014" y="686" text-anchor="middle" class="small">ServiceDiscoveryRegistry → eureka-plugin</text>
+
+  <path d="M610 618 L610 582" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <text x="628" y="604" class="small">同一个插件通常同时挂多个扩展点</text>
+  <text x="600" y="770" text-anchor="middle" class="subtitle">判据：核心里不允许出现 if (plugin instanceof XxxPlugin) 或 core → 具体插件 的依赖——业务层只表达「需要什么能力」，由注册表决定用哪个实现</text>
+</svg>

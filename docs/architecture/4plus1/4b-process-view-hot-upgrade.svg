@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1150" width="1400" height="1150">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .lane { fill:#111827; font-size:12px; font-weight:600; }
+    .lanesub { fill:#6b7280; font-size:10px; }
+    .msg { fill:#1f2937; font-size:11px; }
+    .ret { fill:#6b7280; font-size:11px; }
+    .phase { fill:#4b5563; font-size:12px; font-weight:600; }
+    .note { fill:#111827; font-size:11px; font-weight:600; }
+    .small { fill:#6b7280; font-size:10px; }
+  </style>
+  <defs>
+    <marker id="u-solid" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#374151"/></marker>
+    <marker id="u-open" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#9ca3af"/></marker>
+    <marker id="u-red" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#dc2626"/></marker>
+  </defs>
+
+  <rect width="1400" height="1150" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">进程视图 (2/2) —— 插件热升级与回滚（无空窗）</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">四个阶段：装到磁盘 → 启动新版本 → 停掉旧版本 → 需要时回滚。真正让「无空窗」成立的是第三阶段按版本撤销注册，而不是启动得快</text>
+
+  <g>
+    <rect x="40" y="86" width="118" height="56" rx="6" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.4"/>
+    <text x="99" y="108" text-anchor="middle" class="lane">节点命令线程</text><text x="99" y="126" text-anchor="middle" class="lanesub">nodesInfo 广播</text>
+    <rect x="190" y="86" width="118" height="56" rx="6" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.4"/>
+    <text x="249" y="104" text-anchor="middle" class="lane">PluginNode</text><text x="249" y="120" text-anchor="middle" class="lane">CommandListener</text><text x="249" y="136" text-anchor="middle" class="lanesub">平台侧</text>
+    <rect x="340" y="86" width="118" height="56" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.4"/>
+    <text x="399" y="108" text-anchor="middle" class="lane">PluginInstaller</text><text x="399" y="126" text-anchor="middle" class="lanesub">lpr-management</text>
+    <rect x="490" y="86" width="118" height="56" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.4"/>
+    <text x="549" y="108" text-anchor="middle" class="lane">PluginRepository</text><text x="549" y="126" text-anchor="middle" class="lanesub">节点本地磁盘</text>
+    <rect x="640" y="86" width="118" height="56" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+    <text x="699" y="104" text-anchor="middle" class="lane">DefaultPlugin</text><text x="699" y="120" text-anchor="middle" class="lane">LifecycleManager</text><text x="699" y="136" text-anchor="middle" class="lanesub">lpr-core</text>
+    <rect x="790" y="86" width="118" height="56" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+    <text x="849" y="104" text-anchor="middle" class="lane">DefaultService</text><text x="849" y="120" text-anchor="middle" class="lane">Registry</text><text x="849" y="136" text-anchor="middle" class="lanesub">键 = (id, version)</text>
+    <rect x="940" y="86" width="118" height="56" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+    <text x="999" y="104" text-anchor="middle" class="lane">PluginService</text><text x="999" y="120" text-anchor="middle" class="lane">Registry&lt;T&gt;</text><text x="999" y="136" text-anchor="middle" class="lanesub">业务侧看见的</text>
+  </g>
+
+  <g stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="5,4">
+    <line x1="99" y1="142" x2="99" y2="1046"/>
+    <line x1="249" y1="142" x2="249" y2="1046"/>
+    <line x1="399" y1="142" x2="399" y2="1046"/>
+    <line x1="549" y1="142" x2="549" y2="1046"/>
+    <line x1="699" y1="142" x2="699" y2="1046"/>
+    <line x1="849" y1="142" x2="849" y2="1046"/>
+    <line x1="999" y1="142" x2="999" y2="1046"/>
+  </g>
+
+  <!-- ===== 阶段 1 ===== -->
+  <rect x="40" y="156" width="1030" height="24" rx="4" fill="#f0fdfa" stroke="#5eead4" stroke-width="1"/>
+  <text x="52" y="173" class="phase">阶段 ① INSTALL_PLUGIN · 让 1.3.0 出现在磁盘上，但不提供任何服务</text>
+  <path d="M99 210 L238 210" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="106" y="204" class="msg">1 · INSTALL_PLUGIN(id, 1.3.0, uri, sha1)</text>
+  <path d="M249 250 L388 250" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="256" y="244" class="msg">2 · install(...)</text>
+  <path d="M399 288 L439 288 L439 306 L405 306" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="449" y="292" class="msg">3 · 下载到临时目录 → 校验 sha1 → 从 jar 内取出 plugin.yaml</text>
+  <path d="M399 340 L538 340" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="406" y="334" class="msg">4 · ATOMIC_MOVE 到 &lt;id&gt;/1.3.0/</text>
+
+  <!-- ===== 阶段 2 ===== -->
+  <rect x="40" y="366" width="1030" height="24" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="52" y="383" class="phase">阶段 ② START_PLUGIN 1.3.0 · 新版本上线，此时 1.2.0 仍在服务</text>
+  <path d="M99 420 L238 420" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="106" y="414" class="msg">5 · START_PLUGIN(id, 1.3.0)</text>
+  <path d="M249 460 L688 460" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="256" y="454" class="msg">6 · start(id, 1.3.0)</text>
+  <path d="M699 498 L739 498 L739 516 L705 516" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="749" y="502" class="msg">7 · CAS：RESOLVED → STARTING（保证 START 不会并发执行两次）</text>
+  <path d="M699 548 L739 548 L739 566 L705 566" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="749" y="552" class="msg">8 · 新建 ClassLoader，反射实例化 entrypoint 并调用 start()</text>
+  <path d="M699 600 L838 600" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="706" y="594" class="msg">9 · register(…)，键 = (id, 1.3.0)</text>
+  <path d="M849 640 L988 640" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="856" y="634" class="msg">10 · 桥接通知</text>
+  <path d="M699 680 L560 680" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="574" y="674" class="msg">11 · 切换 ACTIVE 文件：active=1.3.0, previous=1.2.0</text>
+
+  <!-- ===== 阶段 3 ===== -->
+  <rect x="40" y="706" width="1030" height="24" rx="4" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="52" y="723" class="phase">阶段 ③ 停掉 1.2.0 · 顺序不能反，键也不能写成 pluginId</text>
+  <path d="M699 760 L838 760" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#u-red)"/><text x="706" y="754" class="msg" fill="#dc2626">12 · unregisterAll(id, 1.2.0)　—— 按 (pluginId, version)，不是按 pluginId</text>
+  <path d="M849 800 L988 800" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="856" y="794" class="msg">13 · 仅移除 1.2.0 的条目</text>
+  <path d="M699 838 L739 838 L739 856 L705 856" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="749" y="842" class="msg">14 · plugin.stop() → resources().closeAll()</text>
+  <path d="M699 888 L739 888 L739 906 L705 906" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#u-red)"/><text x="749" y="892" class="msg" fill="#dc2626">15 · 丢弃 ClassLoader 与 Plugin 实例的引用（不只是 shutdown）</text>
+  <path d="M699 936 L739 936 L739 954 L705 954" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="749" y="940" class="msg">16 · CAS：STOPPING → STOPPED，1.2.0 的类等待 GC</text>
+
+  <!-- ===== 阶段 4 ===== -->
+  <rect x="40" y="980" width="1030" height="24" rx="4" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="52" y="997" class="phase">阶段 ④ 回滚 · 不是特殊路径，就是把阶段 ②③ 对 1.2.0 再跑一遍</text>
+  <path d="M99 1034 L688 1034" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#u-solid)"/><text x="106" y="1028" class="msg">17 · START_PLUGIN(id, 1.2.0)　—— 磁盘上 1.2.0 从未被删除，所以回滚只是再启动一次</text>
+
+  <!-- ===== 右侧注释 ===== -->
+  <rect x="1090" y="272" width="286" height="104" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.3"/>
+  <text x="1102" y="294" class="note">为什么必须原子就位</text>
+  <text x="1102" y="316" class="small">运行时靠列目录发现插件。</text>
+  <text x="1102" y="334" class="small">写了一半的版本目录和真的版本目录</text>
+  <text x="1102" y="352" class="small">长得一模一样，因此必须先落临时目录，</text>
+  <text x="1102" y="370" class="small">成功后再 ATOMIC_MOVE 就位。</text>
+  <line x1="1090" y1="340" x2="560" y2="340" stroke="#c4b5fd" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <rect x="1090" y="586" width="286" height="104" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.3"/>
+  <text x="1102" y="608" class="note">「无空窗」在这一刻成立</text>
+  <text x="1102" y="630" class="small">步骤 10 之后、步骤 12 之前，</text>
+  <text x="1102" y="648" class="small">1.2.0 与 1.3.0 同时在册。</text>
+  <text x="1102" y="666" class="small">流量落到哪个版本由业务侧选择器决定，</text>
+  <text x="1102" y="684" class="small">但任何时刻都至少有一个提供者。</text>
+  <line x1="1090" y1="640" x2="1010" y2="640" stroke="#86efac" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <rect x="1090" y="736" width="286" height="104" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+  <text x="1102" y="758" class="note">约束 A5 · 撤销键的作用域</text>
+  <text x="1102" y="780" class="small">若按 pluginId 撤销，停 1.2.0 会把 1.3.0</text>
+  <text x="1102" y="798" class="small">刚注册的服务一并撤掉——插件显示</text>
+  <text x="1102" y="816" class="small">ACTIVE，却什么都不提供。</text>
+  <text x="1102" y="834" class="small">这个 bug 是被端到端测试抓到的。</text>
+  <line x1="1090" y1="780" x2="860" y2="780" stroke="#fca5a5" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <rect x="1090" y="860" width="286" height="122" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1.3"/>
+  <text x="1102" y="882" class="note">约束 A4 · 顺序与「丢弃引用」</text>
+  <text x="1102" y="904" class="small">顺序不能反：先撤注册再 stop。反过来</text>
+  <text x="1102" y="922" class="small">会有一段窗口，流量打到已经关掉资源</text>
+  <text x="1102" y="940" class="small">的旧实例上。</text>
+  <text x="1102" y="962" class="small">「丢弃引用」也不能省：JDK 21 上已终止的</text>
+  <text x="1102" y="976" class="small">Thread 仍强引用 Runnable，ClassLoader 不回收。</text>
+  <line x1="1090" y1="904" x2="750" y2="904" stroke="#fdba74" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <text x="700" y="1100" text-anchor="middle" class="subtitle">对齐检查：本图的步骤 9 / 12 直接对应逻辑视图里 DefaultServiceRegistry 的键设计；步骤 1 的广播语义由物理视图的「插件目录是节点本地状态」解释</text>
+</svg>
