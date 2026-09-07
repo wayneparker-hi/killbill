@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1060" width="1400" height="1060">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill:#111827; font-size:22px; font-weight:600; }
+    .subtitle { fill:#6b7280; font-size:12px; }
+    .col { fill:#374151; font-size:13px; font-weight:600; }
+    .lane { fill:#374151; font-size:14px; font-weight:600; }
+    .box { fill:#111827; font-size:13px; font-weight:600; }
+    .sub { fill:#6b7280; font-size:11px; }
+    .edge { fill:#4b5563; font-size:10px; font-weight:600; }
+    .th { fill:#111827; font-size:12px; font-weight:600; }
+    .td { fill:#374151; font-size:11px; }
+    .warn { fill:#dc2626; font-size:11px; font-weight:600; }
+  </style>
+  <defs>
+    <marker id="m-green" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#16a34a"/></marker>
+    <marker id="m-orange" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ea580c"/></marker>
+    <marker id="m-purple" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#7c3aed"/></marker>
+    <marker id="m-red" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#dc2626"/></marker>
+    <marker id="m-gray" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="1400" height="1060" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" class="title">商业化接入：读写两条路径 + 一条离线链路</text>
+  <text x="700" y="56" text-anchor="middle" class="subtitle">判定走本地快照、用量走异步写入、计费完全离线——三条链路的一致性要求不同，合成一条就等于把计费系统放进了下单的关键路径</text>
+
+  <!-- 列标题 -->
+  <text x="234" y="86" text-anchor="middle" class="col">业务侧</text>
+  <text x="670" y="86" text-anchor="middle" class="col">链路特征</text>
+  <text x="1113" y="86" text-anchor="middle" class="col">商业化侧</text>
+  <line x1="452" y1="96" x2="452" y2="726" stroke="#e5e7eb" stroke-width="1.2" stroke-dasharray="5,4"/>
+  <line x1="888" y1="96" x2="888" y2="726" stroke="#e5e7eb" stroke-width="1.2" stroke-dasharray="5,4"/>
+
+  <!-- ============ Lane 1 · 读路径 ============ -->
+  <rect x="24" y="96" width="1306" height="210" rx="8" fill="#f0fdf4" fill-opacity="0.5" stroke="#86efac" stroke-width="1.6"/>
+  <text x="40" y="122" class="lane">① 读路径 · 权益判定　—— 唯一在主链路上的一条，因此不能是远程调用</text>
+
+  <rect x="40" y="140" width="180" height="76" rx="6" fill="#ffffff" stroke="#4ade80" stroke-width="1.4"/>
+  <text x="130" y="166" text-anchor="middle" class="box">业务判定点</text>
+  <text x="130" y="186" text-anchor="middle" class="sub">@RequiresEntitlement</text>
+  <text x="130" y="204" text-anchor="middle" class="sub">统一切面，不各处手写 if</text>
+
+  <path d="M220 178 L246 178" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#m-green)"/>
+
+  <rect x="252" y="140" width="180" height="76" rx="6" fill="#ffffff" stroke="#4ade80" stroke-width="1.4"/>
+  <text x="342" y="166" text-anchor="middle" class="box">本地权益快照</text>
+  <text x="342" y="186" text-anchor="middle" class="sub">开关 · 配额 · 有效期</text>
+  <text x="342" y="204" text-anchor="middle" class="sub">进程内缓存，纳秒级</text>
+
+  <path d="M470 178 L438 178" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#m-green)"/>
+
+  <rect x="476" y="140" width="390" height="76" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.4"/>
+  <text x="671" y="166" text-anchor="middle" class="box">快照下发　—— 推送为主，定期全量拉取兜底</text>
+  <text x="671" y="186" text-anchor="middle" class="sub">由订阅变更 / 逾期 / 到期 三类事件驱动</text>
+  <text x="671" y="204" text-anchor="middle" class="sub">秒级新鲜度即可；业务侧永远持有一份可用的旧值</text>
+
+  <path d="M906 178 L872 178" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#m-green)"/>
+
+  <rect x="912" y="140" width="400" height="76" rx="6" fill="#ffffff" stroke="#4ade80" stroke-width="1.4"/>
+  <text x="1112" y="166" text-anchor="middle" class="box">权益物化服务</text>
+  <text x="1112" y="186" text-anchor="middle" class="sub">把订阅事实翻译成「现在能用什么」</text>
+  <text x="1112" y="204" text-anchor="middle" class="sub">Kill Bill 里对应 EntitlementApi + BlockingState</text>
+
+  <rect x="40" y="230" width="1272" height="60" rx="6" fill="#ffffff" stroke="#bbf7d0" stroke-width="1.3"/>
+  <text x="56" y="254" class="box">关键：判定不是 RPC</text>
+  <text x="56" y="276" class="sub">商业化系统整体不可用时，业务仍按最后一份快照继续运行——这就是把计费系统移出关键路径的全部意义。反过来说，如果这一格画成了同步调用，后面两条链路怎么设计都救不回来。</text>
+
+  <!-- ============ Lane 2 · 写路径 ============ -->
+  <rect x="24" y="326" width="1306" height="170" rx="8" fill="#fff7ed" fill-opacity="0.5" stroke="#fdba74" stroke-width="1.6"/>
+  <text x="40" y="352" class="lane">② 写路径 · 用量归集　—— 业务只管把事实丢出去，不等回应</text>
+
+  <rect x="40" y="370" width="180" height="76" rx="6" fill="#ffffff" stroke="#fb923c" stroke-width="1.4"/>
+  <text x="130" y="396" text-anchor="middle" class="box">业务事实发生</text>
+  <text x="130" y="416" text-anchor="middle" class="sub">下单成功 · 新增员工</text>
+  <text x="130" y="434" text-anchor="middle" class="sub">调用一次 API</text>
+
+  <path d="M220 408 L246 408" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#m-orange)"/>
+
+  <rect x="252" y="370" width="180" height="76" rx="6" fill="#ffffff" stroke="#fb923c" stroke-width="1.4"/>
+  <text x="342" y="396" text-anchor="middle" class="box">本地缓冲 + 幂等键</text>
+  <text x="342" y="416" text-anchor="middle" class="sub">上报失败入重试队列</text>
+  <text x="342" y="434" text-anchor="middle" class="sub">不阻塞主链路</text>
+
+  <path d="M438 408 L470 408" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#m-orange)"/>
+
+  <rect x="476" y="370" width="390" height="76" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.4"/>
+  <text x="671" y="396" text-anchor="middle" class="box">异步上报（至少一次）</text>
+  <text x="671" y="416" text-anchor="middle" class="sub">可丢可补：靠幂等键去重，靠对账补齐缺口</text>
+  <text x="671" y="434" text-anchor="middle" class="sub">延迟预算分钟级——用量本来就是最终一致的</text>
+
+  <path d="M872 408 L906 408" fill="none" stroke="#ea580c" stroke-width="1.8" marker-end="url(#m-orange)"/>
+
+  <rect x="912" y="370" width="400" height="76" rx="6" fill="#ffffff" stroke="#fb923c" stroke-width="1.4"/>
+  <text x="1112" y="396" text-anchor="middle" class="box">用量归集与周期聚合</text>
+  <text x="1112" y="416" text-anchor="middle" class="sub">UsagePluginApi 或内置用量表</text>
+  <text x="1112" y="434" text-anchor="middle" class="sub">只做归集，绝不在这里做任何判定</text>
+
+  <!-- ============ Lane 3 · 离线 ============ -->
+  <rect x="24" y="516" width="1306" height="210" rx="8" fill="#faf5ff" fill-opacity="0.5" stroke="#c4b5fd" stroke-width="1.6"/>
+  <text x="40" y="542" class="lane">③ 离线链路 · 计费出账　—— 不在任何业务请求的链路上</text>
+
+  <rect x="40" y="560" width="392" height="76" rx="6" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.4"/>
+  <text x="236" y="586" text-anchor="middle" class="box">业务侧此时完全不参与</text>
+  <text x="236" y="606" text-anchor="middle" class="sub">既不调用商业化，也不被商业化阻塞</text>
+  <text x="236" y="624" text-anchor="middle" class="sub">出账跑三个小时，对业务无感</text>
+
+  <rect x="476" y="560" width="390" height="76" rx="6" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.4"/>
+  <text x="671" y="586" text-anchor="middle" class="box">由定时器驱动，失败可重跑</text>
+  <text x="671" y="606" text-anchor="middle" class="sub">账单日到达 → 每账户一条通知 → 出账</text>
+  <text x="671" y="624" text-anchor="middle" class="sub">延迟预算：小时级</text>
+
+  <rect x="912" y="560" width="94" height="76" rx="6" fill="#ffffff" stroke="#a78bfa" stroke-width="1.4"/>
+  <text x="959" y="592" text-anchor="middle" class="box">出账</text><text x="959" y="612" text-anchor="middle" class="sub">用量 + 订阅</text>
+  <path d="M1006 598 L1014 598" fill="none" stroke="#7c3aed" stroke-width="1.6" marker-end="url(#m-purple)"/>
+  <rect x="1014" y="560" width="94" height="76" rx="6" fill="#ffffff" stroke="#a78bfa" stroke-width="1.4"/>
+  <text x="1061" y="592" text-anchor="middle" class="box">发票</text><text x="1061" y="612" text-anchor="middle" class="sub">形成应收</text>
+  <path d="M1108 598 L1116 598" fill="none" stroke="#7c3aed" stroke-width="1.6" marker-end="url(#m-purple)"/>
+  <rect x="1116" y="560" width="94" height="76" rx="6" fill="#ffffff" stroke="#a78bfa" stroke-width="1.4"/>
+  <text x="1163" y="592" text-anchor="middle" class="box">支付</text><text x="1163" y="612" text-anchor="middle" class="sub">扣款与重试</text>
+  <path d="M1210 598 L1218 598" fill="none" stroke="#7c3aed" stroke-width="1.6" marker-end="url(#m-purple)"/>
+  <rect x="1218" y="560" width="94" height="76" rx="6" fill="#ffffff" stroke="#f87171" stroke-width="1.6"/>
+  <text x="1265" y="592" text-anchor="middle" class="box">逾期</text><text x="1265" y="612" text-anchor="middle" class="sub">收不回怎么办</text>
+
+  <rect x="40" y="650" width="1272" height="60" rx="6" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.3"/>
+  <text x="56" y="674" class="box">闭环：商业化状态反过来影响业务可用性时，走的仍然是快照</text>
+  <text x="56" y="696" class="sub">业务不去问逾期系统「这个租户欠费了吗」；是逾期系统把结果物化进权益快照，业务照常读本地那一份。判定点的代码一行都不用改。</text>
+
+  <!-- 回压边 -->
+  <path d="M1312 598 L1352 598 L1352 178 L1318 178" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#m-red)"/>
+  <rect x="1358" y="330" width="14" height="120" rx="3" fill="#ffffff"/>
+  <text x="1364" y="446" transform="rotate(-90 1364 446)" class="warn">欠费 / 逾期 → 收回权益</text>
+
+  <!-- ============ 席位例子 ============ -->
+  <text x="24" y="762" class="lane">为什么「员工数量 ≤ 席位数」也不需要远程调用：limit 与 count 存放在不同的一侧</text>
+  <rect x="24" y="772" width="1306" height="90" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.4"/>
+  <rect x="44" y="792" width="380" height="52" rx="6" fill="#ffffff" stroke="#4ade80" stroke-width="1.4"/>
+  <text x="234" y="814" text-anchor="middle" class="box">limit = 20 席位</text>
+  <text x="234" y="834" text-anchor="middle" class="sub">商业化的事实 · 随订阅变更下发到快照里</text>
+  <path d="M424 818 L466 818" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#m-gray)"/>
+  <rect x="472" y="792" width="380" height="52" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.4"/>
+  <text x="662" y="814" text-anchor="middle" class="box">count = 18 员工</text>
+  <text x="662" y="834" text-anchor="middle" class="sub">业务自己的事实 · 本来就在业务库里</text>
+  <path d="M852 818 L894 818" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#m-gray)"/>
+  <rect x="900" y="792" width="410" height="52" rx="6" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.6"/>
+  <text x="1105" y="814" text-anchor="middle" class="box">判定 count &lt; limit　→　纯本地运算，零远程调用</text>
+  <text x="1105" y="834" text-anchor="middle" class="sub">员工数变化再经写路径回流，影响的是下期账单，不是这次判定</text>
+
+  <!-- ============ 对照表 ============ -->
+  <text x="24" y="896" class="lane">三条链路的对照 —— 把它们混成一条，就是让最严的一条去迁就最松的一条</text>
+  <rect x="24" y="906" width="1306" height="118" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.4"/>
+  <rect x="24" y="906" width="1306" height="30" rx="8" fill="#f9fafb"/>
+  <line x1="24" y1="936" x2="1330" y2="936" stroke="#d1d5db"/>
+  <line x1="264" y1="906" x2="264" y2="1024" stroke="#e5e7eb"/>
+  <line x1="474" y1="906" x2="474" y2="1024" stroke="#e5e7eb"/>
+  <line x1="684" y1="906" x2="684" y2="1024" stroke="#e5e7eb"/>
+  <line x1="964" y1="906" x2="964" y2="1024" stroke="#e5e7eb"/>
+  <text x="40" y="926" class="th">链路</text>
+  <text x="280" y="926" class="th">一致性要求</text>
+  <text x="490" y="926" class="th">延迟预算</text>
+  <text x="700" y="926" class="th">失败策略</text>
+  <text x="980" y="926" class="th">谁持有事实</text>
+
+  <text x="40" y="958" class="td">① 权益判定（读）</text>
+  <text x="280" y="958" class="td">可短暂陈旧</text>
+  <text x="490" y="958" class="td">纳秒（本地）</text>
+  <text x="700" y="958" class="td">用最后一份快照，按能力性质决定放行或拒绝</text>
+  <text x="980" y="958" class="td">商业化持有，物化后下发给业务</text>
+
+  <text x="40" y="986" class="td">② 用量归集（写）</text>
+  <text x="280" y="986" class="td">最终一致</text>
+  <text x="490" y="986" class="td">分钟级</text>
+  <text x="700" y="986" class="td">重试 + 幂等去重 + 对账补齐，绝不阻塞业务</text>
+  <text x="980" y="986" class="td">业务持有，上报给商业化</text>
+
+  <text x="40" y="1014" class="td">③ 计费出账（离线）</text>
+  <text x="280" y="1014" class="td">强一致（账要对）</text>
+  <text x="490" y="1014" class="td">小时级</text>
+  <text x="700" y="1014" class="td">整批可重跑；未收回的应收另有逾期链路处置</text>
+  <text x="980" y="1014" class="td">商业化独有，业务不参与</text>
+
+  <text x="700" y="1050" text-anchor="middle" class="subtitle">唯一真正需要同步远程调用的，是跨系统的强一致扣减（如按次计费的预付余额）——那种也应该做成「预占 + 异步核销」，而不是同步扣</text>
+</svg>

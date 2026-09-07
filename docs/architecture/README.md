@@ -22,6 +22,7 @@
 | [extension-points.svg](business/extension-points.svg) | 13 个扩展点分别留在价值流的哪一段，现有实现是谁 | `EntitlementPluginApi` 是唯一能**否决**业务操作的扩展点 |
 | [exception-decision-matrix.svg](business/exception-decision-matrix.svg) | 资金结果确定性 × 剩余应收 的处置决策 | 支付超时只触发回查与升级，绝不自动改成失败——那会让重试变成重复扣款 |
 | [metric-tree.svg](business/metric-tree.svg) | 目标 / 过程 / 护栏三层指标与治理闭环 | 护栏指标里有一项是「插件故障导致的降级」 |
+| [monetization-integration-paths.svg](business/monetization-integration-paths.svg) | 业务系统接入商业化时的读 / 写 / 离线三条链路 | 权益判定是读本地快照而非 RPC；`limit` 在商业化侧、`count` 在业务侧，所以配额判定零远程调用 |
 
 ## 二、4+1 架构视图 [`4plus1/`](4plus1/)
 

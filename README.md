@@ -16,8 +16,8 @@ Kill Bill 计费平台的一个 fork，目标是**用自研的轻量级插件运
 通知渠道一律以插件形态挂在 13 个扩展点上，由 LPR 运行时装载。核心里不允许出现
 `if (plugin instanceof XxxPlugin)`，也不允许出现 `core → 具体插件` 的 pom 依赖。
 
-其余 13 张图（价值流、能力地图、对象生命周期、扩展点地图、异常决策矩阵、指标树，
-以及 4+1 的五个视图与视图对齐图）见 [docs/architecture/](docs/architecture/README.md)。
+其余 14 张图（价值流、能力地图、对象生命周期、扩展点地图、异常决策矩阵、指标树、
+商业化接入的三条链路，以及 4+1 的五个视图与视图对齐图）见 [docs/architecture/](docs/architecture/README.md)。
 
 ---
 
@@ -165,7 +165,7 @@ accertify、bitcoin、bridge、dwolla、feedzai、forte、meter、moneris、paye
 | [CLAUDE.md](CLAUDE.md) | **架构约束与工作规范**。改代码前必读 |
 | [docs/usage.md](docs/usage.md) | **使用指南**：跑起来、装插件、运维、排障 |
 | [docs/README.md](docs/README.md) | 文档索引 |
-| [docs/architecture/README.md](docs/architecture/README.md) | **架构图**：业务架构 7 张 + 4+1 视图 7 张，全部 SVG |
+| [docs/architecture/README.md](docs/architecture/README.md) | **架构图**：业务架构 8 张 + 4+1 视图 7 张，全部 SVG |
 | [docs/design/lightweight-plugin-runtime.md](docs/design/lightweight-plugin-runtime.md) | **LPR 设计**：模型、自研 vs 复用的边界、以及设计与实现的出入 |
 | [docs/analysis/](docs/analysis/) | 改造前的代码摸底（带文件路径与行号） |
 | [docs/migration/](docs/migration/) | 实施方案与进度 |
