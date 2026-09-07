@@ -7,18 +7,17 @@
 
 ## 设计（design/）
 
-插件运行时的原始设计文档。**这是架构决策的源头依据**，实施中遇到分歧以此为准。
-
 | 文档 | 内容 |
 |---|---|
-| [01-lightweight-plugin-runtime-v1.md](design/01-lightweight-plugin-runtime-v1.md) | LPR 完整规格 v1.0。63 节，涵盖设计目标、非目标、核心抽象、生命周期状态机、ClassLoader 委派模型、Service Registry、EventBus、Resource Registry、版本管理与热更新、测试体系、MVP 范围与开发顺序 |
-| [02-lightweight-plugin-runtime-v2.md](design/02-lightweight-plugin-runtime-v2.md) | v1 的修正版。核心论点：**复用"机制"，自己定义"插件架构语义"**。给出了自研 vs 复用的取舍表，以及 Port & Adapter 分层（这是本工程的硬约束来源） |
+| [lightweight-plugin-runtime.md](design/lightweight-plugin-runtime.md) | **LPR 设计**。它解决什么问题、四条设计原则、自研 vs 复用的边界与 Port & Adapter、核心抽象、生命周期与停止顺序、ClassLoader 委派模型、Service Registry、版本管理与热更新、测试体系、开发顺序 |
 
-**两份文档的关系**：v1 定义"要做什么"，v2 修正"哪些自己做、哪些复用"。
-v2 的核心修正是：**ClassLoader 隔离复用成熟实现（SOFAArk），但必须藏在自己的 SPI 之后**。
+**这是架构决策的源头依据**，实施中遇到分歧以此为准。
 
-> ⚠️ **实施时对 v2 做了一处修正**：SPI 边界保留，但默认后端改为自研而非 SOFAArk。
-> 依据见 [migration/osgi-to-lpr-plan.md](migration/osgi-to-lpr-plan.md#附录对-v2-的一处修正classloader-默认后端)。
+由原始的 v1 规格（63 节）与 v2 修正稿合并而成——v1 定义"做什么"，v2 定义"哪些自己做、
+哪些复用"，两者是同一份设计的模型层与边界纪律。两份原稿可从首次提交的 git 历史取回。
+
+文末「设计与实现的三处出入」列出了实施中**基于证据推翻或修正**的部分：
+ClassLoader 默认后端改为自研、EventBus 没有抽 port、`org.killbill.billing.plugin.` 挖回 child-first。
 
 ---
 

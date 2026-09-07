@@ -149,7 +149,7 @@ accertify、bitcoin、bridge、dwolla、feedzai、forte、meter、moneris、paye
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | **架构约束与工作规范**。改代码前必读 |
 | [docs/README.md](docs/README.md) | 文档索引 |
-| [docs/design/](docs/design/) | LPR 原始设计（v1 规格 + v2 修正） |
+| [docs/design/lightweight-plugin-runtime.md](docs/design/lightweight-plugin-runtime.md) | **LPR 设计**：模型、自研 vs 复用的边界、以及设计与实现的出入 |
 | [docs/analysis/](docs/analysis/) | 改造前的代码摸底（带文件路径与行号） |
 | [docs/migration/](docs/migration/) | 实施方案与进度 |
 | [docs/development/plugin-development.md](docs/development/plugin-development.md) | **写一个新插件**：描述符字段、平台能力、testkit、热更新与回滚 |
