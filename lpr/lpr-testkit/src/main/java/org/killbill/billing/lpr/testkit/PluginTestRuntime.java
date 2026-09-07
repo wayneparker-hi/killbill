@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 
 import org.killbill.billing.lpr.api.PluginState;
 import org.killbill.billing.lpr.classloader.DefaultPluginClassLoaderFactory;
-import org.killbill.billing.lpr.core.DefaultEventBus;
+import org.killbill.billing.lpr.event.DefaultEventBus;
 import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;

@@ -19,15 +19,17 @@
         <artifactId>killbill-lpr</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <artifactId>killbill-lpr-testkit</artifactId>
+    <artifactId>killbill-lpr-event-default</artifactId>
     <packaging>jar</packaging>
-    <name>LPR :: TestKit</name>
-    <description>Runs a real plugin runtime over a temporary directory so a plugin can be exercised
-        the way it will actually be loaded: compiled, packaged, described, discovered, started.
-        Used both by the runtime's own end-to-end tests and by plugin authors.
+    <name>LPR :: Event :: Default</name>
+    <description>The in-process EventBus the runtime ships with: a few hundred lines over
+        ConcurrentHashMap, no third-party dependencies.
 
-        This is the one module allowed to depend on adapters as well as the runtime: assembling a
-        working stack is precisely its job.</description>
+        A separate module rather than a class inside lpr-core, for the same reason
+        lpr-classloader-default is: an EventBus is infrastructure, and lpr-core owns the plugin
+        model. Keeping implementations out of the core is what makes "the infrastructure is
+        replaceable" checkable rather than merely intended -- lpr-core cannot reference this class
+        because it does not depend on this module.</description>
 
     <dependencies>
         <dependency>
@@ -36,29 +38,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.kill-bill.billing</groupId>
-            <artifactId>killbill-lpr-classloader-default</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kill-bill.billing</groupId>
-            <artifactId>killbill-lpr-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kill-bill.billing</groupId>
-            <artifactId>killbill-lpr-descriptor-yaml</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kill-bill.billing</groupId>
-            <artifactId>killbill-lpr-event-default</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kill-bill.billing</groupId>
-            <artifactId>killbill-lpr-spi</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>

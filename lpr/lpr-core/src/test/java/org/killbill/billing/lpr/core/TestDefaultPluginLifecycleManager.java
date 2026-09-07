@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.api.Plugin;
 import org.killbill.billing.lpr.api.PluginContext;
 import org.killbill.billing.lpr.api.PluginState;
@@ -56,7 +57,7 @@ public class TestDefaultPluginLifecycleManager {
     private static final List<String> journal = new ArrayList<>();
 
     private DefaultServiceRegistry serviceRegistry;
-    private DefaultEventBus eventBus;
+    private EventBus eventBus;
     private StubClassLoaderFactory classLoaderFactory;
     private DefaultPluginLifecycleManager lifecycle;
 
@@ -65,7 +66,7 @@ public class TestDefaultPluginLifecycleManager {
         journal.clear();
         RecordingPlugin.registryForAssertions = null;
         serviceRegistry = new DefaultServiceRegistry();
-        eventBus = new DefaultEventBus();
+        eventBus = new NoOpEventBus();
         classLoaderFactory = new StubClassLoaderFactory();
         lifecycle = new DefaultPluginLifecycleManager(classLoaderFactory,
                                                       ClassLoaderPolicy.defaultPolicy(),
@@ -403,6 +404,25 @@ public class TestDefaultPluginLifecycleManager {
         @Override
         public void close() {
             closed = true;
+        }
+    }
+
+    /**
+     * The lifecycle only ever hands the bus to a plugin's context; it never publishes or subscribes
+     * itself. A no-op is therefore a complete stand-in, and using one keeps lpr-core's tests free of
+     * any EventBus implementation -- which is the point of the implementation living in its own
+     * module.
+     */
+    private static final class NoOpEventBus implements EventBus {
+
+        @Override
+        public void publish(final Object event) {
+        }
+
+        @Override
+        public <T> org.killbill.billing.lpr.api.Subscription subscribe(
+                final Class<T> eventType, final org.killbill.billing.lpr.api.EventHandler<T> handler) {
+            throw new UnsupportedOperationException("The lifecycle under test never subscribes");
         }
     }
 }

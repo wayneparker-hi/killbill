@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package org.killbill.billing.lpr.core;
+package org.killbill.billing.lpr.event;
 
 import java.util.ArrayList;
 import java.util.List;

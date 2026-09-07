@@ -18,18 +18,25 @@ Kill Bill fork。**OSGi / Felix 已彻底删除**，插件由自研的轻量级�
 LPR 的价值在于**自己拥有插件模型，基础设施可替换**。所有第三方能力必须先定义 SPI，再由独立 adapter 模块实现。
 
 ```
-lpr-spi                        ← 只有接口，零第三方依赖
-  ├── PluginClassLoaderFactory  → lpr-classloader-default   （已实现，默认后端）
-  └── DescriptorParser          → lpr-descriptor-yaml       （已实现，SnakeYAML）
+lpr-api   EventBus                  → lpr-event-default        （插件自己调，所以 port 在 api 层）
+lpr-spi   PluginClassLoaderFactory  → lpr-classloader-default  （只有运行时调）
+          DescriptorParser          → lpr-descriptor-yaml
 ```
 
-现存的 adapter 就这两个。EventBus 目前是 `lpr-core` 里的自研实现（几百行，无第三方依赖），
-所以还不需要 port；等真要换实现时再抽 `EventBusProvider`。Metrics 同理。
+**判据不是"有没有第三方依赖"，是"它是模型还是基础设施"。**
+`lpr-classloader-default` 和 `lpr-event-default` 都是自研、零第三方依赖，依然各自成模块——
+因为**实现留在 core 里，迟早会被具体地接线**。EventBus 就这么中过招：
+接口在 lpr-api 好好地待着，`DefaultPluginLifecycleManager` 却接收 `DefaultEventBus` 具体类。
+**接口存在不等于被使用。**
 
 **加新 adapter 时**：先在 `lpr-spi` 定义 port，再开独立模块实现，`lpr-core` 只依赖 port。
 不要为了"将来可能要换"提前造空 port——`lpr-spi` 曾因声明了用不到的 `lpr-api` 依赖而被构建拒绝。
 
-**违规判据**：`TestArchitecturalConstraints` 失败。它检查 `lpr-core` 的 classpath 上是否出现 SOFAArk / Guava / Micrometer / SnakeYAML / Jackson / OSGi / Felix / Guice，并在报错时指出该放到哪个 port 后面。
+**违规判据**：`TestArchitecturalConstraints` 失败。两条断言：
+`testRuntimeDoesNotDependOnConcreteInfrastructure` 检查 classpath 上是否出现
+SOFAArk / Guava / Micrometer / SnakeYAML / Jackson / OSGi / Felix / Guice；
+`testRuntimeShipsNoInfrastructureImplementation` 检查是否出现任何 adapter 的实现类。
+两者都在报错时指出该放到哪个模块。
 
 没用 `maven-enforcer` 的 `bannedDependencies` 是**刻意的**：enforcer 经常被 `-Dcheck.skip-enforcer=true` 关掉，而"该生效时是关着的"不算规则。
 

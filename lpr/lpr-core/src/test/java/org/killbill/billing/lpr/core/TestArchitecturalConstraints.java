@@ -83,6 +83,39 @@ public class TestArchitecturalConstraints {
      * must agree on forever, so the module deliberately has no dependencies at all -- adding one
      * would quietly conscript a third-party library into the contract.
      */
+    /**
+     * The runtime owns the plugin model; implementations of infrastructure live in adapter modules.
+     * <p>
+     * This is a stricter statement than "no third-party dependency": the default EventBus and the
+     * default ClassLoader factory are both self-written with no third-party code, and they still
+     * belong outside lpr-core. Keeping them out is what makes the port real -- an implementation
+     * sitting in the core is one that can be wired concretely by accident, which is exactly what
+     * happened to the EventBus before this test existed.
+     */
+    @Test(groups = "fast")
+    public void testRuntimeShipsNoInfrastructureImplementation() {
+        final Map<String, String> implementationsBelongingInAdapters = Map.of(
+                "org.killbill.billing.lpr.core.DefaultEventBus", "lpr-event-default",
+                "org.killbill.billing.lpr.core.DefaultPluginClassLoader", "lpr-classloader-default",
+                "org.killbill.billing.lpr.core.DefaultPluginClassLoaderFactory", "lpr-classloader-default",
+                "org.killbill.billing.lpr.core.YamlDescriptorParser", "lpr-descriptor-yaml");
+
+        final List<String> violations = implementationsBelongingInAdapters.keySet().stream()
+                                                                          .filter(TestArchitecturalConstraints::isOnClasspath)
+                                                                          .sorted()
+                                                                          .toList();
+        if (!violations.isEmpty()) {
+            final StringBuilder message = new StringBuilder(
+                    "lpr-core ships an infrastructure implementation. Move it to its adapter module:\n");
+            for (final String violation : violations) {
+                message.append("  - ").append(violation)
+                       .append("\n      belongs in: ").append(implementationsBelongingInAdapters.get(violation))
+                       .append('\n');
+            }
+            fail(message.toString());
+        }
+    }
+
     @Test(groups = "fast")
     public void testPluginApiCarriesNoThirdPartyTypes() {
         for (final Class<?> apiType : List.of(org.killbill.billing.lpr.api.Plugin.class,

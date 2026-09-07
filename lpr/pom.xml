@@ -50,6 +50,7 @@
         <module>lpr-core</module>
         <module>lpr-classloader-default</module>
         <module>lpr-descriptor-yaml</module>
+        <module>lpr-event-default</module>
         <module>lpr-management</module>
         <module>lpr-testkit</module>
     </modules>

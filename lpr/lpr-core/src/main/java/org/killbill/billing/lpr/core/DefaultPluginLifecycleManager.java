@@ -19,6 +19,7 @@ package org.killbill.billing.lpr.core;
 import java.util.Map;
 import java.util.Objects;
 
+import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.api.Plugin;
 import org.killbill.billing.lpr.api.PluginContext;
 import org.killbill.billing.lpr.api.PluginState;
@@ -58,14 +59,14 @@ public class DefaultPluginLifecycleManager {
     private final ClassLoaderPolicy policy;
     private final ClassLoader parentClassLoader;
     private final DefaultServiceRegistry serviceRegistry;
-    private final DefaultEventBus eventBus;
+    private final EventBus eventBus;
     private final Map<Class<?>, Object> platformServices;
 
     public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory,
                                          final ClassLoaderPolicy policy,
                                          final ClassLoader parentClassLoader,
                                          final DefaultServiceRegistry serviceRegistry,
-                                         final DefaultEventBus eventBus,
+                                         final EventBus eventBus,
                                          final Map<Class<?>, Object> platformServices) {
         this.classLoaderFactory = Objects.requireNonNull(classLoaderFactory, "classLoaderFactory");
         this.policy = Objects.requireNonNull(policy, "policy");

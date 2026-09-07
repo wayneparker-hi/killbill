@@ -78,6 +78,12 @@
             <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-event-default</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
         <!-- The migration test assembles a real runtime, so it declares the runtime's pieces
              explicitly rather than leaning on what the testkit happens to pull in. -->
         <dependency>

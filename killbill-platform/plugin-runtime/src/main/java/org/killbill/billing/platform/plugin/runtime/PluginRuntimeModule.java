@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.killbill.billing.lpr.classloader.DefaultPluginClassLoaderFactory;
-import org.killbill.billing.lpr.core.DefaultEventBus;
+import org.killbill.billing.lpr.api.EventBus;
+import org.killbill.billing.lpr.event.DefaultEventBus;
 import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
@@ -96,7 +97,9 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
 
         bind(DefaultServiceRegistry.class).asEagerSingleton();
         installPluginServlet();
-        bind(DefaultEventBus.class).asEagerSingleton();
+        // Bound to the interface, not injected as the concrete class: the runtime only ever needs
+        // EventBus, and naming the implementation here is the one place a deployment swaps it.
+        bind(EventBus.class).to(DefaultEventBus.class).asEagerSingleton();
         bind(PluginRuntimeService.class).asEagerSingleton();
         bind(PluginsInfoApi.class).to(DefaultPluginsInfoApi.class).asEagerSingleton();
         installNotificationPlugins();
@@ -189,7 +192,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
     @Singleton
     DefaultPluginManager providePluginManager(final PluginRepository repository,
                                               final DefaultServiceRegistry serviceRegistry,
-                                              final DefaultEventBus eventBus,
+                                              final EventBus eventBus,
                                               final ClassLoaderPolicy policy,
                                               final com.google.inject.Injector injector,
                                               final Set<PluginServiceRegistry<?>> typedRegistries,

@@ -1,8 +1,5 @@
 # Lightweight Plugin Runtime（LPR）设计
 
-> 本文合并了原始的 v1 规格与 v2 修正稿。**v1 定义"做什么"，v2 定义"哪些自己做、哪些复用"**——
-> 两者不冲突，是同一份设计的两层：模型层与边界纪律。
->
 > 这是**设计文档**，不是实施报告。设计与最终实现有出入的地方，文末「设计与实现的三处出入」
 > 逐条说明。实施中遇到分歧以本文为准；已固化为不可违反约束的部分见
 > [`../../CLAUDE.md`](../../CLAUDE.md)。
@@ -89,10 +86,13 @@ Service Registry 的复杂度**全部来自我们自己的语义**——什么�
 复用不等于依赖。任何第三方能力都先在 `lpr-spi` 定义 port，再由独立 adapter 模块实现：
 
 ```
-lpr-spi                          ← 只有接口，零第三方依赖
-  ├── PluginClassLoaderFactory   → lpr-classloader-*
-  └── DescriptorParser           → lpr-descriptor-*
+lpr-api    EventBus                  → lpr-event-*          ← 插件契约的一部分
+lpr-spi    PluginClassLoaderFactory  → lpr-classloader-*    ← 运行时内部扩展点
+           DescriptorParser          → lpr-descriptor-*
 ```
+
+**port 分两层，取决于谁调用它**：插件自己调的（`EventBus`）在 lpr-api，
+只有运行时调的（ClassLoader 工厂、描述符解析）在 lpr-spi。
 
 **`lpr-core` 只依赖 port，不依赖任何具体实现。** 这不是洁癖：一旦第三方类型进入插件契约，
 以后就换不掉了。`PluginContext.eventBus()` 返回的必须是自己定义的 `EventBus`，
@@ -104,15 +104,30 @@ lpr-spi                          ← 只有接口，零第三方依赖
 lpr/
 ├── lpr-api                 插件契约：Plugin / PluginContext / ServiceRegistry / ...
 ├── lpr-spi                 port：ClassLoader 工厂、描述符解析
-├── lpr-core                注册表、生命周期、仓库、事件总线
+├── lpr-core                注册表、生命周期、仓库——只有模型，没有实现
 ├── lpr-classloader-*       隔离后端（adapter）
 ├── lpr-descriptor-*        描述符解析（adapter）
+├── lpr-event-*             事件总线实现（adapter）
 ├── lpr-management          安装 / 卸载
 └── lpr-testkit             隔离性与泄漏性测试工具
 ```
 
-> **不要为"将来可能要换"提前造空 port。** 没有第二个实现的 port 只是多一层间接。
-> EventBus 目前是自研的几百行、无第三方依赖，就不需要 port；等真要换实现时再抽。
+### 判据不是"有没有第三方依赖"
+
+容易想当然的一条推论是"自研的、零第三方依赖的实现可以留在 core"。**这条是错的**——
+`lpr-classloader-default` 和 `lpr-event-default` 都是自研、零第三方依赖，依然在各自的模块里。
+
+真正的判据是：**它是模型，还是基础设施？**
+
+`lpr-core` 拥有插件模型（注册表、生命周期、仓库）。ClassLoader 怎么实现、事件怎么分发、
+描述符是什么格式，都是可替换的基础设施——**实现留在 core 里，就迟早会被具体地接线**。
+
+这不是假设。EventBus 的实现最初就放在 `lpr-core`，结果
+`DefaultPluginLifecycleManager` 接收的是 `DefaultEventBus` 具体类而不是 `EventBus` 接口——
+它本可以用接口的，只是因为实现就在手边。**接口存在不等于被使用。**
+
+判据现在由 `TestArchitecturalConstraints.testRuntimeShipsNoInfrastructureImplementation` 保证：
+lpr-core 的 classpath 上出现任何一个 adapter 的实现类即失败。
 
 ---
 
