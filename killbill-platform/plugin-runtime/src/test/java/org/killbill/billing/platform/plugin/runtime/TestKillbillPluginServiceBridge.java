@@ -124,6 +124,22 @@ public class TestKillbillPluginServiceBridge {
     }
 
     /**
+     * An upgrade briefly has two registrations under the same name. Stopping the old version must
+     * leave the candidate visible, rather than blindly removing whichever service is in the typed
+     * registry at that name.
+     */
+    @Test(groups = "fast")
+    public void testStoppingTheOldVersionDoesNotWithdrawTheUpgradeCandidate() {
+        runtimeRegistry.register("acme", "1.0.0", Gateway.class, () -> "v1", Map.of());
+        runtimeRegistry.register("acme", "2.0.0", Gateway.class, () -> "v2", Map.of());
+
+        runtimeRegistry.unregisterAll("acme", "1.0.0");
+
+        assertEquals(gatewayRegistry.getServiceForName("acme").charge(), "v2");
+        assertEquals(gatewayRegistry.getAllServices(), Set.of("acme"));
+    }
+
+    /**
      * A deployment need not consume every service type a plugin offers. Publishing one nobody wants
      * is not an error -- an analytics plugin registering a metrics hook on a deployment without one
      * should just start normally.

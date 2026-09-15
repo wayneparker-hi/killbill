@@ -17,7 +17,10 @@
 package org.killbill.billing.platform.plugin.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -61,6 +64,16 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
     private final List<PluginServiceRegistry<?>> registries;
     private final List<SinglePluginServiceRegistry<?>> singleRegistries;
 
+    /*
+     * The typed Kill Bill registries are keyed by registration name, whereas LPR keeps old and new
+     * versions distinct during an upgrade. Retain the bridge's routing history so removing an old
+     * registration cannot accidentally withdraw the newer service that replaced it under the same
+     * name. Identity is intentional: a ServiceReference is one registration, even when a plugin
+     * publishes the same type and name more than once.
+     */
+    private final Map<ServiceReference<?>, RoutedRegistration> routedByReference = new IdentityHashMap<>();
+    private final Map<RouteKey, List<RoutedRegistration>> routedByTarget = new HashMap<>();
+
     /**
      * @param registries one per plugin service type; nulls are ignored so a host can pass optional
      *                   bindings straight through
@@ -96,7 +109,7 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
     }
 
     @Override
-    public void onRegistered(final ServiceReference<?> reference) {
+    public synchronized void onRegistered(final ServiceReference<?> reference) {
         final String registrationName = registrationNameOf(reference);
         if (!VALID_REGISTRATION_NAME.matcher(registrationName).matches()) {
             log.warn("Plugin {} tried to register {} under the invalid name '{}'; ignoring. "
@@ -108,12 +121,12 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
 
         final Optional<PluginServiceRegistry<?>> registry = findRegistryFor(reference.type());
         if (registry.isPresent()) {
-            register(registry.get(), reference, registrationName);
+            route(reference, register(registry.get(), reference, registrationName));
             return;
         }
         final Optional<SinglePluginServiceRegistry<?>> single = findSingleRegistryFor(reference.type());
         if (single.isPresent()) {
-            registerSingle(single.get(), reference, registrationName);
+            route(reference, registerSingle(single.get(), reference, registrationName));
             return;
         }
         log.debug("Plugin {} published {}, which this deployment does not consume",
@@ -121,39 +134,72 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
     }
 
     @Override
-    public void onUnregistered(final ServiceReference<?> reference) {
-        final String registrationName = registrationNameOf(reference);
-        findRegistryFor(reference.type()).ifPresent(registry -> {
-            log.info("Withdrawing {} '{}' published by plugin {}",
-                     reference.type().getSimpleName(), registrationName, reference.pluginId());
-            registry.unregisterService(registrationName);
-        });
-        findSingleRegistryFor(reference.type()).ifPresent(registry -> registry.unregisterService(registrationName));
+    public synchronized void onUnregistered(final ServiceReference<?> reference) {
+        final RoutedRegistration routed = routedByReference.remove(reference);
+        if (routed == null) {
+            // The registration was invalid or belongs to a service type this deployment does not
+            // consume, so it never reached a typed registry.
+            return;
+        }
+
+        final List<RoutedRegistration> registrations = routedByTarget.get(routed.key());
+        final boolean wasCurrent = registrations.get(registrations.size() - 1) == routed;
+        registrations.remove(routed);
+        if (registrations.isEmpty()) {
+            routedByTarget.remove(routed.key());
+        }
+        if (!wasCurrent) {
+            return;
+        }
+
+        log.info("Withdrawing {} '{}' published by plugin {} version {}",
+                 reference.type().getSimpleName(), routed.registrationName(), reference.pluginId(), reference.version());
+        routed.unregisterAction().run();
+        if (!registrations.isEmpty()) {
+            // The most recent remaining registration becomes visible again. This also covers a
+            // direct unregister of the newest registration without making an older live provider
+            // disappear.
+            registrations.get(registrations.size() - 1).registerAction().run();
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void register(final PluginServiceRegistry<T> registry,
-                              final ServiceReference<?> reference,
-                              final String registrationName) {
+    private <T> RoutedRegistration register(final PluginServiceRegistry<T> registry,
+                                            final ServiceReference<?> reference,
+                                            final String registrationName) {
         final Class<T> serviceType = registry.getServiceType();
         final T service = (T) reference.service();
 
         log.info("Registering {} '{}' published by plugin {} version {}",
                  serviceType.getSimpleName(), registrationName, reference.pluginId(), reference.version());
 
-        registry.registerService(
-                new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName),
-                PluginServiceContextClassLoaderProxy.wrap(service, serviceType));
+        final DefaultPluginServiceDescriptor descriptor =
+                new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName);
+        final T proxied = PluginServiceContextClassLoaderProxy.wrap(service, serviceType);
+        return new RoutedRegistration(registry,
+                                      registrationName,
+                                      () -> registry.registerService(descriptor, proxied),
+                                      () -> registry.unregisterService(registrationName));
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void registerSingle(final SinglePluginServiceRegistry<T> registry,
-                                    final ServiceReference<?> reference,
-                                    final String registrationName) {
+    private <T> RoutedRegistration registerSingle(final SinglePluginServiceRegistry<T> registry,
+                                                  final ServiceReference<?> reference,
+                                                  final String registrationName) {
         final Class<T> serviceType = registry.getServiceType();
-        registry.registerService(
-                new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName),
-                PluginServiceContextClassLoaderProxy.wrap((T) reference.service(), serviceType));
+        final DefaultPluginServiceDescriptor descriptor =
+                new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName);
+        final T proxied = PluginServiceContextClassLoaderProxy.wrap((T) reference.service(), serviceType);
+        return new RoutedRegistration(registry,
+                                      registrationName,
+                                      () -> registry.registerService(descriptor, proxied),
+                                      () -> registry.unregisterService(registrationName));
+    }
+
+    private void route(final ServiceReference<?> reference, final RoutedRegistration routed) {
+        routed.registerAction().run();
+        routedByReference.put(reference, routed);
+        routedByTarget.computeIfAbsent(routed.key(), ignored -> new ArrayList<>()).add(routed);
     }
 
     private Optional<SinglePluginServiceRegistry<?>> findSingleRegistryFor(final Class<?> serviceType) {
@@ -182,5 +228,39 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
     static String registrationNameOf(final ServiceReference<?> reference) {
         final Object declared = reference.properties().get(PluginServiceProperties.REGISTRATION_NAME);
         return declared instanceof String name && !name.isBlank() ? name.trim() : reference.pluginId();
+    }
+
+    private record RoutedRegistration(Object registry,
+                                      String registrationName,
+                                      Runnable registerAction,
+                                      Runnable unregisterAction) {
+
+        private RouteKey key() {
+            return new RouteKey(registry, registrationName);
+        }
+    }
+
+    /** Uses registry identity: two distinct registry instances must never share a route stack. */
+    private static final class RouteKey {
+
+        private final Object registry;
+        private final String registrationName;
+
+        private RouteKey(final Object registry, final String registrationName) {
+            this.registry = registry;
+            this.registrationName = registrationName;
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof RouteKey that
+                   && registry == that.registry
+                   && registrationName.equals(that.registrationName);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * System.identityHashCode(registry) + registrationName.hashCode();
+        }
     }
 }

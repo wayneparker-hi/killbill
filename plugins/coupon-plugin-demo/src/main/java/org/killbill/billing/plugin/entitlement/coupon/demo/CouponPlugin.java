@@ -17,9 +17,10 @@
 package org.killbill.billing.plugin.entitlement.coupon.demo;
 
 import jakarta.servlet.Servlet;
-import jakarta.servlet.http.HttpServlet;
 import org.killbill.billing.entitlement.plugin.api.EntitlementPluginApi;
 import org.killbill.billing.plugin.runtime.PluginBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Migrated from CouponPlugin.
@@ -31,19 +32,19 @@ public class CouponPlugin extends PluginBase {
 
     public static final String PLUGIN_NAME = "killbill-coupon-demo";
 
-
+    private static final Logger log = LoggerFactory.getLogger(CouponPlugin.class);
 
     @Override
     protected void startPlugin() throws Exception {
         
 
-        logService.log(LogService.LOG_INFO, "Starting " + PLUGIN_NAME);
+        log.info("Starting {}", PLUGIN_NAME);
 
         final EntitlementPluginApi entitlementPluginApi = new CouponDemoEntitlementPluginApi(clock, killbillApi);
         registerService(EntitlementPluginApi.class, entitlementPluginApi);
 
         // Register a servlet (optional)
-        final CouponDemoServlet analyticsServlet = new CouponDemoServlet(logService);
+        final CouponDemoServlet analyticsServlet = new CouponDemoServlet();
         registerService(Servlet.class, analyticsServlet);
     }
 

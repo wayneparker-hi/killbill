@@ -17,8 +17,6 @@
 package org.killbill.billing.plugin.payment.retries;
 
 import jakarta.servlet.Servlet;
-import jakarta.servlet.http.HttpServlet;
-import java.util.Dictionary;
 import org.killbill.billing.control.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.notification.plugin.api.NotificationPluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
@@ -27,6 +25,8 @@ import org.killbill.billing.plugin.payment.retries.config.DefaultPaymentRetriesA
 import org.killbill.billing.plugin.payment.retries.config.PaymentRetriesConfiguration;
 import org.killbill.billing.plugin.payment.retries.config.PaymentRetriesConfigurationHandler;
 import org.killbill.billing.plugin.runtime.PluginBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Migrated from PaymentRetriesPlugin.
@@ -38,32 +38,32 @@ public class PaymentRetriesPlugin extends PluginBase {
 
     public static final String PLUGIN_NAME = "payment-retries-plugin";
 
+    private static final Logger log = LoggerFactory.getLogger(PaymentRetriesPlugin.class);
+
     private PaymentRetriesConfigurationHandler paymentRetriesConfigurationHandler;
 
     @Override
     protected void startPlugin() throws Exception {
         
 
-        paymentRetriesConfigurationHandler = new PaymentRetriesConfigurationHandler(PLUGIN_NAME, killbillApi, logService);
+        paymentRetriesConfigurationHandler = new PaymentRetriesConfigurationHandler(PLUGIN_NAME, killbillApi, log);
 
         final PaymentRetriesConfiguration globalConfigurable = paymentRetriesConfigurationHandler.createConfigurable(configProperties.getProperties());
         paymentRetriesConfigurationHandler.setDefaultConfigurable(globalConfigurable);
 
         final PaymentRetriesApi paymentRetriesApi = new DefaultPaymentRetriesApi(killbillApi);
-        registrar.registerService(context, PaymentRetriesApi.class, paymentRetriesApi, new Hashtable());
+        registerService(PaymentRetriesApi.class, paymentRetriesApi);
 
         final PaymentControlPluginApi paymentControlPluginApi = new PaymentRetriesPaymentControlPluginApi(paymentRetriesConfigurationHandler,
                                                                                                           paymentRetriesApi,
                                                                                                           killbillApi,
                                                                                                           configProperties,
-                                                                                                          logService,
+                                                                                                          log,
                                                                                                           clock);
         registerService(PaymentControlPluginApi.class, paymentControlPluginApi);
 
         final PaymentRetriesServlet analyticsServlet = new PaymentRetriesServlet(paymentRetriesApi);
         registerService(Servlet.class, analyticsServlet);
-
-        registerEventHandler();
 
         // Was dispatcher.registerEventHandlers(...): a configuration handler is a
         // NotificationPluginApi now, published like any other service.
@@ -71,7 +71,4 @@ public class PaymentRetriesPlugin extends PluginBase {
                         new PluginConfigurationEventHandler(paymentRetriesConfigurationHandler));
     }
 
-    private void registerEventHandler() {
-        final PluginConfigurationEventHandler eventHandler = new PluginConfigurationEventHandler(paymentRetriesConfigurationHandler);
-        registerService(NotificationPluginApi.class, eventHandler);
-    }}
+}

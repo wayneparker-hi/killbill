@@ -25,7 +25,6 @@ import jakarta.inject.Named;
 import org.killbill.billing.notification.plugin.api.ExtBusEvent;
 import org.killbill.billing.notification.plugin.api.NotificationPluginApi;
 import org.killbill.billing.notification.plugin.api.NotificationPluginApiRetryException;
-import org.killbill.billing.platform.api.KillbillService;
 import org.killbill.billing.platform.api.LifecycleHandlerType;
 import org.killbill.billing.platform.api.LifecycleHandlerType.LifecycleLevel;
 import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
@@ -83,7 +82,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  * the queue stores one entry per event and not one per plugin; a plugin that cannot tolerate seeing
  * an event twice must deduplicate on {@code ExtBusEvent}'s user token.
  */
-public class PluginEventDispatcher extends RetryableService implements KillbillService {
+public class PluginEventDispatcher extends RetryableService implements PluginEventDispatcherService {
 
     private static final Logger log = LoggerFactory.getLogger(PluginEventDispatcher.class);
 

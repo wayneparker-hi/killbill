@@ -66,14 +66,29 @@ public class DefaultPluginManager {
      *
      * @return how many plugins were discovered
      */
-    public int discover() {
-        plugins.clear();
+    public synchronized int discover() {
+        final Map<String, PluginRuntime> discovered = new LinkedHashMap<>();
         for (final PluginRuntime runtime : repository.scan()) {
-            final PluginRuntime previous = plugins.putIfAbsent(runtime.pluginId(), runtime);
+            final PluginRuntime previous = discovered.putIfAbsent(runtime.pluginId(), runtime);
             if (previous != null) {
                 log.warn("Ignoring duplicate plugin id {}", runtime.pluginId());
             }
         }
+
+        // Discovery is also used after INSTALL_PLUGIN and filesystem notifications, while other
+        // plugins are serving traffic. Replacing the whole map here loses the only references that
+        // can stop those live instances and release their ClassLoaders. Keep a live runtime until
+        // the lifecycle explicitly stops it; its descriptor's installedVersions() still reflects
+        // the newly scanned filesystem state.
+        for (final Map.Entry<String, PluginRuntime> entry : List.copyOf(plugins.entrySet())) {
+            final PluginRuntime current = entry.getValue();
+            if (current.state().isRunning()) {
+                discovered.put(entry.getKey(), current);
+            }
+        }
+
+        plugins.clear();
+        plugins.putAll(discovered);
         log.info("Discovered {} plugin(s) in {}", plugins.size(), repository.root());
         return plugins.size();
     }

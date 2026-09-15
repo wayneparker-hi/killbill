@@ -135,7 +135,10 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
                     break;
 
                 case DISABLED:
-                    if (pluginManager.isRunning(pluginId)) {
+                    final org.killbill.billing.lpr.core.PluginInfo current = pluginManager.get(pluginId).orElse(null);
+                    if (current != null
+                        && (pluginVersion == null || pluginVersion.equals(current.version()))
+                        && pluginManager.isRunning(pluginId)) {
                         pluginManager.stop(pluginId);
                     }
                     pluginManager.discover();

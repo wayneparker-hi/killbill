@@ -48,6 +48,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 
 /**
  * The module has to hand Kill Bill every binding the OSGi module used to hand it.
@@ -113,6 +114,10 @@ public class TestPluginRuntimeModule {
         assertNotNull(injector.getInstance(
                 Key.get(new TypeLiteral<PluginServiceRegistry<NotificationPluginApi>>() { })));
         assertNotNull(injector.getInstance(PluginEventDispatcher.class));
+        assertSame(injector.getInstance(PluginRuntimeLifecycleService.class),
+                   injector.getInstance(PluginRuntimeService.class));
+        assertSame(injector.getInstance(PluginEventDispatcherService.class),
+                   injector.getInstance(PluginEventDispatcher.class));
     }
 
     private Injector createInjector() {

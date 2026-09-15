@@ -101,6 +101,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
         // EventBus, and naming the implementation here is the one place a deployment swaps it.
         bind(EventBus.class).to(DefaultEventBus.class).asEagerSingleton();
         bind(PluginRuntimeService.class).asEagerSingleton();
+        bind(PluginRuntimeLifecycleService.class).to(PluginRuntimeService.class);
         bind(PluginsInfoApi.class).to(DefaultPluginsInfoApi.class).asEagerSingleton();
         installNotificationPlugins();
 
@@ -125,6 +126,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
         Multibinder.newSetBinder(binder(), REGISTRY_TYPE).addBinding().toInstance(registry);
 
         bind(PluginEventDispatcher.class).asEagerSingleton();
+        bind(PluginEventDispatcherService.class).to(PluginEventDispatcher.class);
         bind(PluginNodeCommandListener.class).asEagerSingleton();
     }
 

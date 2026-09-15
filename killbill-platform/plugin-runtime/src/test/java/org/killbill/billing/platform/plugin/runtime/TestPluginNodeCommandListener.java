@@ -163,6 +163,19 @@ public class TestPluginNodeCommandListener {
         assertTrue(manager.list().isEmpty(), "The runtime must no longer know about the plugin");
     }
 
+    @Test(groups = "fast")
+    public void testUninstallingAnInactiveVersionDoesNotStopTheRunningVersion() {
+        install("1.0.0");
+        listener.handleKillbillEvent(command("START_PLUGIN", PLUGIN_ID, "1.0.0", Map.of()));
+        install("1.1.0");
+
+        listener.handleKillbillEvent(command("UNINSTALL_PLUGIN", PLUGIN_ID, "1.1.0", Map.of()));
+
+        assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.1.0")));
+        assertEquals(manager.get(PLUGIN_ID).orElseThrow().version(), "1.0.0");
+        assertEquals(manager.state(PLUGIN_ID).orElseThrow(), PluginState.ACTIVE);
+    }
+
     /**
      * A checksum that does not match means the artifact is not what was asked for. Installing it
      * anyway would put an unverified jar somewhere the runtime will happily load it.

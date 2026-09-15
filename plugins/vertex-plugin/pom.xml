@@ -264,8 +264,6 @@
                     <failOnWarning>${check.fail-dependency}</failOnWarning>
                     <ignoreNonCompile>true</ignoreNonCompile>
                     <ignoredUnusedDeclaredDependencies>
-                        <!-- It doesn't always detect that org.osgi.framework.ServiceReference is used (by PluginConfigurationHandler for instance) -->
-                        <ignoredUnusedDeclaredDependency>org.apache.felix:org.apache.felix.framework</ignoredUnusedDeclaredDependency>
                         <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider</ignoredUnusedDeclaredDependency>
                         <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
                     </ignoredUnusedDeclaredDependencies>

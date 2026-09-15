@@ -229,7 +229,8 @@ public class PluginNodeCommandListener {
             log.warn("Ignoring UNINSTALL_PLUGIN for {}: no version given", pluginId);
             return;
         }
-        if (pluginManager.isRunning(pluginId)) {
+        final var current = pluginManager.get(pluginId).orElse(null);
+        if (current != null && current.version().equals(version) && pluginManager.isRunning(pluginId)) {
             pluginManager.stop(pluginId);
         }
         installer.uninstall(pluginId, version);

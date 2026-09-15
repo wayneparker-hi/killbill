@@ -16,25 +16,22 @@
 
 package org.killbill.billing.plugin.entitlement.coupon.demo;
 
-import org.osgi.service.log.LogService;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CouponDemoServlet extends HttpServlet {
 
-    private final LogService logService;
-
-    public CouponDemoServlet(final LogService logService) {
-        this.logService = logService;
-    }
+    private static final Logger log = LoggerFactory.getLogger(CouponDemoServlet.class);
 
     @Override
     protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
         // Find me on http://127.0.0.1:8080/plugins/killbill-coupon-demo
-        logService.log(LogService.LOG_INFO, "I am a coupon plugin demo");
+        log.info("I am a coupon plugin demo");
     }
 }

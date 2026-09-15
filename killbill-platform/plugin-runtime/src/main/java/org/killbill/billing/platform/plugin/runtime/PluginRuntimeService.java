@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.killbill.billing.lpr.core.DefaultPluginManager;
-import org.killbill.billing.platform.api.KillbillService;
 import org.killbill.billing.platform.api.LifecycleHandlerType;
 import org.killbill.billing.platform.api.LifecycleHandlerType.LifecycleLevel;
 import jakarta.inject.Named;
@@ -49,7 +48,7 @@ import com.google.inject.Inject;
  * {@code start()}. Changing the order would be a smaller change here than it was under OSGi, but it
  * would break every plugin written against the existing contract.
  */
-public class PluginRuntimeService implements KillbillService {
+public class PluginRuntimeService implements PluginRuntimeLifecycleService {
 
     private static final Logger log = LoggerFactory.getLogger(PluginRuntimeService.class);
 

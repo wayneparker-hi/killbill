@@ -34,19 +34,19 @@ import org.slf4j.LoggerFactory;
 /**
  * Routes {@code /plugins/...} requests to the servlet a plugin registered.
  * <p>
- * Carried over from the OSGi layer essentially unchanged, because it never had anything to do with
- * OSGi: it is a prefix-to-servlet map plus longest-prefix matching, expressed in plain
- * {@code jakarta.servlet} types.
+ * It is a prefix-to-servlet map plus longest-prefix matching, expressed in plain
+ * {@code jakarta.servlet} types. The table is published as an immutable snapshot, so a request can
+ * route while a lifecycle operation installs, stops or upgrades a plugin.
  */
 @Singleton
 public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServletRouter.class);
 
-    // Internal Servlet routing table: map of plugin prefixes to servlet instances.
-    // A plugin prefix can be /foo, /foo/bar, /foo/bar/baz, ... and is mounted on /plugins/<pluginPrefix>
-    private final Map<String, Servlet> pluginPathServlets = new HashMap<String, Servlet>();
-    private final Map<String, PluginServiceDescriptor> pluginRegistrations = new HashMap<String, PluginServiceDescriptor>();
+    // A request must see one coherent routing table while a lifecycle thread adds or removes a
+    // plugin. Replacing immutable snapshots makes reads lock-free and avoids iterating a HashMap
+    // while another thread mutates it during a hot upgrade.
+    private volatile RoutingTable routes = RoutingTable.empty();
 
     @Override
     public void registerService(final PluginServiceDescriptor desc, final Servlet httpServlet) {
@@ -58,29 +58,30 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
         }
 
         logger.info("Registering plugin servlet at " + pathPrefix);
-        synchronized (this) {
-            registerServletInternal(pathPrefix, httpServlet);
-            registerServiceInternal(desc);
-        }
+        updateRoutes(pathPrefix, httpServlet, desc);
     }
 
     public void registerServiceFromPath(final String path, final Servlet httpServlet) {
         final String pathPrefix = sanitizePathPrefix(path);
-        registerServletInternal(pathPrefix, httpServlet);
+        updateRoutes(pathPrefix, httpServlet, null);
     }
 
-    private void registerServletInternal(final String pathPrefix, final Servlet httpServlet) {
-        pluginPathServlets.put(pathPrefix, httpServlet);
-    }
-
-    private void registerServiceInternal(final PluginServiceDescriptor desc) {
-        pluginRegistrations.put(desc.getRegistrationName(), desc);
+    private synchronized void updateRoutes(final String pathPrefix,
+                                           final Servlet httpServlet,
+                                           final PluginServiceDescriptor descriptor) {
+        final Map<String, Servlet> servlets = new HashMap<>(routes.servlets());
+        final Map<String, PluginServiceDescriptor> registrations = new HashMap<>(routes.registrations());
+        servlets.put(pathPrefix, httpServlet);
+        if (descriptor != null) {
+            registrations.put(descriptor.getRegistrationName(), descriptor);
+        }
+        routes = new RoutingTable(servlets, registrations);
     }
 
     @Override
     public void unregisterService(final String serviceName) {
         synchronized (this) {
-            final PluginServiceDescriptor desc = pluginRegistrations.get(serviceName);
+            final PluginServiceDescriptor desc = routes.registrations().get(serviceName);
             if (desc != null) {
                 final String pathPrefix = getPathPrefixFromDescriptor(desc);
                 if (pathPrefix == null) {
@@ -89,35 +90,35 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
                 }
 
                 logger.info("Unregistering plugin servlet " + desc.getRegistrationName() + " at path " + pathPrefix);
-                synchronized (this) {
-                    unRegisterServletInternal(pathPrefix);
-                    unRegisterServiceInternal(desc);
-                }
+                removeRoutes(pathPrefix, desc.getRegistrationName());
             }
         }
     }
 
     public void unregisterServiceFromPath(final String path) {
         final String pathPrefix = sanitizePathPrefix(path);
-        unRegisterServletInternal(pathPrefix);
+        removeRoutes(pathPrefix, null);
     }
 
-    private Servlet unRegisterServletInternal(final String pathPrefix) {
-        return pluginPathServlets.remove(pathPrefix);
-    }
-
-    private PluginServiceDescriptor unRegisterServiceInternal(final PluginServiceDescriptor desc) {
-        return pluginRegistrations.remove(desc.getRegistrationName());
+    private synchronized void removeRoutes(final String pathPrefix, final String registrationName) {
+        final Map<String, Servlet> servlets = new HashMap<>(routes.servlets());
+        final Map<String, PluginServiceDescriptor> registrations = new HashMap<>(routes.registrations());
+        servlets.remove(pathPrefix);
+        if (registrationName != null) {
+            registrations.remove(registrationName);
+        }
+        routes = new RoutingTable(servlets, registrations);
     }
 
     @Override
     public Servlet getServiceForName(final String serviceName) {
-        final PluginServiceDescriptor desc = pluginRegistrations.get(serviceName);
+        final RoutingTable snapshot = routes;
+        final PluginServiceDescriptor desc = snapshot.registrations().get(serviceName);
         if (desc == null) {
             return null;
         }
         final String registeredPath = getPathPrefixFromDescriptor(desc);
-        return pluginPathServlets.get(registeredPath);
+        return snapshot.servlets().get(registeredPath);
     }
 
     private String getPathPrefixFromDescriptor(final PluginServiceDescriptor desc) {
@@ -130,7 +131,7 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
 
     @Override
     public Set<String> getAllServices() {
-        return pluginRegistrations.keySet();
+        return routes.registrations().keySet();
     }
 
     @Override
@@ -140,8 +141,12 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
 
     // TODO PIERRE Naive implementation - we should rather switch to e.g. heap tree
     public String getPluginPrefixForPath(final String pathPrefix) {
+        return bestMatchFor(routes.servlets(), pathPrefix);
+    }
+
+    private static String bestMatchFor(final Map<String, Servlet> servlets, final String pathPrefix) {
         String bestMatch = null;
-        for (final String potentialMatch : pluginPathServlets.keySet()) {
+        for (final String potentialMatch : servlets.keySet()) {
             if (pathPrefix.startsWith(potentialMatch) && (bestMatch == null || bestMatch.length() < potentialMatch.length())) {
                 bestMatch = potentialMatch;
             }
@@ -150,8 +155,9 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
     }
 
     private Servlet getServletForPathPrefix(final String pathPrefix) {
-        final String bestMatch = getPluginPrefixForPath(pathPrefix);
-        return bestMatch == null ? null : pluginPathServlets.get(bestMatch);
+        final RoutingTable snapshot = routes;
+        final String bestMatch = bestMatchFor(snapshot.servlets(), pathPrefix);
+        return bestMatch == null ? null : snapshot.servlets().get(bestMatch);
     }
 
     private static String sanitizePathPrefix(final String inputPath) {
@@ -160,11 +166,24 @@ public class PluginServletRouter implements PluginServiceRegistry<Servlet> {
         }
 
         final String pathPrefix;
-        if (inputPath.charAt(0) != '/') {
+        if (inputPath.isEmpty() || inputPath.charAt(0) != '/') {
             pathPrefix = "/" + inputPath;
         } else {
             pathPrefix = inputPath;
         }
         return pathPrefix;
+    }
+
+    private record RoutingTable(Map<String, Servlet> servlets,
+                                Map<String, PluginServiceDescriptor> registrations) {
+
+        private RoutingTable {
+            servlets = Map.copyOf(servlets);
+            registrations = Map.copyOf(registrations);
+        }
+
+        private static RoutingTable empty() {
+            return new RoutingTable(Map.of(), Map.of());
+        }
     }
 }

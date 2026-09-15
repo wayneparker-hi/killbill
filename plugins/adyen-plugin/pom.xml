@@ -348,7 +348,6 @@
                     <rules>
                         <requireUpperBoundDeps>
                             <excludes>
-                                <exclude>org.osgi:org.osgi.core</exclude>
                                 <exclude>org.slf4j:slf4j-api</exclude>
                             </excludes>
                         </requireUpperBoundDeps>

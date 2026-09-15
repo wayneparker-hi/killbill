@@ -180,6 +180,22 @@ public class TestPluginRuntimeEndToEnd {
     }
 
     @Test(groups = "fast")
+    public void testUpdatingTheActiveMarkerLeavesNoPartialMarkerBehind() throws Exception {
+        try (PluginTestRuntime runtime = PluginTestRuntime.create()) {
+            installVersion(runtime, "1.0.0");
+            runtime.setActiveVersion("versioned-payment", "1.0.0");
+
+            final java.nio.file.Path pluginDir = runtime.pluginsDirectory().resolve("versioned-payment");
+            final String marker = java.nio.file.Files.readString(pluginDir.resolve("ACTIVE"));
+            assertTrue(marker.contains("active=1.0.0"));
+            try (var entries = java.nio.file.Files.list(pluginDir)) {
+                assertTrue(entries.noneMatch(path -> path.getFileName().toString().startsWith("ACTIVE.")
+                                                     && path.getFileName().toString().endsWith(".tmp")));
+            }
+        }
+    }
+
+    @Test(groups = "fast")
     public void testADisabledVersionIsSkipped() {
         try (PluginTestRuntime runtime = PluginTestRuntime.create()) {
             installVersion(runtime, "1.0.0");
@@ -236,6 +252,31 @@ public class TestPluginRuntimeEndToEnd {
             assertEquals(runtime.manager().get("versioned-payment").orElseThrow().version(), "1.0.0");
             assertEquals(runtime.service(PaymentGateway.class, "versioned-payment").charge("1.00"),
                          "v1.0.0 charged 1.00");
+        }
+    }
+
+    /**
+     * A filesystem refresh is used after installing another version. It must not replace a live
+     * runtime object: that object owns the services, resources and ClassLoader that later need a
+     * coordinated stop.
+     */
+    @Test(groups = "fast")
+    public void testRediscoveryKeepsTheRunningVersionManaged() {
+        try (PluginTestRuntime runtime = PluginTestRuntime.create()) {
+            installVersion(runtime, "1.0.0");
+            runtime.setActiveVersion("versioned-payment", "1.0.0");
+            runtime.startAll();
+
+            installVersion(runtime, "2.0.0");
+            runtime.discover();
+
+            assertEquals(runtime.manager().get("versioned-payment").orElseThrow().version(), "1.0.0");
+            assertEquals(runtime.state("versioned-payment").orElseThrow(), PluginState.ACTIVE);
+            assertEquals(runtime.service(PaymentGateway.class, "versioned-payment").charge("1.00"),
+                         "v1.0.0 charged 1.00");
+
+            runtime.manager().stop("versioned-payment");
+            assertFalse(runtime.services().getService(PaymentGateway.class, "versioned-payment").isPresent());
         }
     }
 

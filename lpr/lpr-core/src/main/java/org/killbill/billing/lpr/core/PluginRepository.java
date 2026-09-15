@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -55,8 +57,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li><b>{@code ACTIVE} is a file, not a symlink.</b> The old {@code SET_DEFAULT} symlink meant
  *       deployment state lived in a filesystem feature that behaves differently across platforms,
- *       archives and container image layers. A file with {@code active=1.3.0} survives being
- *       tarred, copied and inspected.</li>
+ *       archives and container image layers. A file with {@code active=1.3.0}, atomically
+ *       replaced from a same-directory temporary file, survives being tarred, copied and
+ *       inspected without exposing a partial write to readers.</li>
  *   <li><b>Versions are compared numerically.</b> The old ordering used {@code String.compareTo},
  *       so {@code 10.0} sorted below {@code 9.0} and the wrong version would start once a plugin
  *       reached double digits.</li>
@@ -182,10 +185,31 @@ public class PluginRepository {
         marker.setProperty(ACTIVE_KEY, version);
 
         final Path markerFile = pluginDir.resolve(ACTIVE_MARKER);
-        try (var writer = Files.newBufferedWriter(markerFile, StandardCharsets.UTF_8)) {
-            marker.store(writer, "Managed by LPR. 'active' names the version to run.");
+        Path staging = null;
+        try {
+            staging = Files.createTempFile(pluginDir, ACTIVE_MARKER + '.', ".tmp");
+            try (var writer = Files.newBufferedWriter(staging, StandardCharsets.UTF_8)) {
+                marker.store(writer, "Managed by LPR. 'active' names the version to run.");
+            }
+            try {
+                Files.move(staging, markerFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (final AtomicMoveNotSupportedException e) {
+                // A same-directory temporary file is still the best available fallback on filesystems
+                // without atomic rename support. It guarantees readers never observe a partly
+                // written marker, which direct overwrite did not.
+                Files.move(staging, markerFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            staging = null;
         } catch (final IOException e) {
             throw new UncheckedIOException("Cannot write " + markerFile, e);
+        } finally {
+            if (staging != null) {
+                try {
+                    Files.deleteIfExists(staging);
+                } catch (final IOException e) {
+                    log.warn("Failed to remove incomplete active marker {}", staging, e);
+                }
+            }
         }
         log.info("Plugin {} will run version {}", pluginId, version);
     }

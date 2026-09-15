@@ -47,6 +47,9 @@
         <module>deposit-plugin</module>
         <module>payment-test-plugin</module>
         <module>catalog-plugin-test</module>
+        <module>coupon-plugin-demo</module>
+        <module>payment-retries-plugin</module>
+        <module>qualpay-plugin</module>
         <module>metrics-plugin</module>
         <module>prometheus-plugin</module>
         <module>graphite-plugin</module>
