@@ -36,11 +36,11 @@
 | [capability-classloader-isolation.md](capability-classloader-isolation.md) | ClassLoader 隔离 |
 | [capability-plugin-lifecycle.md](capability-plugin-lifecycle.md) | 插件生命周期与状态机 |
 | [capability-service-registry.md](capability-service-registry.md) | 服务注册与发现 |
-| [capability-event-bus.md](capability-event-bus.md) | 进程内事件总线 |
+| [capability-event-bus.md](capability-event-bus.md) | 同步内存 / 可选持久化事件总线 |
 | [capability-resource-management.md](capability-resource-management.md) | 资源托管与 ClassLoader 可卸载性 |
 | [capability-version-management.md](capability-version-management.md) | 版本管理与热更新/回滚 |
 | [capability-plugin-installation.md](capability-plugin-installation.md) | 插件安装与仓库布局 |
-| [capability-platform-bridge.md](capability-platform-bridge.md) | Kill Bill 平台适配层桥接 |
+| [capability-platform-bridge.md](capability-platform-bridge.md) | Kill Bill 平台桥接 / 进程外 PoC |
 
 ## 使用方式
 

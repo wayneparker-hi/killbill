@@ -95,6 +95,7 @@ public class TestArchitecturalConstraints {
     @Test(groups = "fast")
     public void testRuntimeShipsNoInfrastructureImplementation() {
         final Map<String, String> implementationsBelongingInAdapters = Map.of(
+                "org.killbill.billing.lpr.process.ProcessPluginLauncher", "lpr-process",
                 "org.killbill.billing.lpr.core.DefaultEventBus", "lpr-event-default",
                 "org.killbill.billing.lpr.core.DefaultPluginClassLoader", "lpr-classloader-default",
                 "org.killbill.billing.lpr.core.DefaultPluginClassLoaderFactory", "lpr-classloader-default",
@@ -129,6 +130,7 @@ public class TestArchitecturalConstraints {
                                               org.killbill.billing.lpr.api.ServiceApiVersion.class,
                                               org.killbill.billing.lpr.api.EventBus.class,
                                               org.killbill.billing.lpr.api.DurableEventBus.class,
+                                              org.killbill.billing.lpr.api.ProcessPlugin.class,
                                               org.killbill.billing.lpr.api.DurableEvent.class,
                                               org.killbill.billing.lpr.api.DurableEventHandler.class,
                                               org.killbill.billing.lpr.api.ResourceRegistry.class)) {

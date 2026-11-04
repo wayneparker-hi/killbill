@@ -129,24 +129,24 @@
 
 ## Assumptions
 
-- 所有插件都是 Java fat jar，运行在同一 JVM 内。
+- 默认插件为 Java fat jar，在宿主 JVM 内执行；可选 `lpr-process` 研究适配器使用独立 JVM。
 - 插件目录可被所有 Kill Bill 节点访问（当前版本），或外部工具负责分发。
 - 插件作者是可信的；LPR 不防御恶意代码。
 - JDK 21 运行时环境。
 
 ## Out of Scope（当前版本）
 
-- 进程外插件模型（gRPC/Unix socket）。
+- 进程外插件的生产装配、完整支付协议与 supervisor（Unix socket PoC 已实现）。
 - 插件自动依赖图解析与版本协商。
-- 集群级插件状态一致性视图。
-- JVM 安全沙箱与 jar 签名验证。
+- 跨区域插件分发与外部分布式存储后端（已有共享 FS / 集群状态视图）。
+- JVM / OS 安全沙箱（已有可选 JAR 签名/PKIX 验证）。
 
 ## 决策记录
 
 | # | 问题 | 决定 | 理由 |
 |---|---|---|---|
 | 1 | 插件运行时复用 SOFAArk 还是自研？ | 自研 LPR | SOFAArk 的 export/import 与要替换的 OSGi 同构；Kill Bill 只需要固定 parent-first 白名单。 |
-| 2 | EventBus 是否抽成独立 adapter？ | 保留在 `lpr-core` 内 | 零第三方依赖、只有一个实现，抽 port 只是多一层间接。 |
+| 2 | EventBus 实现归属？ | `lpr-event-default` 同步内存 adapter，平台可选 PersistentBus | Core 只依赖契约；持久化保持显式选择，不改变生命周期同步分发。 |
 | 3 | `org.killbill.billing.plugin.*` 走 parent-first 还是 child-first？ | child-first | 插件实现代码惯用此包；平台侧插件 API 改放到 `org.killbill.billing.runtime.api` 等包。 |
 | 4 | 插件入口推断还是显式声明？ | 显式 `plugin.yaml` | 可 grep、可 review、失败位置靠近原因。 |
 | 5 | 服务注册撤销粒度？ | 按 `(pluginId, version)` | 无空窗升级时新旧版本共享 pluginId，按 pluginId 撤销会误撤新版本。 |

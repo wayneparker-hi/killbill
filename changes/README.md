@@ -18,14 +18,13 @@ changes/
 
 ## 当前变更
 
-| 变更 | 当前范围 | 后续 |
-|---|---|---|
-| [lpr-production-readiness](lpr-production-readiness/tasks.md) | T1–T5 已提交；T11 故障注入与生命周期隔离已验收 | T6–T10 待实现，暂不归档 |
+无。
 
 ## 已归档变更
 
 | 变更 | 主题 | 归档日期 |
 |---|---|---|
+| [archive/lpr-production-readiness](archive/lpr-production-readiness/ARCHIVED.md) | T1–T11：可观测性、故障隔离、运维一致性及进程外研究 PoC | 2026-11-04 |
 | [archive/osgi-to-lpr](archive/osgi-to-lpr/ARCHIVED.md) | 用 LPR 替换 OSGi/Felix，迁移插件与扩展点 | 2026-10-21 |
 
 ## 开新变更的步骤

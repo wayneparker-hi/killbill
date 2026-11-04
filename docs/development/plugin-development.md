@@ -455,3 +455,8 @@ ORDER BY record_id DESC;
 ```
 
 `user_token` 为消息 UUID。既有历史查询 API 不返回 processing_state，不能据此识别死信。人工确认失败原因和业务幂等后，通过同一 durable API 使用原 UUID 重新发布；没有自动重放端点。消息内容会进入现有队列存储与诊断日志，请按部署的数据访问和保留策略管理。
+
+
+## 进程外插件研究入口
+
+T10 提供 opt-in `lpr-process` Unix socket PoC；原 `Plugin`/`PluginContext` 不会自动跨进程。独立 JVM 故障隔离、资源归属、支付授权验证及生产化缺口见 [process-plugin-poc.md](process-plugin-poc.md)。

@@ -102,3 +102,5 @@ ClassLoader 默认后端改为自研、EventBus 没有抽 port、`org.killbill.b
 - **分析报告是快照**，反映写作时的代码状态。代码改了之后，如果结论失效，要么更新要么标注失效，不要留着误导后来者。
 - **设计文档不改**（design/ 下的 v1/v2 是历史决策依据）。设计变更写进 migration/ 的方案里，并说明相对 v1/v2 改了什么、为什么。
 - **进度只在一个地方记**：`migration/osgi-to-lpr-plan.md` 的 Phase 状态 + 本文的进度表。不要在多处复制进度，会不一致。
+
+- [进程外插件 PoC](development/process-plugin-poc.md)：Unix socket、独立 JVM、支付授权与故障隔离研究。
