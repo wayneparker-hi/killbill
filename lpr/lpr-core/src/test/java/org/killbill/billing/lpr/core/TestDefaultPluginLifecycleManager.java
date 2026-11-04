@@ -260,6 +260,37 @@ public class TestDefaultPluginLifecycleManager {
                    "The caller's context ClassLoader was not restored");
     }
 
+    @Test(groups = "fast")
+    public void testFailedStartReleasesClassLoaderMetric() {
+        final TestLprMetricsCollector.RecordingMetrics recording = new TestLprMetricsCollector.RecordingMetrics();
+        final LprMetricsCollector metrics = new LprMetricsCollector(recording);
+        final DefaultPluginLifecycleManager measured = new DefaultPluginLifecycleManager(classLoaderFactory,
+                ClassLoaderPolicy.defaultPolicy(), getClass().getClassLoader(), serviceRegistry, eventBus, Map.of(), metrics);
+        final PluginRuntime runtime = runtimeFor(FailingStartPlugin.class);
+        assertThrows(IllegalStateException.class, () -> measured.start(runtime));
+        assertEquals(recording.gaugeValue("killbill.lpr.classloaders.active"), 0L);
+        measured.stop(runtime);
+        assertEquals(recording.gaugeValue("killbill.lpr.classloaders.active"), 0L);
+    }
+
+    @Test(groups = "fast")
+    public void testHealthAccessorIsDeferredUntilProbeExecution() {
+        HealthAccessorPlugin.calls.set(0);
+        lifecycle.start(runtimeFor(HealthAccessorPlugin.class));
+        assertEquals(HealthAccessorPlugin.calls.get(), 0);
+        assertThrows(IllegalStateException.class, () -> serviceRegistry
+                .getService(org.killbill.billing.lpr.api.PluginHealthCheck.class, "health-accessor").orElseThrow().check());
+        assertEquals(HealthAccessorPlugin.calls.get(), 1);
+    }
+
+    public static class HealthAccessorPlugin extends RecordingPlugin {
+        static final AtomicInteger calls = new AtomicInteger();
+        @Override public java.util.Optional<org.killbill.billing.lpr.api.PluginHealthCheck> healthCheck() {
+            calls.incrementAndGet();
+            throw new IllegalStateException("accessor failed");
+        }
+    }
+
     private PluginRuntime runtimeFor(final Class<? extends Plugin> entrypoint) {
         final String pluginId = pluginIdOf(entrypoint);
         return new PluginRuntime(

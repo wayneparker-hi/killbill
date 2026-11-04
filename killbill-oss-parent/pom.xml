@@ -113,6 +113,7 @@
         <derby.version>10.15.2.0</derby.version>
         <dropwizard-metrics.version>2.0.28</dropwizard-metrics.version>
         <ehcache.version>3.11.1</ehcache.version>
+        <email-notifications-plugin.version>1.0.0-SNAPSHOT</email-notifications-plugin.version>
         <embedded-postgres.version>2.0.4</embedded-postgres.version>
         <eureka.version>1.10.17</eureka.version>
         <guava.version>33.6.0-jre</guava.version>
@@ -1133,6 +1134,11 @@
                 <groupId>org.kill-bill.billing.plugin</groupId>
                 <artifactId>killbill-plugin-api-usage</artifactId>
                 <version>${killbill-plugin-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kill-bill.billing.plugin.java</groupId>
+                <artifactId>email-notifications-plugin</artifactId>
+                <version>${email-notifications-plugin.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.kill-bill.billing.plugin.java</groupId>
@@ -2410,6 +2416,89 @@
                 <!-- <project.build.targetJdk>17</project.build.targetJdk> -->
                 <surefireArgLine>-Xmx${build.jvmsize} --illegal-access=permit --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.base=ALL-UNNAMED</surefireArgLine>
             </properties>
+        </profile>
+
+        <!--
+          LPR plugin ABI check. Activated only for modules that ship a plugin.yaml, so core and
+          runtime modules are unaffected. Two classpaths are produced because the distinction is
+          the check: a type on the runtime classpath but not on the provided one belongs to the
+          plugin, and must not appear in a service method signature.
+        -->
+        <profile>
+            <id>lpr-plugin-abi-check</id>
+            <activation>
+                <file>
+                    <exists>src/main/resources/plugin.yaml</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.kill-bill.billing</groupId>
+                                <artifactId>killbill-lpr-abi-validator</artifactId>
+                                <version>1.0.0-SNAPSHOT</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>check-plugin-abi</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <java classname="org.killbill.billing.lpr.abi.AbiValidator" classpathref="maven.plugin.classpath" failonerror="true" fork="true">
+                                            <arg value="--jar" />
+                                            <arg value="${project.build.directory}/${project.build.finalName}.jar" />
+                                            <arg value="--provided-classpath-file" />
+                                            <arg value="${project.build.directory}/abi-provided.cp" />
+                                            <arg value="--runtime-classpath-file" />
+                                            <arg value="${project.build.directory}/abi-runtime.cp" />
+                                        </java>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>abi-provided-classpath</id>
+                                <goals>
+                                    <goal>build-classpath</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <skip>false</skip>
+                                    <includeScope>provided</includeScope>
+                                    <outputFile>${project.build.directory}/abi-provided.cp</outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>abi-runtime-classpath</id>
+                                <goals>
+                                    <goal>build-classpath</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <skip>false</skip>
+                                    <includeScope>runtime</includeScope>
+                                    <outputFile>${project.build.directory}/abi-runtime.cp</outputFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

@@ -53,5 +53,6 @@
         <module>lpr-event-default</module>
         <module>lpr-management</module>
         <module>lpr-testkit</module>
+        <module>lpr-abi-validator</module>
     </modules>
 </project>

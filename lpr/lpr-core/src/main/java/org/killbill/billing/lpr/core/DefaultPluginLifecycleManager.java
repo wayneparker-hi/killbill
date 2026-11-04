@@ -18,10 +18,12 @@ package org.killbill.billing.lpr.core;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.api.Plugin;
 import org.killbill.billing.lpr.api.PluginContext;
+import org.killbill.billing.lpr.api.PluginHealthCheck;
 import org.killbill.billing.lpr.api.PluginState;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
 import org.killbill.billing.lpr.spi.PluginClassLoaderFactory;
@@ -61,6 +63,7 @@ public class DefaultPluginLifecycleManager {
     private final DefaultServiceRegistry serviceRegistry;
     private final EventBus eventBus;
     private final Map<Class<?>, Object> platformServices;
+    private final LprMetricsCollector metrics;
 
     public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory,
                                          final ClassLoaderPolicy policy,
@@ -68,12 +71,23 @@ public class DefaultPluginLifecycleManager {
                                          final DefaultServiceRegistry serviceRegistry,
                                          final EventBus eventBus,
                                          final Map<Class<?>, Object> platformServices) {
+        this(classLoaderFactory, policy, parentClassLoader, serviceRegistry, eventBus, platformServices, null);
+    }
+
+    public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory,
+                                         final ClassLoaderPolicy policy,
+                                         final ClassLoader parentClassLoader,
+                                         final DefaultServiceRegistry serviceRegistry,
+                                         final EventBus eventBus,
+                                         final Map<Class<?>, Object> platformServices,
+                                         final LprMetricsCollector metrics) {
         this.classLoaderFactory = Objects.requireNonNull(classLoaderFactory, "classLoaderFactory");
         this.policy = Objects.requireNonNull(policy, "policy");
         this.parentClassLoader = Objects.requireNonNull(parentClassLoader, "parentClassLoader");
         this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceRegistry");
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus");
         this.platformServices = Map.copyOf(Objects.requireNonNullElse(platformServices, Map.of()));
+        this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
     }
 
     /**
@@ -104,11 +118,13 @@ public class DefaultPluginLifecycleManager {
         }
 
         PluginClassLoaderHandle handle = null;
+        final long startNanos = System.nanoTime();
         try {
             handle = classLoaderFactory.create(runtime.artifact(), policy, parentClassLoader);
+            metrics.classLoaderCreated();
             final Plugin instance = instantiate(runtime, handle.classLoader());
 
-            final DefaultResourceRegistry resources = new DefaultResourceRegistry(runtime.pluginId());
+            final DefaultResourceRegistry resources = new DefaultResourceRegistry(runtime.pluginId(), metrics);
             final PluginContext context = new DefaultPluginContext(
                     runtime.pluginId(),
                     runtime.version(),
@@ -124,6 +140,8 @@ public class DefaultPluginLifecycleManager {
             runWithPluginClassLoader(handle.classLoader(), () -> instance.start(context));
 
             runtime.transition(PluginState.STARTING, PluginState.ACTIVE);
+            registerHealthCheck(runtime, instance, context);
+            metrics.recordPluginStart(System.nanoTime() - startNanos);
             log.info("Started plugin {} version {}", runtime.pluginId(), runtime.version());
             return true;
 
@@ -134,8 +152,12 @@ public class DefaultPluginLifecycleManager {
             serviceRegistry.unregisterAll(runtime.pluginId(), runtime.version());
             releaseResources(runtime);
             closeQuietly(handle);
+            if (handle != null) {
+                metrics.classLoaderDestroyed();
+            }
             runtime.unloaded();
             runtime.markFailed(e.getMessage() != null ? e.getMessage() : e.toString());
+            metrics.recordPluginStart(System.nanoTime() - startNanos);
             throw new IllegalStateException("Plugin " + runtime.pluginId() + " failed to start", e);
         }
     }
@@ -162,6 +184,8 @@ public class DefaultPluginLifecycleManager {
             return false;
         }
 
+        final long stopNanos = System.nanoTime();
+
         // 1. New callers can no longer reach this version. In-flight ones keep a live
         //    implementation until they return, which is why this precedes Plugin.stop().
         //    Scoped by version, not just id: during an upgrade the incoming version shares this
@@ -183,6 +207,7 @@ public class DefaultPluginLifecycleManager {
 
         cleanUp(runtime);
         runtime.transition(PluginState.STOPPING, PluginState.STOPPED);
+        metrics.recordPluginStop(System.nanoTime() - stopNanos);
         log.info("Stopped plugin {} version {}", runtime.pluginId(), runtime.version());
         return true;
     }
@@ -205,7 +230,11 @@ public class DefaultPluginLifecycleManager {
     /** Steps 3 to 5 of the teardown, shared by the stop and failure paths. */
     private void cleanUp(final PluginRuntime runtime) {
         releaseResources(runtime);
-        closeQuietly(runtime.classLoaderHandle());
+        final PluginClassLoaderHandle handle = runtime.classLoaderHandle();
+        if (handle != null) {
+            closeQuietly(handle);
+            metrics.classLoaderDestroyed();
+        }
         runtime.unloaded();
     }
 
@@ -219,6 +248,23 @@ public class DefaultPluginLifecycleManager {
     private void closeQuietly(final PluginClassLoaderHandle handle) {
         if (handle != null) {
             handle.close();
+        }
+    }
+
+    private void registerHealthCheck(final PluginRuntime runtime,
+                                     final Plugin instance,
+                                     final PluginContext context) {
+        try {
+            // Discover the optional capability without executing plugin code on the start thread.
+            if (instance.getClass().getMethod("healthCheck").getDeclaringClass() == Plugin.class) {
+                return;
+            }
+            context.services().register(PluginHealthCheck.class, () -> {
+                final Optional<PluginHealthCheck> probe = Objects.requireNonNull(instance.healthCheck(), "healthCheck");
+                return probe.isPresent() ? probe.get().check() : PluginHealthCheck.HealthCheckResult.ok("No health probe configured");
+            });
+        } catch (final ReflectiveOperationException | RuntimeException e) {
+            log.warn("Failed to register health check for plugin {} version {}", runtime.pluginId(), runtime.version(), e);
         }
     }
 

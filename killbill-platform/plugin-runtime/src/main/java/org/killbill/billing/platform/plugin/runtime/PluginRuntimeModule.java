@@ -31,7 +31,10 @@ import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.core.PluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.management.PluginInstaller;
+import org.killbill.billing.lpr.core.LprMetricsCollector;
+import org.killbill.billing.lpr.core.NoOpLprMetrics;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
+import org.killbill.billing.lpr.spi.LprMetrics;
 import org.killbill.billing.platform.plugin.runtime.http.PluginServlet;
 import org.killbill.billing.platform.plugin.runtime.http.PluginServletRouter;
 import org.killbill.billing.platform.api.KillbillConfigSource;
@@ -40,6 +43,7 @@ import org.killbill.billing.notification.plugin.api.NotificationPluginApi;
 import org.killbill.billing.platform.plugin.api.PluginServiceProperties;
 import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
 import org.killbill.billing.platform.plugin.api.SinglePluginServiceRegistry;
+import org.killbill.billing.runtime.api.Healthcheck;
 import org.killbill.billing.runtime.api.PluginsInfoApi;
 import org.skife.config.AugmentedConfigurationObjectFactory;
 import org.slf4j.Logger;
@@ -95,13 +99,10 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
         // The OSGi layer published the equivalent as OSGIConfigProperties.
         bind(KillbillConfigSource.class).toInstance(configSource);
 
-        bind(DefaultServiceRegistry.class).asEagerSingleton();
         installPluginServlet();
-        // Bound to the interface, not injected as the concrete class: the runtime only ever needs
-        // EventBus, and naming the implementation here is the one place a deployment swaps it.
-        bind(EventBus.class).to(DefaultEventBus.class).asEagerSingleton();
         bind(PluginRuntimeService.class).asEagerSingleton();
         bind(PluginRuntimeLifecycleService.class).to(PluginRuntimeService.class);
+        bind(PluginUpgradeMonitor.class).asEagerSingleton();
         bind(PluginsInfoApi.class).to(DefaultPluginsInfoApi.class).asEagerSingleton();
         installNotificationPlugins();
 
@@ -154,6 +155,51 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
      */
     @Provides
     @Singleton
+    LprMetrics provideLprMetrics(final com.google.inject.Injector injector) {
+        final com.google.inject.Binding<org.killbill.commons.metrics.api.MetricRegistry> binding =
+                injector.getExistingBinding(com.google.inject.Key.get(org.killbill.commons.metrics.api.MetricRegistry.class));
+        if (binding != null) {
+            return new KillBillLprMetrics(binding.getProvider().get());
+        }
+        return NoOpLprMetrics.INSTANCE;
+    }
+
+    @Provides
+    @Singleton
+    LprMetricsCollector provideLprMetricsCollector(final LprMetrics metrics) {
+        return new LprMetricsCollector(metrics);
+    }
+
+    @Provides
+    @Singleton
+    DefaultServiceRegistry provideServiceRegistry(final LprMetricsCollector metrics) {
+        return new DefaultServiceRegistry(metrics);
+    }
+
+    @Provides
+    @Singleton
+    PluginInvocationGuard providePluginInvocationGuard(final PluginRuntimeConfig config,
+                                                       final LprMetricsCollector metrics) {
+        return new PluginInvocationGuard(config, metrics);
+    }
+
+    @Provides
+    @Singleton
+    PluginHealthCheckManager providePluginHealthCheckManager(
+            final com.google.inject.Provider<DefaultPluginManager> pluginManagerProvider,
+            final PluginRuntimeConfig config,
+            final LprMetricsCollector metrics) {
+        return new PluginHealthCheckManager(() -> pluginManagerProvider.get().runningPlugins(), config, metrics);
+    }
+
+    @Provides
+    @Singleton
+    EventBus provideEventBus(final LprMetricsCollector metrics) {
+        return new DefaultEventBus(metrics);
+    }
+
+    @Provides
+    @Singleton
     ClassLoaderPolicy provideClassLoaderPolicy(final PluginRuntimeConfig config) {
         final String extra = config.getExtraParentFirstPackages();
         if (extra == null || extra.isBlank()) {
@@ -196,11 +242,13 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                                               final DefaultServiceRegistry serviceRegistry,
                                               final EventBus eventBus,
                                               final ClassLoaderPolicy policy,
+                                              final LprMetricsCollector metrics,
+                                              final PluginInvocationGuard invocationGuard,
+                                              final PluginHealthCheckManager healthCheckManager,
                                               final com.google.inject.Injector injector,
                                               final Set<PluginServiceRegistry<?>> typedRegistries,
                                               final Set<SinglePluginServiceRegistry<?>> singleRegistries) {
-        serviceRegistry.addListener(new KillbillPluginServiceBridge(List.copyOf(typedRegistries),
-                                                                    List.copyOf(singleRegistries)));
+        final PluginServiceRegistry<Healthcheck> healthcheckRegistry = resolveHealthcheckRegistry(injector);
 
         final DefaultPluginLifecycleManager lifecycle = new DefaultPluginLifecycleManager(
                 new DefaultPluginClassLoaderFactory(),
@@ -208,7 +256,25 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                 PluginRuntimeModule.class.getClassLoader(),
                 serviceRegistry,
                 eventBus,
-                PlatformServices.resolve(injector));
-        return new DefaultPluginManager(repository, lifecycle, serviceRegistry);
+                PlatformServices.resolve(injector),
+                metrics);
+        final DefaultPluginManager pluginManager = new DefaultPluginManager(repository, lifecycle, serviceRegistry, metrics);
+
+        serviceRegistry.setHealthPredicate(healthCheckManager::isHealthy);
+        healthCheckManager.addListener(serviceRegistry::refreshVisibility);
+
+        serviceRegistry.addListener(new KillbillPluginServiceBridge(List.copyOf(typedRegistries),
+                                                                    List.copyOf(singleRegistries),
+                                                                    healthcheckRegistry,
+                                                                    healthCheckManager,
+                                                                    invocationGuard,
+                                                                    serviceRegistry::isVisible));
+        return pluginManager;
+    }
+
+    private static PluginServiceRegistry<Healthcheck> resolveHealthcheckRegistry(final com.google.inject.Injector injector) {
+        final com.google.inject.Binding<PluginServiceRegistry<Healthcheck>> binding =
+                injector.getExistingBinding(com.google.inject.Key.get(new TypeLiteral<PluginServiceRegistry<Healthcheck>>() { }));
+        return binding != null ? binding.getProvider().get() : null;
     }
 }

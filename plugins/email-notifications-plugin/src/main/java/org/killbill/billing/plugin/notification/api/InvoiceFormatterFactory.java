@@ -16,33 +16,9 @@
 
 package org.killbill.billing.plugin.notification.api;
 
-import java.util.Locale;
-import java.util.Map;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 
-import org.killbill.billing.invoice.api.Invoice;
-import org.killbill.billing.invoice.api.formatters.InvoiceFormatter;
-import org.killbill.billing.util.callcontext.TenantContext;
-
-/**
- * API for a factory service that creates {@link InvoiceFormatter} instances.
- * 
- * @author matt
- */
-public interface InvoiceFormatterFactory {
-
-    /**
-     * Create an {@link InvoiceFormatter} instance for a given {@link Invoice}.
-     * 
-     * @param translator the available translations
-     * @param invoice the invoice
-     * @param locale the desired locale
-     * @param context the tenant context
-     * @return the formatter instance, never {@literal null}
-     */
-    InvoiceFormatter createInvoiceFormatter(
-            Map<String, String> translator,
-            Invoice invoice,
-            Locale locale,
-            TenantContext context);
-
+/** @deprecated Register the parent-loaded NotificationInvoiceFormatterFactory contract instead. */
+@Deprecated
+public interface InvoiceFormatterFactory extends NotificationInvoiceFormatterFactory {
 }

@@ -41,8 +41,6 @@
         <check.skip-enforcer>true</check.skip-enforcer>
         <check.skip-rat>true</check.skip-rat>
         <check.skip-spotbugs>true</check.skip-spotbugs>
-        <osgi.extra-import>org.killbill.billing.plugin.notification.api;
-			org.killbill.billing.plugin.notification.generator.*;</osgi.extra-import>
     </properties>
     <dependencies>
         <dependency>
@@ -84,6 +82,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-classloader-default</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.kill-bill.billing.plugin</groupId>
             <artifactId>killbill-plugin-api-notification</artifactId>
             <scope>provided</scope>
@@ -95,6 +99,10 @@
         </dependency>
         <dependency>
             <groupId>org.kill-bill.billing.plugin.java</groupId>
+            <artifactId>email-notifications-plugin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing.plugin.java</groupId>
             <artifactId>killbill-base-plugin</artifactId>
         </dependency>
         <dependency>
@@ -102,12 +110,6 @@
             <artifactId>killbill-base-plugin</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.kill-bill.billing.plugin.java</groupId>
-            <artifactId>killbill-email-notifications-plugin</artifactId>
-            <version>0.8.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.kill-bill.commons</groupId>

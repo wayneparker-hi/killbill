@@ -57,18 +57,27 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     private final PluginEventDispatcher eventDispatcher;
     private final PersistentBus externalBus;
     private final PluginNodeCommandListener nodeCommandListener;
+    private final PluginInvocationGuard invocationGuard;
+    private final PluginHealthCheckManager healthCheckManager;
+    private final PluginUpgradeMonitor upgradeMonitor;
 
     @Inject
     public PluginRuntimeService(final DefaultPluginManager pluginManager,
                                 final PluginRuntimeConfig config,
                                 final PluginEventDispatcher eventDispatcher,
                                 @Named("externalBus") final PersistentBus externalBus,
-                                final PluginNodeCommandListener nodeCommandListener) {
+                                final PluginNodeCommandListener nodeCommandListener,
+                                final PluginInvocationGuard invocationGuard,
+                                final PluginHealthCheckManager healthCheckManager,
+                                final PluginUpgradeMonitor upgradeMonitor) {
         this.pluginManager = Objects.requireNonNull(pluginManager, "pluginManager");
         this.config = Objects.requireNonNull(config, "config");
         this.eventDispatcher = Objects.requireNonNull(eventDispatcher, "eventDispatcher");
         this.externalBus = Objects.requireNonNull(externalBus, "externalBus");
         this.nodeCommandListener = Objects.requireNonNull(nodeCommandListener, "nodeCommandListener");
+        this.invocationGuard = invocationGuard;
+        this.healthCheckManager = healthCheckManager;
+        this.upgradeMonitor = Objects.requireNonNull(upgradeMonitor, "upgradeMonitor");
     }
 
     @Override
@@ -119,6 +128,13 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
         }
         final List<String> started = pluginManager.startAll(mandatoryPlugins());
         log.info("Started {} plugin(s): {}", started.size(), started);
+
+        if (config.isPluginHealthCheckEnabled() && healthCheckManager != null) {
+            healthCheckManager.start();
+        }
+        if (upgradeMonitor != null) {
+            upgradeMonitor.start();
+        }
     }
 
     /**
@@ -136,8 +152,17 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
         } catch (final PersistentBus.EventBusException e) {
             log.warn("Failed to unsubscribe from the external bus", e);
         }
+        if (healthCheckManager != null) {
+            healthCheckManager.stop();
+        }
+        if (upgradeMonitor != null) {
+            upgradeMonitor.stop();
+        }
         log.info("Stopping plugins");
         pluginManager.stopAll();
+        if (invocationGuard != null) {
+            invocationGuard.shutdown();
+        }
     }
 
     private List<String> mandatoryPlugins() {

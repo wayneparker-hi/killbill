@@ -26,6 +26,8 @@ import jakarta.servlet.http.HttpServlet;
 
 import org.killbill.billing.notification.plugin.api.NotificationPluginApi;
 import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.commons.metrics.api.MetricRegistry;
+import org.killbill.commons.metrics.impl.NoOpMetricRegistry;
 import org.killbill.billing.platform.config.DefaultKillbillConfigSource;
 import org.killbill.billing.platform.plugin.api.PluginServiceProperties;
 import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
@@ -138,6 +140,7 @@ public class TestPluginRuntimeModule {
                                         binder.bind(NotificationQueueService.class)
                                               .toInstance(stub(NotificationQueueService.class));
                                         binder.bind(org.killbill.clock.Clock.class).toInstance(new DefaultClock());
+                                        binder.bind(MetricRegistry.class).toInstance(new NoOpMetricRegistry());
                                     });
     }
 

@@ -36,7 +36,7 @@ import org.killbill.billing.entitlement.api.Subscription;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.formatters.InvoiceFormatter;
 import org.killbill.billing.payment.api.PaymentTransaction;
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 import org.killbill.billing.plugin.notification.email.EmailContent;
 import org.killbill.billing.plugin.notification.exception.EmailNotificationException;
 import org.killbill.billing.plugin.notification.generator.formatters.DefaultInvoiceFormatter;
@@ -62,7 +62,7 @@ public class TemplateRenderer {
     private final ResourceBundleFactory bundleFactory;
     private final TenantUserApi tenantApi;
 
-    private InvoiceFormatterFactory invoiceFormatterFactory;
+    private volatile java.util.function.Supplier<NotificationInvoiceFormatterFactory> invoiceFormatterSupplier = () -> null;
 
     public TemplateRenderer(final TemplateEngine templateEngine,
                             final ResourceBundleFactory bundleFactory,
@@ -114,7 +114,7 @@ public class TemplateRenderer {
         }
         if (invoice != null) {
             // look for a custom InvoiceFormatter via our factory service tracker, if available
-            final InvoiceFormatterFactory formatterFactory = (invoiceFormatterFactory != null ? invoiceFormatterFactory : null);
+            final NotificationInvoiceFormatterFactory formatterFactory = invoiceFormatterSupplier.get();
             InvoiceFormatter formattedInvoice = (formatterFactory != null
             		? formatterFactory.createInvoiceFormatter(text, invoice, locale, context) : null);
             if ( formattedInvoice == null ) {
@@ -197,16 +197,13 @@ public class TemplateRenderer {
         }
     }
 
-    /**
-     * Configure a custom {@link InvoiceFormatterFactory} via some other plugin.
-     *
-     * <p>If this service is not configured, or the tracker does not return a service via {@link ServiceTracker#getService()},
-     * then a {@link DefaultInvoiceFormatter} instance will be used.</p>
-     * 
-     * @param invoiceFormatterFactory the service tracker to use
-     */
-    public void setInvoiceFormatterTracker(InvoiceFormatterFactory invoiceFormatterFactory) {
-        this.invoiceFormatterFactory = invoiceFormatterFactory;
+    /** Use the current custom factory, falling back to the default formatter when absent. */
+    public void setInvoiceFormatterTracker(NotificationInvoiceFormatterFactory invoiceFormatterFactory) {
+        this.invoiceFormatterSupplier = () -> invoiceFormatterFactory;
+    }
+
+    public void setInvoiceFormatterSupplier(final java.util.function.Supplier<NotificationInvoiceFormatterFactory> supplier) {
+        this.invoiceFormatterSupplier = java.util.Objects.requireNonNull(supplier, "supplier");
     }
 
 }

@@ -1,0 +1,60 @@
+name: Monorepo verification
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # This public release is distributed through an authenticated GitHub Maven repository.
+      - uses: actions/checkout@v4
+        with:
+          repository: killbill/qualpay-java-client
+          ref: f705d5aba34de727f9524002428e7ea5aaf2d4bb
+          path: .ci/qualpay-java-client
+          persist-credentials: false
+      - name: Build official Qualpay client 1.1.9
+        run: >-
+          mvn -B -ff -f .ci/qualpay-java-client/java-client/pom.xml install
+          -DskipTests=true -Dmaven.javadoc.skip=true
+          -Dmaven.compiler.source=8 -Dmaven.compiler.target=8
+      - name: Configure verification
+        run: |
+          cat > "$RUNNER_TEMP/killbill-mvn" <<'SCRIPT'
+          #!/usr/bin/env bash
+          exec mvn -B -ff \
+            -Dcheck.skip-spotbugs=true -Dcheck.skip-dependency=true \
+            -Dcheck.skip-dependency-scope=true -Dcheck.skip-dependency-versions=true \
+            -Dcheck.skip-duplicate-finder=true -Dcheck.skip-enforcer=true -Dcheck.skip-rat=true "$@"
+          SCRIPT
+          chmod +x "$RUNNER_TEMP/killbill-mvn"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Build all modules and enforce plugin ABI
+        run: killbill-mvn -T 1C clean install -DskipTests=true
+      - name: Run runtime and plugin regressions
+        env:
+          TEST_JVM_ARGS: >-
+            -Xmx1024m -Duser.language=en -Duser.country=US
+            --add-opens java.base/java.lang=ALL-UNNAMED
+            --add-opens java.base/java.io=ALL-UNNAMED
+            --add-opens java.base/java.util=ALL-UNNAMED
+            --add-opens java.base/java.base=ALL-UNNAMED
+        run: |
+          killbill-mvn -pl lpr/lpr-core,lpr/lpr-classloader-default,lpr/lpr-testkit,lpr/lpr-abi-validator,killbill-platform/plugin-runtime,plugins/hello-world-plugin test \
+            -DsurefireArgLine="$TEST_JVM_ARGS"
+          killbill-mvn -pl lpr/lpr-spi,lpr/lpr-descriptor-yaml,lpr/lpr-event-default,lpr/lpr-management,plugins/email-notifications-plugin,plugins/custom-email-invoice-formatter-plugin,plugins/payment-retries-plugin,plugins/catalog-plugin-test test \
+            -Dtest=TestSemanticVersion,TestYamlDescriptorParser,TestDefaultEventBus,TestPluginInstaller,TestDynamicInvoiceFormatter,TestSharedFormatterContract,TestKillbillApiWrapper,TestRulesComputer,TestPaymentRetriesStats,TestCatalogTestPluginApi \
+            -Dsurefire.failIfNoSpecifiedTests=false -DsurefireArgLine="$TEST_JVM_ARGS"

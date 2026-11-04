@@ -43,7 +43,7 @@ import org.killbill.billing.invoice.api.formatters.InvoiceFormatter;
 import org.killbill.billing.payment.api.PaymentTransaction;
 import org.killbill.billing.payment.api.boilerplate.PaymentTransactionImp;
 import org.killbill.billing.plugin.notification.TestBase;
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 import org.killbill.billing.plugin.notification.email.EmailContent;
 import org.killbill.billing.plugin.notification.templates.MustacheTemplateEngine;
 import org.killbill.billing.plugin.notification.templates.TemplateEngine;
@@ -73,7 +73,7 @@ public class TestTemplateRenderer extends TestBase {
 
 
     @Mock
-    private InvoiceFormatterFactory invoiceFormatterFactory;
+    private NotificationInvoiceFormatterFactory invoiceFormatterFactory;
 
     @Mock
     private InvoiceFormatter invoiceFormatter;

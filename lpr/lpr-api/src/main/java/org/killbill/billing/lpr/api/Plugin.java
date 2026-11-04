@@ -16,6 +16,8 @@
 
 package org.killbill.billing.lpr.api;
 
+import java.util.Optional;
+
 /**
  * A plugin's entry point. The runtime instantiates the class named by {@code entrypoint.class} in
  * the plugin descriptor, using the plugin's own ClassLoader, and drives it through this interface.
@@ -56,4 +58,17 @@ public interface Plugin {
      * @throws Exception if the plugin cannot stop cleanly; the runtime logs it and continues
      */
     void stop() throws Exception;
+
+    /**
+     * An optional health probe the runtime will call on a schedule.
+     * <p>
+     * Returning {@link Optional#empty()} means the plugin opts out of health checks and is always
+     * treated as healthy. Implementations should be read-only and must not perform long-running
+     * work; the runtime enforces the configured timeout.
+     *
+     * @return the probe, or empty if the plugin has none
+     */
+    default Optional<PluginHealthCheck> healthCheck() {
+        return Optional.empty();
+    }
 }

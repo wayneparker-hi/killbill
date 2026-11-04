@@ -1,7 +1,13 @@
 # 文档索引
 
 本目录是这个工程的**知识库**：为什么这么做、现状是什么样、下一步做什么。
-面向 AI 的**工作规范与约定**不在这里，在根目录的 [`../CLAUDE.md`](../CLAUDE.md)。
+面向 AI 的**工作规范与约定**不在这里，在根目录的 [`../AGENTS.md`](../AGENTS.md)。
+
+> **SDD 规范入口**：本工程已按 [SDD Kit](../spec/constitution.md) 建立规范驱动开发结构。
+> - 真相源（当前系统是什么）：[`../spec/`](../spec/)
+> - 系统级总规格：[`../spec/killbill.md`](../spec/killbill.md)
+> - 变更过程（怎么演进）：[`../changes/`](../changes/)
+> - 已归档变更：[`../changes/archive/`](../changes/archive/)
 
 ---
 

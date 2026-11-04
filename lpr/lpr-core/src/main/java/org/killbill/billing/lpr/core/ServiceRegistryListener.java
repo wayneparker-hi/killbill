@@ -47,4 +47,7 @@ public interface ServiceRegistryListener {
      * @param reference the registration being removed
      */
     void onUnregistered(ServiceReference<?> reference);
+
+    default void onVisibilityChanged() {
+    }
 }

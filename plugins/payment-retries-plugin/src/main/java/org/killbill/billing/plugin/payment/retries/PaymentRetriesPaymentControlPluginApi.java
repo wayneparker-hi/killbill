@@ -60,7 +60,7 @@ public class PaymentRetriesPaymentControlPluginApi extends PluginPaymentControlP
                                                  final PluginConfigProperties configProperties,
                                                  final org.slf4j.Logger logService,
                                                  final Clock clock) {
-        super(killbillApi, configProperties, logService, clock);
+        super(killbillApi, configProperties, clock);
         this.paymentRetriesConfigurationHandler = paymentRetriesConfigurationHandler;
         this.paymentRetriesApi = paymentRetriesApi;
     }
@@ -90,7 +90,7 @@ public class PaymentRetriesPaymentControlPluginApi extends PluginPaymentControlP
                         context.getAttemptPaymentId(), totalAborted, nbOfAttemptedRetries, totalAbortedPct, authorizationDeclineCode.getMessage(), authorizationDeclineCode.getCode(), authorizationDeclineCode.isRetryable());
         }
 
-        return new PluginPriorPaymentControlResult(isAborted, context);
+        return new PluginPriorPaymentControlResult(isAborted);
     }
 
     @Override

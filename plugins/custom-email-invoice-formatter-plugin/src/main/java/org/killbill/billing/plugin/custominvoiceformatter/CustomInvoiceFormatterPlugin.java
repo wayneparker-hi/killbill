@@ -16,30 +16,16 @@
 
 package org.killbill.billing.plugin.custominvoiceformatter;
 
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 import org.killbill.billing.plugin.runtime.PluginBase;
 
-/**
- * Supplies a custom {@code InvoiceFormatterFactory} for the email-notifications plugin to render
- * invoices with.
- * <p>
- * Note the interface: it is the one declared by the email-notifications plugin, not Kill Bill's own
- * {@code InvoiceFormatterFactory}. Both sides therefore load it from the same place -- the plugin
- * that declares it -- which is why that jar has to be a compile dependency here rather than
- * something each plugin ships its own copy of.
- * <p>
- * The smallest migration in this repository, and a clean illustration of the shape change: the OSGi
- * version called {@code context.registerService(...)} directly and kept the returned
- * {@code ServiceRegistration} in a field so that {@code stop()} could unregister it. Registrations
- * are scoped to the plugin now, so the runtime withdraws them when it stops -- there is nothing
- * left to hold or to undo.
- */
+/** Publishes a custom formatter through the platform's parent-loaded notification contract. */
 public class CustomInvoiceFormatterPlugin extends PluginBase {
 
     public static final String PLUGIN_NAME = "custom-email-invoice-formatter-plugin";
 
     @Override
     protected void startPlugin() throws Exception {
-        registerService(InvoiceFormatterFactory.class, new CustomInvoiceFormatterFactory());
+        registerService(NotificationInvoiceFormatterFactory.class, new CustomInvoiceFormatterFactory());
     }
 }

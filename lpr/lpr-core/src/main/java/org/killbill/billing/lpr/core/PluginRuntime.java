@@ -110,7 +110,7 @@ public class PluginRuntime {
         state.set(PluginState.FAILED);
     }
 
-    void loaded(final PluginClassLoaderHandle handle,
+    synchronized void loaded(final PluginClassLoaderHandle handle,
                 final Plugin pluginInstance,
                 final PluginContext pluginContext,
                 final DefaultResourceRegistry resourceRegistry) {
@@ -128,7 +128,7 @@ public class PluginRuntime {
      * ClassLoader stays reachable and its classes are never reclaimed, so "unloaded" would be a
      * claim rather than a fact (CLAUDE.md, A4).
      */
-    void unloaded() {
+    synchronized void unloaded() {
         this.classLoaderHandle = null;
         this.instance = null;
         this.context = null;

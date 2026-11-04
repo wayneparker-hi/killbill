@@ -2,7 +2,7 @@ package org.killbill.billing.plugin.custominvoiceformatter;
 
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.formatters.InvoiceFormatter;
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Locale;
 import java.util.Map;
 
-public class CustomInvoiceFormatterFactory implements InvoiceFormatterFactory {
+public class CustomInvoiceFormatterFactory implements NotificationInvoiceFormatterFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomInvoiceFormatterFactory.class);
 

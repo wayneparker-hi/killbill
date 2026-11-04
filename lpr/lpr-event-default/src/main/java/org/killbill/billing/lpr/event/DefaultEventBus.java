@@ -25,6 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.api.EventHandler;
 import org.killbill.billing.lpr.api.Subscription;
+import org.killbill.billing.lpr.core.LprMetricsCollector;
+import org.killbill.billing.lpr.core.NoOpLprMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +56,20 @@ public class DefaultEventBus implements EventBus {
      */
     private final Map<Class<?>, CopyOnWriteArrayList<DefaultSubscription<?>>> subscriptionsByType =
             new ConcurrentHashMap<>();
+    private final LprMetricsCollector metrics;
+
+    public DefaultEventBus() {
+        this(null);
+    }
+
+    public DefaultEventBus(final LprMetricsCollector metrics) {
+        this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
+    }
 
     @Override
     public void publish(final Object event) {
         Objects.requireNonNull(event, "event");
+        metrics.eventPublished();
 
         for (final Map.Entry<Class<?>, CopyOnWriteArrayList<DefaultSubscription<?>>> entry
                 : subscriptionsByType.entrySet()) {
@@ -75,7 +87,7 @@ public class DefaultEventBus implements EventBus {
         Objects.requireNonNull(eventType, "eventType");
         Objects.requireNonNull(handler, "handler");
 
-        final DefaultSubscription<T> subscription = new DefaultSubscription<>(eventType, handler, this);
+        final DefaultSubscription<T> subscription = new DefaultSubscription<>(eventType, handler, this, metrics);
         // The add happens inside compute, not after it. Doing `computeIfAbsent(...).add(...)`
         // would leave a window in which unsubscribe drops the bucket as empty and this add lands
         // in a list no longer reachable from the map, silently losing the subscription.
@@ -124,15 +136,18 @@ public class DefaultEventBus implements EventBus {
         private final EventHandler<T> handler;
         private final ClassLoader handlerClassLoader;
         private final DefaultEventBus bus;
+        private final LprMetricsCollector metrics;
         private volatile boolean active = true;
 
         private DefaultSubscription(final Class<T> eventType,
                                     final EventHandler<T> handler,
-                                    final DefaultEventBus bus) {
+                                    final DefaultEventBus bus,
+                                    final LprMetricsCollector metrics) {
             this.eventType = eventType;
             this.handler = handler;
             this.handlerClassLoader = handler.getClass().getClassLoader();
             this.bus = bus;
+            this.metrics = metrics;
         }
 
         @SuppressWarnings("unchecked")
@@ -146,6 +161,7 @@ public class DefaultEventBus implements EventBus {
                 current.setContextClassLoader(handlerClassLoader);
                 handler.handle((T) event);
             } catch (final RuntimeException e) {
+                metrics.eventFailed();
                 log.warn("Event handler for {} failed", eventType.getName(), e);
             } finally {
                 current.setContextClassLoader(original);

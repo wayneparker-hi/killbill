@@ -24,13 +24,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.function.Predicate;
 
+import org.killbill.billing.lpr.api.PluginHealthCheck;
 import org.killbill.billing.lpr.api.ServiceReference;
 import org.killbill.billing.lpr.core.ServiceRegistryListener;
 import org.killbill.billing.platform.plugin.api.DefaultPluginServiceDescriptor;
 import org.killbill.billing.platform.plugin.api.PluginServiceProperties;
 import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
 import org.killbill.billing.platform.plugin.api.SinglePluginServiceRegistry;
+import org.killbill.billing.runtime.api.Healthcheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +66,11 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
 
     private final List<PluginServiceRegistry<?>> registries;
     private final List<SinglePluginServiceRegistry<?>> singleRegistries;
+    private final PluginServiceRegistry<Healthcheck> healthcheckRegistry;
+    private final PluginHealthCheckManager healthCheckManager;
+    private final PluginInvocationGuard guard;
+    private final Predicate<ServiceReference<?>> visible;
+    private final Map<RouteKey, RoutedRegistration> currentRoutes = new HashMap<>();
 
     /*
      * The typed Kill Bill registries are keyed by registration name, whereas LPR keeps old and new
@@ -79,17 +87,62 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
      *                   bindings straight through
      */
     public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries) {
-        this(registries, List.of());
+        this(registries, List.of(), null, null, null);
+    }
+
+    /**
+     * @param registries one per plugin service type; nulls are ignored so a host can pass optional
+     *                   bindings straight through
+     * @param guard      protects every plugin call with timeout and circuit breaker; may be null
+     *                   for tests that want no protection
+     */
+    public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries,
+                                       final PluginInvocationGuard guard) {
+        this(registries, List.of(), null, null, guard);
     }
 
     /**
      * @param registries       one per plugin service type
      * @param singleRegistries types of which there can be only one implementation
+     * @param guard            protects every plugin call with timeout and circuit breaker; may be
+     *                         null for tests that want no protection
      */
     public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries,
-                                       final List<SinglePluginServiceRegistry<?>> singleRegistries) {
+                                       final List<SinglePluginServiceRegistry<?>> singleRegistries,
+                                       final PluginInvocationGuard guard) {
+        this(registries, singleRegistries, null, null, guard);
+    }
+
+    /**
+     * @param registries         one per plugin service type
+     * @param singleRegistries   types of which there can be only one implementation
+     * @param healthcheckRegistry the Kill Bill healthcheck registry to mirror plugin probes into;
+     *                            may be null if the host does not expose one
+     * @param healthCheckManager  the manager that runs probes and caches their results; may be null
+     * @param guard               protects every plugin call with timeout and circuit breaker; may be
+     *                            null for tests that want no protection
+     */
+    public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries,
+                                       final List<SinglePluginServiceRegistry<?>> singleRegistries,
+                                       final PluginServiceRegistry<Healthcheck> healthcheckRegistry,
+                                       final PluginHealthCheckManager healthCheckManager,
+                                       final PluginInvocationGuard guard) {
+        this(registries, singleRegistries, healthcheckRegistry, healthCheckManager, guard,
+             reference -> healthCheckManager == null || healthCheckManager.isHealthy(reference.pluginId(), reference.version()));
+    }
+
+    public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries,
+                                       final List<SinglePluginServiceRegistry<?>> singleRegistries,
+                                       final PluginServiceRegistry<Healthcheck> healthcheckRegistry,
+                                       final PluginHealthCheckManager healthCheckManager,
+                                       final PluginInvocationGuard guard,
+                                       final Predicate<ServiceReference<?>> visible) {
         this.registries = List.copyOf(withoutNulls(registries));
         this.singleRegistries = List.copyOf(withoutNulls(singleRegistries));
+        this.healthcheckRegistry = healthcheckRegistry;
+        this.healthCheckManager = healthCheckManager;
+        this.guard = guard;
+        this.visible = Objects.requireNonNull(visible, "visible");
         log.info("Plugin service bridge wired for {} service type(s): {}",
                  this.registries.size() + this.singleRegistries.size(),
                  java.util.stream.Stream.concat(
@@ -129,6 +182,10 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
             route(reference, registerSingle(single.get(), reference, registrationName));
             return;
         }
+        if (healthcheckRegistry != null && reference.type() == PluginHealthCheck.class) {
+            route(reference, registerHealthcheck(reference, registrationName));
+            return;
+        }
         log.debug("Plugin {} published {}, which this deployment does not consume",
                   reference.pluginId(), reference.type().getName());
     }
@@ -143,23 +200,41 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
         }
 
         final List<RoutedRegistration> registrations = routedByTarget.get(routed.key());
-        final boolean wasCurrent = registrations.get(registrations.size() - 1) == routed;
         registrations.remove(routed);
         if (registrations.isEmpty()) {
             routedByTarget.remove(routed.key());
         }
-        if (!wasCurrent) {
+        refresh(routed.key());
+    }
+
+    @Override
+    public synchronized void onVisibilityChanged() {
+        final java.util.Set<RouteKey> keys = new java.util.HashSet<>(routedByTarget.keySet());
+        keys.addAll(currentRoutes.keySet());
+        keys.forEach(this::refresh);
+    }
+
+    private void refresh(final RouteKey key) {
+        final List<RoutedRegistration> registrations = routedByTarget.getOrDefault(key, List.of());
+        RoutedRegistration next = null;
+        for (int i = registrations.size() - 1; i >= 0; i--) {
+            final RoutedRegistration candidate = registrations.get(i);
+            if (candidate.reference().type() == PluginHealthCheck.class || visible.test(candidate.reference())) {
+                next = candidate;
+                break;
+            }
+        }
+        final RoutedRegistration previous = currentRoutes.get(key);
+        if (next == previous) {
             return;
         }
-
-        log.info("Withdrawing {} '{}' published by plugin {} version {}",
-                 reference.type().getSimpleName(), routed.registrationName(), reference.pluginId(), reference.version());
-        routed.unregisterAction().run();
-        if (!registrations.isEmpty()) {
-            // The most recent remaining registration becomes visible again. This also covers a
-            // direct unregister of the newest registration without making an older live provider
-            // disappear.
-            registrations.get(registrations.size() - 1).registerAction().run();
+        if (next != null) {
+            // Replace directly: withdrawing first would introduce a routing gap.
+            next.registerAction().run();
+            currentRoutes.put(key, next);
+        } else if (previous != null) {
+            previous.unregisterAction().run();
+            currentRoutes.remove(key);
         }
     }
 
@@ -175,8 +250,9 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
 
         final DefaultPluginServiceDescriptor descriptor =
                 new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName);
-        final T proxied = PluginServiceContextClassLoaderProxy.wrap(service, serviceType);
-        return new RoutedRegistration(registry,
+        final T tcclProxied = PluginServiceContextClassLoaderProxy.wrap(service, serviceType);
+        final T proxied = PluginServiceCircuitBreakerProxy.wrap(tcclProxied, serviceType, descriptor, guard);
+        return new RoutedRegistration(reference, registry,
                                       registrationName,
                                       () -> registry.registerService(descriptor, proxied),
                                       () -> registry.unregisterService(registrationName));
@@ -189,17 +265,32 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
         final Class<T> serviceType = registry.getServiceType();
         final DefaultPluginServiceDescriptor descriptor =
                 new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName);
-        final T proxied = PluginServiceContextClassLoaderProxy.wrap((T) reference.service(), serviceType);
-        return new RoutedRegistration(registry,
+        final T tcclProxied = PluginServiceContextClassLoaderProxy.wrap((T) reference.service(), serviceType);
+        final T proxied = PluginServiceCircuitBreakerProxy.wrap(tcclProxied, serviceType, descriptor, guard);
+        return new RoutedRegistration(reference, registry,
                                       registrationName,
                                       () -> registry.registerService(descriptor, proxied),
                                       () -> registry.unregisterService(registrationName));
     }
 
+    @SuppressWarnings("unchecked")
+    private RoutedRegistration registerHealthcheck(final ServiceReference<?> reference,
+                                                   final String registrationName) {
+        final DefaultPluginServiceDescriptor descriptor =
+                new DefaultPluginServiceDescriptor(reference.pluginId(), reference.version(), registrationName);
+        final Healthcheck adapted =
+                new KillbillPluginHealthCheckAdapter(reference.pluginId(), reference.version(), healthCheckManager);
+        final PluginServiceRegistry<Healthcheck> registry = healthcheckRegistry;
+        return new RoutedRegistration(reference, registry,
+                                      registrationName,
+                                      () -> registry.registerService(descriptor, adapted),
+                                      () -> registry.unregisterService(registrationName));
+    }
+
     private void route(final ServiceReference<?> reference, final RoutedRegistration routed) {
-        routed.registerAction().run();
         routedByReference.put(reference, routed);
         routedByTarget.computeIfAbsent(routed.key(), ignored -> new ArrayList<>()).add(routed);
+        refresh(routed.key());
     }
 
     private Optional<SinglePluginServiceRegistry<?>> findSingleRegistryFor(final Class<?> serviceType) {
@@ -230,13 +321,14 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
         return declared instanceof String name && !name.isBlank() ? name.trim() : reference.pluginId();
     }
 
-    private record RoutedRegistration(Object registry,
+    private record RoutedRegistration(ServiceReference<?> reference,
+                                      Object registry,
                                       String registrationName,
                                       Runnable registerAction,
                                       Runnable unregisterAction) {
 
         private RouteKey key() {
-            return new RouteKey(registry, registrationName);
+            return new RouteKey(registry, registry instanceof SinglePluginServiceRegistry<?> ? "" : registrationName);
         }
     }
 

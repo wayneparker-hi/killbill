@@ -16,7 +16,7 @@
 
 package org.killbill.billing.plugin.notification.setup;
 
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServlet;
@@ -40,7 +40,7 @@ public class EmailNotificationPlugin extends PluginBase {
     public static final String PLUGIN_NAME = "killbill-email-notifications";
     public static final String PROPERTY_PREFIX = "org.killbill.billing.plugin.email-notifications.";
 
-    private NotificationPluginApi emailNotificationListener;
+    private EmailNotificationListener emailNotificationListener;
     private EmailNotificationConfigurationHandler emailNotificationConfigurationHandler;
 
     @Override
@@ -54,13 +54,11 @@ public class EmailNotificationPlugin extends PluginBase {
         final EmailNotificationConfiguration globalConfiguration = emailNotificationConfigurationHandler.createConfigurable(configProperties.getProperties());
         emailNotificationConfigurationHandler.setDefaultConfigurable(globalConfiguration);
 
-        // Whatever plugin publishes an InvoiceFormatterFactory, or nothing. Was a ServiceTracker
-        // kept open for the lifetime of the plugin; the registry answers the same question.
-        final InvoiceFormatterFactory invoiceFormatterFactory =
-                context.services().getService(InvoiceFormatterFactory.class, PLUGIN_NAME).orElse(null);
-
-        // Register an event listener (optional)
-        emailNotificationListener = new EmailNotificationListener(clock, killbillApi, configProperties, dataSource(), emailNotificationConfigurationHandler, invoiceFormatterFactory);
+        // Resolve per render so later starts, upgrades and removals are visible.
+        emailNotificationListener = new EmailNotificationListener(clock, killbillApi, configProperties, dataSource(), emailNotificationConfigurationHandler, null);
+        emailNotificationListener.setInvoiceFormatterSupplier(() -> context.services()
+                .getServices(NotificationInvoiceFormatterFactory.class).stream()
+                .map(reference -> reference.service()).findFirst().orElse(null));
 
         final ConfigurationDao configurationDao = new ConfigurationDao(dataSource());
 

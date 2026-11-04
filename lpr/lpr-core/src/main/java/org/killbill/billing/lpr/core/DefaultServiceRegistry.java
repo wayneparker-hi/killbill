@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
 
 import org.killbill.billing.lpr.api.ServiceReference;
 import org.killbill.billing.lpr.api.ServiceRegistration;
@@ -67,6 +68,24 @@ public class DefaultServiceRegistry {
      */
     private final CopyOnWriteArrayList<ServiceRegistryListener> listeners = new CopyOnWriteArrayList<>();
 
+    private final Map<String, String> selectedVersions = new ConcurrentHashMap<>();
+    private final Map<String, String> stagedVersions = new ConcurrentHashMap<>();
+    private final LprMetricsCollector metrics;
+
+    /**
+     * Decides whether a plugin version is healthy enough to route traffic to. Set from the runtime
+     * once the health-check manager exists; until then every plugin is considered healthy.
+     */
+    private volatile BiPredicate<String, String> healthPredicate = (pluginId, version) -> true;
+
+    public DefaultServiceRegistry() {
+        this(null);
+    }
+
+    public DefaultServiceRegistry(final LprMetricsCollector metrics) {
+        this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
+    }
+
     /**
      * A plugin-facing view that stamps {@code pluginId} and {@code version} onto every
      * registration.
@@ -88,6 +107,63 @@ public class DefaultServiceRegistry {
      */
     public void addListener(final ServiceRegistryListener listener) {
         listeners.add(Objects.requireNonNull(listener, "listener"));
+    }
+
+    /**
+     * Supplies the predicate the registry uses to hide services of unhealthy plugin versions.
+     * <p>
+     * The predicate receives {@code (pluginId, version)} and returns true when that version may
+     * serve traffic. It is consulted on every lookup, so it must be cheap and must not throw.
+     *
+     * @param predicate the predicate; null means "all healthy"
+     */
+    public void setHealthPredicate(final BiPredicate<String, String> predicate) {
+        this.healthPredicate = predicate != null ? predicate : (pluginId, version) -> true;
+        refreshVisibility();
+    }
+
+    public void stageVersion(final String pluginId, final String version) {
+        stagedVersions.put(pluginId, version);
+    }
+
+    public void clearStagedVersion(final String pluginId) {
+        stagedVersions.remove(pluginId);
+    }
+
+    public void selectVersion(final String pluginId, final String version) {
+        if (version == null) {
+            selectedVersions.remove(pluginId);
+        } else {
+            selectedVersions.put(pluginId, version);
+        }
+        refreshVisibility();
+    }
+
+    public void refreshVisibility() {
+        for (final ServiceRegistryListener listener : listeners) {
+            try {
+                listener.onVisibilityChanged();
+            } catch (final RuntimeException e) {
+                log.warn("Service visibility listener failed", e);
+            }
+        }
+    }
+
+    /** The selected healthy version, falling back to another live healthy registration. */
+    public boolean isVisible(final ServiceReference<?> reference) {
+        if (reference.version().equals(stagedVersions.get(reference.pluginId())) || !healthy(reference)) {
+            return false;
+        }
+        final String selected = selectedVersions.get(reference.pluginId());
+        if (selected == null || selected.equals(reference.version())) {
+            return true;
+        }
+        try {
+            return !healthPredicate.test(reference.pluginId(), selected);
+        } catch (final RuntimeException e) {
+            log.warn("Health predicate failed for {} {}", reference.pluginId(), selected, e);
+            return false;
+        }
     }
 
     /**
@@ -129,6 +205,7 @@ public class DefaultServiceRegistry {
             peers.add(reference);
             return peers;
         });
+        metrics.providerRegistered(type);
 
         log.debug("Plugin {} registered {} (priority {})", pluginId, type.getName(), reference.priority());
         notifyRegistered(reference);
@@ -149,7 +226,7 @@ public class DefaultServiceRegistry {
         Objects.requireNonNull(pluginId, "pluginId");
 
         for (final DefaultServiceReference<?> reference : referencesFor(type)) {
-            if (reference.pluginId().equals(pluginId)) {
+            if (reference.pluginId().equals(pluginId) && isVisible(reference)) {
                 return Optional.of(type.cast(reference.service()));
             }
         }
@@ -167,7 +244,9 @@ public class DefaultServiceRegistry {
 
         final List<ServiceReference<T>> ordered = new ArrayList<>();
         for (final DefaultServiceReference<?> reference : referencesFor(type)) {
-            ordered.add((ServiceReference<T>) reference);
+            if (isVisible(reference)) {
+                ordered.add((ServiceReference<T>) reference);
+            }
         }
         ordered.sort(Comparator
                              .comparingInt((ServiceReference<T> r) -> priorityOf(r))
@@ -270,7 +349,10 @@ public class DefaultServiceRegistry {
         }
         // Notified outside the compute: a listener may take its own locks, and holding a map bin
         // while calling into host code is how deadlocks are built.
-        removed.forEach(this::notifyUnregistered);
+        removed.forEach(reference -> {
+            metrics.providerUnregistered(reference.type());
+            notifyUnregistered(reference);
+        });
         return removed.size();
     }
 
@@ -301,6 +383,7 @@ public class DefaultServiceRegistry {
             return peers.isEmpty() ? null : peers;
         });
         if (wasPresent[0]) {
+            metrics.providerUnregistered(reference.type());
             notifyUnregistered(reference);
         }
     }
@@ -308,6 +391,16 @@ public class DefaultServiceRegistry {
     private List<DefaultServiceReference<?>> referencesFor(final Class<?> type) {
         final CopyOnWriteArrayList<DefaultServiceReference<?>> found = servicesByType.get(type);
         return found == null ? List.of() : found;
+    }
+
+    private boolean healthy(final ServiceReference<?> reference) {
+        try {
+            return healthPredicate.test(reference.pluginId(), reference.version());
+        } catch (final RuntimeException e) {
+            log.error("Health predicate threw for {} {}; treating as unhealthy",
+                      reference.pluginId(), reference.version(), e);
+            return false;
+        }
     }
 
     private static int priorityOf(final ServiceReference<?> reference) {

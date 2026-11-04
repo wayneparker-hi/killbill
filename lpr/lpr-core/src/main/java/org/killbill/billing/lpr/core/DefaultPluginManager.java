@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.killbill.billing.lpr.api.Plugin;
 import org.killbill.billing.lpr.api.PluginState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +49,35 @@ public class DefaultPluginManager {
     private final PluginRepository repository;
     private final DefaultPluginLifecycleManager lifecycle;
     private final DefaultServiceRegistry serviceRegistry;
+    private final LprMetricsCollector metrics;
     private final Map<String, PluginRuntime> plugins = new ConcurrentHashMap<>();
+    private final Map<String, PluginRuntime> previousRuntimes = new ConcurrentHashMap<>();
+    private final CopyOnWriteArrayList<PluginActivationListener> activationListeners = new CopyOnWriteArrayList<>();
 
     public DefaultPluginManager(final PluginRepository repository,
                                 final DefaultPluginLifecycleManager lifecycle,
                                 final DefaultServiceRegistry serviceRegistry) {
+        this(repository, lifecycle, serviceRegistry, null);
+    }
+
+    public DefaultPluginManager(final PluginRepository repository,
+                                final DefaultPluginLifecycleManager lifecycle,
+                                final DefaultServiceRegistry serviceRegistry,
+                                final LprMetricsCollector metrics) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");
         this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceRegistry");
+        this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
+        this.metrics.trackPluginStates(() -> allRuntimes().stream().map(PluginRuntime::state).toList());
+    }
+
+    /**
+     * Registers a listener that is notified after successful version switches and rollbacks.
+     *
+     * @param listener the observer; must not be null
+     */
+    public void addActivationListener(final PluginActivationListener listener) {
+        activationListeners.add(Objects.requireNonNull(listener, "listener"));
     }
 
     /**
@@ -105,7 +128,7 @@ public class DefaultPluginManager {
      * @return ids of the plugins that started
      * @throws IllegalStateException if a mandatory plugin did not start
      */
-    public List<String> startAll(final Collection<String> mandatoryPluginIds) {
+    public synchronized List<String> startAll(final Collection<String> mandatoryPluginIds) {
         final Collection<String> mandatory = Objects.requireNonNullElse(mandatoryPluginIds, List.of());
         final List<String> started = new ArrayList<>();
         final Map<String, Exception> failures = new LinkedHashMap<>();
@@ -139,21 +162,22 @@ public class DefaultPluginManager {
      * Failures are logged and swallowed: this runs on the shutdown path, where refusing to continue
      * would leave the remaining plugins holding their resources.
      */
-    public void stopAll() {
-        for (final PluginRuntime runtime : plugins.values()) {
+    public synchronized void stopAll() {
+        for (final PluginRuntime runtime : allRuntimes()) {
             try {
                 lifecycle.stop(runtime);
             } catch (final RuntimeException e) {
                 log.warn("Failed to stop plugin {}", runtime.pluginId(), e);
             }
         }
+        previousRuntimes.clear();
     }
 
     /**
      * @param pluginId the plugin
      * @return true if this call started it
      */
-    public boolean start(final String pluginId) {
+    public synchronized boolean start(final String pluginId) {
         return lifecycle.start(require(pluginId));
     }
 
@@ -161,15 +185,18 @@ public class DefaultPluginManager {
      * @param pluginId the plugin
      * @return true if this call stopped it
      */
-    public boolean stop(final String pluginId) {
+    public synchronized boolean stop(final String pluginId) {
+        final PluginRuntime previous = previousRuntimes.remove(pluginId);
+        if (previous != null) { lifecycle.stop(previous); }
         return lifecycle.stop(require(pluginId));
     }
 
     /**
      * @param pluginId the plugin
      */
-    public void restart(final String pluginId) {
-        lifecycle.restart(require(pluginId));
+    public synchronized void restart(final String pluginId) {
+        stop(pluginId);
+        start(pluginId);
     }
 
     /**
@@ -188,43 +215,110 @@ public class DefaultPluginManager {
      * @param version  an installed version
      * @throws IllegalStateException if the candidate cannot start
      */
-    public void activateVersion(final String pluginId, final String version) {
+    public synchronized void activateVersion(final String pluginId, final String version) {
+        switchVersion(pluginId, version, false);
+    }
+
+    private void switchVersion(final String pluginId, final String version, final boolean rollingBack) {
         final PluginRuntime incumbent = require(pluginId);
         if (incumbent.version().equals(version) && incumbent.state().isRunning()) {
             return;
         }
-
+        completeUpgrade(pluginId, incumbent.version());
         final PluginRuntime candidate = repository.loadVersion(pluginId, version);
         final boolean wasRunning = incumbent.state().isRunning();
-
+        if (wasRunning) {
+            serviceRegistry.selectVersion(pluginId, incumbent.version());
+        }
+        serviceRegistry.stageVersion(pluginId, version);
         try {
             lifecycle.start(candidate);
+            repository.setActiveVersion(pluginId, version, wasRunning ? incumbent.version() : null);
         } catch (final RuntimeException e) {
-            log.error("Version {} of plugin {} failed to start; keeping version {}",
-                      version, pluginId, incumbent.version(), e);
+            lifecycle.stop(candidate);
+            serviceRegistry.clearStagedVersion(pluginId);
             throw e;
         }
-
-        if (wasRunning) {
+        plugins.put(pluginId, candidate);
+        final boolean retain = !rollingBack && wasRunning
+                && activationListeners.stream().anyMatch(PluginActivationListener::retainPreviousVersion);
+        if (retain) {
+            previousRuntimes.put(pluginId, incumbent);
+        }
+        if (!rollingBack) {
+            fireActivated(pluginId, version, wasRunning ? Optional.of(incumbent.version()) : Optional.empty());
+        }
+        serviceRegistry.clearStagedVersion(pluginId);
+        if (plugins.get(pluginId) == candidate) {
+            serviceRegistry.selectVersion(pluginId, version);
+        }
+        if (wasRunning && !retain) {
             lifecycle.stop(incumbent);
         }
-        plugins.put(pluginId, candidate);
-        repository.setActiveVersion(pluginId, version);
-        log.info("Plugin {} switched from version {} to {}", pluginId, incumbent.version(), version);
     }
 
-    /**
-     * Returns a plugin to the version that ran before the current one.
-     *
-     * @param pluginId the plugin
-     * @throws IllegalStateException if no previous version is recorded
-     */
-    public void rollback(final String pluginId) {
-        final String previous = repository.previousVersion(pluginId)
-                                          .orElseThrow(() -> new IllegalStateException(
-                                                  "No previous version recorded for plugin " + pluginId));
-        log.info("Rolling plugin {} back to version {}", pluginId, previous);
-        activateVersion(pluginId, previous);
+    public synchronized void rollback(final String pluginId) {
+        rollback(pluginId, "Operator rollback");
+    }
+
+    private void rollback(final String pluginId, final String reason) {
+        final PluginRuntime current = require(pluginId);
+        final String failedVersion = current.version();
+        final PluginRuntime previous = previousRuntimes.get(pluginId);
+        final String version = previous != null ? previous.version() : repository.previousVersion(pluginId)
+                .orElseThrow(() -> new IllegalStateException("No previous version for " + pluginId));
+        if (previous != null) {
+            repository.setActiveVersion(pluginId, version, failedVersion);
+            plugins.put(pluginId, previous);
+            previousRuntimes.remove(pluginId);
+            serviceRegistry.selectVersion(pluginId, version);
+            lifecycle.stop(current);
+        } else {
+            switchVersion(pluginId, version, true);
+        }
+        fireRolledBack(pluginId, version, failedVersion, reason);
+    }
+
+    public synchronized boolean rollbackIfCurrent(final String pluginId, final String expectedVersion, final String reason) {
+        if (!require(pluginId).version().equals(expectedVersion) || !previousRuntimes.containsKey(pluginId)) {
+            return false;
+        }
+        rollback(pluginId, reason);
+        return true;
+    }
+
+    public synchronized void completeUpgrade(final String pluginId, final String expectedVersion) {
+        if (require(pluginId).version().equals(expectedVersion)) {
+            final PluginRuntime previous = previousRuntimes.remove(pluginId);
+            if (previous != null) {
+                lifecycle.stop(previous);
+            }
+        }
+    }
+
+    private void fireActivated(final String pluginId,
+                               final String newVersion,
+                               final Optional<String> previousVersion) {
+        for (final PluginActivationListener listener : activationListeners) {
+            try {
+                listener.onActivated(pluginId, newVersion, previousVersion);
+            } catch (final RuntimeException e) {
+                log.warn("Activation listener failed for {} {}", pluginId, newVersion, e);
+            }
+        }
+    }
+
+    private void fireRolledBack(final String pluginId,
+                                final String currentVersion,
+                                final String failedVersion,
+                                final String reason) {
+        for (final PluginActivationListener listener : activationListeners) {
+            try {
+                listener.onRolledBack(pluginId, currentVersion, failedVersion, reason);
+            } catch (final RuntimeException e) {
+                log.warn("Rollback listener failed for {}", pluginId, e);
+            }
+        }
     }
 
     /**
@@ -259,6 +353,39 @@ public class DefaultPluginManager {
                       .map(this::describe)
                       .sorted(java.util.Comparator.comparing(PluginInfo::pluginId))
                       .toList();
+    }
+
+    /**
+     * The plugins currently in {@link org.killbill.billing.lpr.api.PluginState#ACTIVE} state.
+     * <p>
+     * The view is a snapshot: a plugin that stops while the caller iterates simply will not appear.
+     *
+     * @return running plugin views; empty if none
+     */
+    public List<RunningPlugin> runningPlugins() {
+        return allRuntimes().stream().map(this::asRunningPlugin).flatMap(Optional::stream).toList();
+    }
+
+    private List<PluginRuntime> allRuntimes() {
+        final List<PluginRuntime> runtimes = new ArrayList<>(plugins.values());
+        runtimes.addAll(previousRuntimes.values());
+        return runtimes;
+    }
+
+    private Optional<RunningPlugin> asRunningPlugin(final PluginRuntime runtime) {
+        synchronized (runtime) {
+            if (!runtime.state().isRunning() || runtime.instance() == null || runtime.classLoaderHandle() == null) {
+                return Optional.empty();
+            }
+            final Plugin instance = runtime.instance();
+            final ClassLoader loader = runtime.classLoaderHandle().classLoader();
+            return Optional.of(new RunningPlugin() {
+                public String pluginId() { return runtime.pluginId(); }
+                public String version() { return runtime.version(); }
+                public Plugin instance() { return instance; }
+                public ClassLoader classLoader() { return loader; }
+            });
+        }
     }
 
     private PluginInfo describe(final PluginRuntime runtime) {

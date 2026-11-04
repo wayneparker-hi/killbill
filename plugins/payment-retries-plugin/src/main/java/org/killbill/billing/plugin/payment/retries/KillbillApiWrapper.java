@@ -54,7 +54,7 @@ public class KillbillApiWrapper {
     }
 
     public Payment getPayment(final String paymentExternalKey, final UUID tenantId) {
-        final TenantContext tenantContext = new PluginTenantContext(tenantId);
+        final TenantContext tenantContext = new PluginTenantContext(null, tenantId);
 
         try {
             final PaymentApi paymentApi = killbillApi.getPaymentApi();
@@ -73,7 +73,7 @@ public class KillbillApiWrapper {
     }
 
     public PaymentMethod getPaymentMethod(final UUID paymentMethodId, final UUID tenantId) {
-        final TenantContext tenantContext = new PluginTenantContext(tenantId);
+        final TenantContext tenantContext = new PluginTenantContext(null, tenantId);
 
         try {
             final PaymentApi paymentApi = killbillApi.getPaymentApi();
@@ -92,7 +92,7 @@ public class KillbillApiWrapper {
     }
 
     public PaymentTransaction getLastAuthorizationIfFailed(final UUID accountId, final UUID paymentMethodId, final UUID tenantId) {
-        final TenantContext tenantContext = new PluginTenantContext(tenantId);
+        final TenantContext tenantContext = new PluginTenantContext(null, tenantId);
 
         try {
             final PaymentApi paymentApi = killbillApi.getPaymentApi();

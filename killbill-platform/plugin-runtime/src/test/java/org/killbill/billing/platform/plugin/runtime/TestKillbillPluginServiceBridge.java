@@ -21,10 +21,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.killbill.billing.lpr.api.PluginHealthCheck;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.platform.plugin.api.PluginServiceDescriptor;
 import org.killbill.billing.platform.plugin.api.PluginServiceProperties;
 import org.killbill.billing.platform.plugin.api.PluginServiceRegistry;
+import org.killbill.billing.runtime.api.Healthcheck;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -165,6 +167,82 @@ public class TestKillbillPluginServiceBridge {
     }
 
     public interface PremiumGateway extends Gateway {
+    }
+
+    /**
+     * Plugin health probes are mirrored into the Kill Bill healthcheck registry so the host's
+     * {@code /1.0/healthcheck} endpoint reports per-plugin status.
+     */
+    @Test(groups = "fast")
+    public void testHealthCheckIsRoutedToTheHostRegistry() {
+        final RecordingRegistry<Healthcheck> healthcheckRegistry = new RecordingRegistry<>(Healthcheck.class);
+        final DefaultServiceRegistry runtimeRegistry = new DefaultServiceRegistry();
+        runtimeRegistry.addListener(new KillbillPluginServiceBridge(List.of(gatewayRegistry),
+                                                                    List.of(),
+                                                                    healthcheckRegistry,
+                                                                    null,
+                                                                    null));
+
+        runtimeRegistry.register("acme", "1.0.0",
+                                 PluginHealthCheck.class,
+                                 () -> PluginHealthCheck.HealthCheckResult.ok("fine"),
+                                 Map.of());
+
+        assertEquals(healthcheckRegistry.getAllServices(), Set.of("acme"));
+        assertTrue(healthcheckRegistry.getServiceForName("acme").getHealthStatus(null, null).isHealthy());
+    }
+
+    @Test(groups = "fast")
+    public void testHostRoutesFollowHealthFallbackAndRecovery() {
+        final DefaultServiceRegistry services = new DefaultServiceRegistry();
+        final RecordingRegistry<Gateway> host = new RecordingRegistry<>(Gateway.class);
+        services.addListener(new KillbillPluginServiceBridge(List.of(host), List.of(), null, null, null, services::isVisible));
+        final java.util.Set<String> unhealthy = new java.util.HashSet<>();
+        services.setHealthPredicate((id, version) -> !unhealthy.contains(version));
+        services.register("acme", "1", Gateway.class, () -> "v1", Map.of());
+        services.selectVersion("acme", "1");
+        services.stageVersion("acme", "2");
+        services.register("acme", "2", Gateway.class, () -> "v2", Map.of());
+        assertEquals(host.getServiceForName("acme").charge(), "v1");
+        services.clearStagedVersion("acme");
+        services.selectVersion("acme", "2");
+        assertEquals(host.getServiceForName("acme").charge(), "v2");
+        unhealthy.add("2");
+        services.refreshVisibility();
+        assertEquals(host.getServiceForName("acme").charge(), "v1");
+        unhealthy.add("1");
+        services.refreshVisibility();
+        assertNull(host.getServiceForName("acme"));
+        unhealthy.clear();
+        services.refreshVisibility();
+        assertEquals(host.getServiceForName("acme").charge(), "v2");
+    }
+
+    @Test(groups = "fast")
+    public void testSingleRegistryFallsBackAcrossDifferentNames() {
+        final DefaultServiceRegistry services = new DefaultServiceRegistry();
+        final RecordingSingle host = new RecordingSingle();
+        services.addListener(new KillbillPluginServiceBridge(List.of(), List.of(host), null, null, null, services::isVisible));
+        services.register("first", "1", Gateway.class, () -> "first", Map.of());
+        services.register("second", "1", Gateway.class, () -> "second", Map.of());
+        assertEquals(host.getService().charge(), "second");
+        services.setHealthPredicate((id, version) -> !id.equals("second"));
+        assertEquals(host.getService().charge(), "first");
+        services.unregisterAll("second");
+        assertEquals(host.getService().charge(), "first");
+        services.setHealthPredicate((id, version) -> false);
+        assertNull(host.getService());
+        services.setHealthPredicate(null);
+        assertEquals(host.getService().charge(), "first");
+    }
+
+    private static final class RecordingSingle implements org.killbill.billing.platform.plugin.api.SinglePluginServiceRegistry<Gateway> {
+        private Gateway service;
+        @Override public void registerService(final PluginServiceDescriptor descriptor, final Gateway service) { this.service = service; }
+        @Override public void unregisterService(final String name) { service = null; }
+        @Override public Gateway getService() { return service; }
+        @Override public void addRegistrationListener(final Runnable listener) { }
+        @Override public Class<Gateway> getServiceType() { return Gateway.class; }
     }
 
     /** Captures what the bridge hands over, so tests can assert on the descriptor too. */

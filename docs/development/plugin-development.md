@@ -280,3 +280,32 @@ plugins/my-plugin/
 - [ ] `start()` 里没有立刻调用 Core API 做业务
 - [ ] 有一个测试**从真 jar 加载**并验证服务可查到
 - [ ] 有一个泄漏性测试
+
+
+## 九、调用保护、健康检查与 ABI 门禁
+
+以下配置均使用 `org.killbill.billing.plugin.` 前缀，由 `PluginRuntimeConfig` 读取：
+
+| 后缀 | 默认值 | 用途 |
+|---|---|---|
+| `invocation.defaultTimeout` | 30000 ms | 调用超时 |
+| `invocation.timeoutOverrides` | 空 | `pluginId=毫秒`，逗号分隔 |
+| `invocation.maxThreads` | 64 | 全运行时调用 worker 上限，无等待队列 |
+| `invocation.maxConcurrentPerPlugin` | 16 | 单插件在途任务上限 |
+| `invocation.circuitBreaker.failureThreshold` | 5 | 连续失败阈值 |
+| `invocation.circuitBreaker.openDuration` | 60000 ms | 熔断等待时间 |
+| `healthcheck.enabled` | true | 周期健康检查 |
+| `healthcheck.interval` | 30000 ms | 周期检查间隔 |
+| `healthcheck.timeout` | 5000 ms | accessor 与探针总超时 |
+| `healthcheck.maxThreads` | 8 | 健康检查 worker 上限；每版本最多一个未退出探针 |
+| `upgrade.autoRollback` | true | 健康失败自动回滚 |
+| `upgrade.healthCheck.window` | 60000 ms | 保留旧版并观察新版的窗口 |
+| `upgrade.healthCheck.interval` | 5000 ms | 升级观察探测间隔 |
+
+超时只请求线程中断。忽略中断的代码仍占 worker 和并发额度，直到实际退出；强制终止任意插件需要进程隔离（T10）。业务受检异常原样透传；超时、额度耗尽及熔断抛 `PluginInvocationException`。
+
+候选启动时保持旧路由；首次检查通过后选择新版。窗口内保留旧运行实例，任次失败可切回，无需重启旧版；窗口届满释放旧版。审计包含 runtime actor、版本、原因与时间，当前输出到日志与内存事件总线，尚无持久审计查询接口。
+
+存在 `src/main/resources/plugin.yaml` 的模块自动在 Maven `verify` 执行 ABI 校验。校验已知平台服务契约的直接、泛型、异常与继承签名，以及 jar/依赖中的重复类；必需输入缺失会失败。自定义共享接口须添加对应 `--service-api-prefix`（显式参数替换默认前缀列表）。此静态门禁不代替实际 ClassLoader 与跨插件调用测试。
+
+邮件插件通过 `org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory` 发现自定义工厂，每次渲染重新选择当前服务。旧 `org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory` 仅保留弃用别名；新注册应直接使用共享契约。

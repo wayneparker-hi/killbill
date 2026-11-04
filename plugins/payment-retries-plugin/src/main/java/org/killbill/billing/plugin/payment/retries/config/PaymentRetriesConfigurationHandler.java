@@ -25,7 +25,7 @@ import org.killbill.billing.plugin.api.notification.PluginTenantConfigurableConf
 public class PaymentRetriesConfigurationHandler extends PluginTenantConfigurableConfigurationHandler<PaymentRetriesConfiguration> {
 
     public PaymentRetriesConfigurationHandler(final String pluginName, final KillbillApi killbillApi, final org.slf4j.Logger osgiKillbillLogService) {
-        super(pluginName, killbillApi, osgiKillbillLogService);
+        super(pluginName, killbillApi);
     }
 
     @Override

@@ -18,7 +18,7 @@ package org.killbill.billing.plugin.entitlement.coupon.demo.catalog;
 
 import java.util.UUID;
 
-import org.joda.time.LocalDate;
+import org.joda.time.DateTime;
 import org.killbill.billing.entitlement.api.BaseEntitlementWithAddOnsSpecifier;
 import org.killbill.billing.entitlement.api.EntitlementSpecifier;
 
@@ -27,15 +27,15 @@ public class DefaultBaseEntitlementWithAddOnsSpecifier implements BaseEntitlemen
     private final UUID                           bundleId;
     private final String                         bundleExternalKey;
     private final Iterable<EntitlementSpecifier> entitlementSpecifier;
-    private final LocalDate                      entitlementEffectiveDate;
-    private final LocalDate                      billingEffectiveDate;
+    private final DateTime                      entitlementEffectiveDate;
+    private final DateTime                      billingEffectiveDate;
     private final boolean                        isMigrated;
 
     public DefaultBaseEntitlementWithAddOnsSpecifier(final UUID bundleId,
                                                      final String bundleExternalKey,
                                                      final Iterable<EntitlementSpecifier> entitlementSpecifier,
-                                                     final LocalDate entitlementEffectiveDate,
-                                                     final LocalDate billingEffectiveDate,
+                                                     final DateTime entitlementEffectiveDate,
+                                                     final DateTime billingEffectiveDate,
                                                      final boolean isMigrated) {
         this.bundleId = bundleId;
         this.bundleExternalKey = bundleExternalKey;
@@ -62,12 +62,12 @@ public class DefaultBaseEntitlementWithAddOnsSpecifier implements BaseEntitlemen
     }
 
     @Override
-    public LocalDate getEntitlementEffectiveDate() {
+    public DateTime getEntitlementEffectiveDate() {
         return entitlementEffectiveDate;
     }
 
     @Override
-    public LocalDate getBillingEffectiveDate() {
+    public DateTime getBillingEffectiveDate() {
         return billingEffectiveDate;
     }
 

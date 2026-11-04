@@ -174,6 +174,17 @@ public class PluginRepository {
      * @param version  the version to activate
      */
     public void setActiveVersion(final String pluginId, final String version) {
+        setActiveVersion(pluginId, version, null);
+    }
+
+    /**
+     * Records which version should run from now on, with an explicit previous version.
+     *
+     * @param pluginId        the plugin
+     * @param version         the version to activate
+     * @param previousVersion the version that was running before; null means "read from marker"
+     */
+    public void setActiveVersion(final String pluginId, final String version, final String previousVersion) {
         final Path pluginDir = root.resolve(Objects.requireNonNull(pluginId, "pluginId"));
         if (!Files.isDirectory(pluginDir.resolve(version))) {
             throw new IllegalArgumentException("Cannot activate version " + version + " of plugin "
@@ -181,7 +192,11 @@ public class PluginRepository {
         }
 
         final Properties marker = new Properties();
-        readActiveMarker(pluginDir).ifPresent(previous -> marker.setProperty(PREVIOUS_KEY, previous));
+        if (previousVersion != null) {
+            marker.setProperty(PREVIOUS_KEY, previousVersion);
+        } else {
+            readActiveMarker(pluginDir).ifPresent(previous -> marker.setProperty(PREVIOUS_KEY, previous));
+        }
         marker.setProperty(ACTIVE_KEY, version);
 
         final Path markerFile = pluginDir.resolve(ACTIVE_MARKER);

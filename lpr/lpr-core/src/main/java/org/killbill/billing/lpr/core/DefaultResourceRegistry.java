@@ -47,6 +47,7 @@ public class DefaultResourceRegistry implements ResourceRegistry {
     private static final Logger log = LoggerFactory.getLogger(DefaultResourceRegistry.class);
 
     private final String pluginId;
+    private final LprMetricsCollector metrics;
     private final Deque<Runnable> releaseActions = new ArrayDeque<>();
     private boolean closed;
 
@@ -54,7 +55,12 @@ public class DefaultResourceRegistry implements ResourceRegistry {
      * @param pluginId the owning plugin, used in diagnostics
      */
     public DefaultResourceRegistry(final String pluginId) {
+        this(pluginId, null);
+    }
+
+    public DefaultResourceRegistry(final String pluginId, final LprMetricsCollector metrics) {
         this.pluginId = Objects.requireNonNull(pluginId, "pluginId");
+        this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
     }
 
     @Override
@@ -79,6 +85,7 @@ public class DefaultResourceRegistry implements ResourceRegistry {
         synchronized (this) {
             if (!closed) {
                 releaseActions.push(releaseAction);
+                metrics.resourceRegistered();
                 return;
             }
         }
@@ -101,6 +108,7 @@ public class DefaultResourceRegistry implements ResourceRegistry {
             // Outside the lock: a release action may block, and may itself try to register or
             // release resources. Popping first also guarantees each action runs at most once.
             runQuietly(next, "release action");
+            metrics.resourceReleased();
         }
     }
 

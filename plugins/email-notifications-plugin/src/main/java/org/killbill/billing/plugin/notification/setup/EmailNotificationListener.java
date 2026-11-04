@@ -55,7 +55,7 @@ import org.killbill.billing.payment.api.PaymentTransaction;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionStatus;
 import org.killbill.billing.payment.api.TransactionType;
-import org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory;
+import org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory;
 import org.killbill.billing.plugin.notification.dao.ConfigurationDao;
 import org.killbill.billing.plugin.notification.dao.gen.tables.pojos.EmailNotificationsConfiguration;
 import org.killbill.billing.plugin.notification.email.EmailContent;
@@ -102,7 +102,7 @@ public class EmailNotificationListener implements NotificationPluginApi {
 
     public EmailNotificationListener(final Clock clock, final KillbillApi killbillApi, final PluginConfigProperties configProperties,
                                      DataSource dataSource, EmailNotificationConfigurationHandler emailNotificationConfigurationHandler,
-                                     final InvoiceFormatterFactory invoiceFormatterFactory) throws SQLException {
+                                     final NotificationInvoiceFormatterFactory invoiceFormatterFactory) throws SQLException {
         this.killbillApi = killbillApi;
         this.configProperties = configProperties;
         this.clock = clock;
@@ -111,6 +111,10 @@ public class EmailNotificationListener implements NotificationPluginApi {
         this.templateRenderer.setInvoiceFormatterTracker(invoiceFormatterFactory);
         this.dao = new ConfigurationDao(dataSource);
         this.emailNotificationConfigurationHandler = emailNotificationConfigurationHandler;
+    }
+
+    public void setInvoiceFormatterSupplier(final java.util.function.Supplier<NotificationInvoiceFormatterFactory> supplier) {
+        templateRenderer.setInvoiceFormatterSupplier(supplier);
     }
 
     @Override

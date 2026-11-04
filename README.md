@@ -39,7 +39,7 @@ Kill Bill 的插件层建立在 OSGi 之上，但实际只用到了 OSGi 的三�
 ```
 .
 ├── pom.xml                  # 纯 aggregator：只定义 reactor 顺序，不是任何模块的 parent
-├── CLAUDE.md                # 工作规范与架构约束（AI 与人都该先读这个）
+├── AGENTS.md                # AI 工作规范与架构约束（CLAUDE.md 引用此文件）
 ├── docs/                    # 设计、分析、迁移方案
 ├── killbill-oss-parent/     # parent pom + BOM，管理全部依赖版本与构建规约
 ├── killbill-api/            # 核心 API（org.kill-bill.billing）
@@ -162,7 +162,7 @@ accertify、bitcoin、bridge、dwolla、feedzai、forte、meter、moneris、paye
 
 | 入口 | 用途 |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | **架构约束与工作规范**。改代码前必读 |
+| [AGENTS.md](AGENTS.md) | **架构约束与工作规范**。改代码前必读 |
 | [docs/usage.md](docs/usage.md) | **使用指南**：跑起来、装插件、运维、排障 |
 | [docs/README.md](docs/README.md) | 文档索引 |
 | [docs/architecture/README.md](docs/architecture/README.md) | **架构图**：业务架构 8 张 + 4+1 视图 7 张，全部 SVG |

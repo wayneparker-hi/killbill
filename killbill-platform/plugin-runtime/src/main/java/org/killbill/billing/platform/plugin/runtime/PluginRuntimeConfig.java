@@ -57,4 +57,73 @@ public interface PluginRuntimeConfig extends KillbillPlatformConfig {
     @Description("Whether to start plugins during the lifecycle. Set false to inspect what is "
                  + "installed without running any of it")
     boolean isPluginStartEnabled();
+
+    @Config("org.killbill.billing.plugin.invocation.defaultTimeout")
+    @Default("30000")
+    @Description("Default timeout in milliseconds for every call into a plugin service "
+                 + "(payment, invoice, notification, etc.)")
+    long getPluginInvocationDefaultTimeout();
+
+    @Config("org.killbill.billing.plugin.invocation.timeoutOverrides")
+    @DefaultNull
+    @Description("Comma-separated plugin-id=timeout-ms pairs that override the default timeout. "
+                 + "Example: stripe-plugin=60000,avatax-plugin=45000")
+    String getPluginInvocationTimeoutOverrides();
+
+    @Config("org.killbill.billing.plugin.invocation.maxThreads")
+    @Default("64")
+    @Description("Maximum concurrent invocation workers across all plugins")
+    int getPluginInvocationMaxThreads();
+
+    @Config("org.killbill.billing.plugin.invocation.maxConcurrentPerPlugin")
+    @Default("16")
+    @Description("Maximum plugin calls still executing, including timed-out calls")
+    int getPluginInvocationMaxConcurrentPerPlugin();
+
+    @Config("org.killbill.billing.plugin.invocation.circuitBreaker.failureThreshold")
+    @Default("5")
+    @Description("Consecutive failures before the circuit breaker opens for a plugin")
+    int getPluginCircuitBreakerFailureThreshold();
+
+    @Config("org.killbill.billing.plugin.invocation.circuitBreaker.openDuration")
+    @Default("60000")
+    @Description("How long the circuit stays open before allowing a half-open probe, in milliseconds")
+    long getPluginCircuitBreakerOpenDuration();
+
+    @Config("org.killbill.billing.plugin.healthcheck.enabled")
+    @Default("true")
+    @Description("Whether to run periodic plugin health checks")
+    boolean isPluginHealthCheckEnabled();
+
+    @Config("org.killbill.billing.plugin.healthcheck.interval")
+    @Default("30000")
+    @Description("How often to run plugin health checks, in milliseconds")
+    long getPluginHealthCheckInterval();
+
+    @Config("org.killbill.billing.plugin.healthcheck.timeout")
+    @Default("5000")
+    @Description("Timeout for a single plugin health check, in milliseconds")
+    long getPluginHealthCheckTimeout();
+
+    @Config("org.killbill.billing.plugin.healthcheck.maxThreads")
+    @Default("8")
+    @Description("Maximum concurrent health probe workers, including timed-out probes")
+    int getPluginHealthCheckMaxThreads();
+
+    @Config("org.killbill.billing.plugin.upgrade.autoRollback")
+    @Default("true")
+    @Description("Whether to roll back a newly activated version if its health check fails "
+                 + "within the watch window")
+    boolean isPluginUpgradeAutoRollbackEnabled();
+
+    @Config("org.killbill.billing.plugin.upgrade.healthCheck.window")
+    @Default("60000")
+    @Description("How long after activation to watch the new version's health, in milliseconds")
+    long getPluginUpgradeHealthCheckWindow();
+
+    @Config("org.killbill.billing.plugin.upgrade.healthCheck.interval")
+    @Default("5000")
+    @Description("How often to check the new version's health during the watch window, "
+                 + "in milliseconds")
+    long getPluginUpgradeHealthCheckInterval();
 }

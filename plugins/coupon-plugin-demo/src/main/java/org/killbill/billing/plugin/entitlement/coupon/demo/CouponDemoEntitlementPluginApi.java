@@ -113,7 +113,7 @@ public class CouponDemoEntitlementPluginApi implements EntitlementPluginApi {
                                                                         null,
                                                                         overridePrice));
 
-                        entitlementSpecifiersWithOverrides.add(new DefaultEntitlementSpecifier(entitlementSpecifier.getPlanPhaseSpecifier(),
+                        entitlementSpecifiersWithOverrides.add(new DefaultEntitlementSpecifier(entitlementSpecifier,
                                                                                                overrides));
                     }
                 }

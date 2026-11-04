@@ -26,9 +26,17 @@ public class DefaultEntitlementSpecifier implements EntitlementSpecifier {
 
     private final PlanPhaseSpecifier planPhaseSpecifier;
     private final List<PlanPhasePriceOverride> overrides;
+    private final EntitlementSpecifier source;
 
     public DefaultEntitlementSpecifier(final PlanPhaseSpecifier planPhaseSpecifier, final List<PlanPhasePriceOverride> overrides) {
+        this.source = null;
         this.planPhaseSpecifier = planPhaseSpecifier;
+        this.overrides = overrides;
+    }
+
+    public DefaultEntitlementSpecifier(final EntitlementSpecifier source, final List<PlanPhasePriceOverride> overrides) {
+        this.source = source;
+        this.planPhaseSpecifier = source.getPlanPhaseSpecifier();
         this.overrides = overrides;
     }
 
@@ -39,12 +47,17 @@ public class DefaultEntitlementSpecifier implements EntitlementSpecifier {
 
     @Override
     public Integer getBillCycleDay() {
-        return null;
+        return source == null ? null : source.getBillCycleDay();
+    }
+
+    @Override
+    public Integer getQuantity() {
+        return source == null ? null : source.getQuantity();
     }
 
     @Override
     public String getExternalKey() {
-        return null;
+        return source == null ? null : source.getExternalKey();
     }
 
     @Override

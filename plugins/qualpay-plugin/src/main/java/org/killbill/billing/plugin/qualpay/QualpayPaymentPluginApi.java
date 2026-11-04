@@ -93,11 +93,11 @@ public class QualpayPaymentPluginApi extends PluginPaymentPluginApi<QualpayRespo
     private final QualpayDao dao;
 
     public QualpayPaymentPluginApi(final QualpayConfigPropertiesConfigurationHandler qualpayConfigPropertiesConfigurationHandler,
-                                   final KillbillApi killbillAPI,
+                                   final KillbillApi killbillApi,
                                    final PluginConfigProperties configProperties,
                                    final Clock clock,
                                    final QualpayDao dao) {
-        super(killbillAPI, configProperties, clock, dao);
+        super(killbillApi, configProperties, clock, dao);
         this.qualpayConfigPropertiesConfigurationHandler = qualpayConfigPropertiesConfigurationHandler;
         this.dao = dao;
     }
@@ -181,10 +181,10 @@ public class QualpayPaymentPluginApi extends PluginPaymentPluginApi<QualpayRespo
                                                                                 clock.getUTCNow());
                     try {
                         final QualpayConfigProperties qualpayConfigProperties = qualpayConfigPropertiesConfigurationHandler.getConfigurable(context.getTenantId());
-                        killbillAPI.getSecurityApi().login(qualpayConfigProperties.getKbUsername(), qualpayConfigProperties.getKbPassword());
-                        killbillAPI.getCustomFieldUserApi().addCustomFields(List.of(customField), context);
+                        killbillApi.getSecurityApi().login(qualpayConfigProperties.getKbUsername(), qualpayConfigProperties.getKbPassword());
+                        killbillApi.getCustomFieldUserApi().addCustomFields(List.of(customField), context);
                     } finally {
-                        killbillAPI.getSecurityApi().logout();
+                        killbillApi.getSecurityApi().logout();
                     }
                 } else {
                     // Add payment method to existing customer
@@ -301,7 +301,7 @@ public class QualpayPaymentPluginApi extends PluginPaymentPluginApi<QualpayRespo
                 final PaymentMethodPlugin paymentMethodInfo = new QualpayPaymentMethodPlugin(null,
                                                                                              billingCard.getCardId(),
                                                                                              properties);
-                killbillAPI.getPaymentApi().addPaymentMethod(getAccount(kbAccountId, context),
+                killbillApi.getPaymentApi().addPaymentMethod(getAccount(kbAccountId, context),
                                                              billingCard.getCardId(),
                                                              QualpayPlugin.PLUGIN_NAME,
                                                              false,
@@ -606,7 +606,7 @@ public class QualpayPaymentPluginApi extends PluginPaymentPluginApi<QualpayRespo
     }
 
     private String getCustomerIdNoException(final UUID kbAccountId, final CallContext context) {
-        final List<CustomField> customFields = killbillAPI.getCustomFieldUserApi().getCustomFieldsForAccountType(kbAccountId, ObjectType.ACCOUNT, context);
+        final List<CustomField> customFields = killbillApi.getCustomFieldUserApi().getCustomFieldsForAccountType(kbAccountId, ObjectType.ACCOUNT, context);
         String qualpayCustomerId = null;
         for (final CustomField customField : customFields) {
             if ("QUALPAY_CUSTOMER_ID".equals(customField.getFieldName())) {
