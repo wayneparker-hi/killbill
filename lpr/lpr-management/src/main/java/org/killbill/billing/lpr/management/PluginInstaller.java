@@ -27,18 +27,15 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,86 +108,26 @@ public class PluginInstaller {
         Objects.requireNonNull(version, "version");
         Objects.requireNonNull(source, "source");
 
-        final Path pluginDir = repository.root().resolve(pluginId);
-        final Path target = pluginDir.resolve(version);
-        if (Files.exists(target)) {
-            throw new IllegalStateException(
-                    "Plugin " + pluginId + " version " + version + " is already installed at " + target
-                    + ". Uninstall it first rather than overwriting a jar that may be in use.");
-        }
-
-        Path staging = null;
         try {
-            Files.createDirectories(pluginDir);
-            staging = Files.createTempDirectory(pluginDir, version + ".incoming-");
-
             final byte[] jar = fetch(source);
             verify(source, jar);
-
-            final String resolvedDescriptor = descriptor != null ? descriptor : descriptorInside(jar);
-            if (resolvedDescriptor == null) {
-                throw new IllegalStateException(
-                        "Cannot install " + pluginId + " " + version + ": the jar carries no "
-                        + DESCRIPTOR + " and none was supplied. A plugin built by this project puts "
-                        + "one in src/main/resources.");
+            final String resolved = descriptor != null ? descriptor : descriptorInside(jar);
+            if (resolved == null) {
+                throw new IllegalStateException("Cannot install " + pluginId + ' ' + version + ": missing " + DESCRIPTOR);
             }
-
-            Files.write(staging.resolve(PluginRepository.PLUGIN_JAR), jar);
-            Files.writeString(staging.resolve(DESCRIPTOR), resolvedDescriptor, StandardCharsets.UTF_8);
-
-            Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
-            staging = null;
-
-            log.info("Installed plugin {} version {} from {} into {}", pluginId, version, source.uri(), target);
-            return target;
-
+            final Path installed = repository.publish(pluginId, version, jar, resolved);
+            log.info("Installed plugin {} version {} from {} into {}", pluginId, version, source.uri(), installed);
+            return installed;
         } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to install plugin " + pluginId + " version " + version, e);
-        } finally {
-            deleteQuietly(staging);
+            throw new UncheckedIOException("Failed to install plugin " + pluginId + ' ' + version, e);
         }
     }
 
-    /**
-     * Removes one version from disk.
-     * <p>
-     * Does not stop the plugin: a running version holds open file handles and a ClassLoader, and
-     * deleting its jar while it serves traffic is the thing this class must not silently do. Stop it
-     * through the lifecycle first. On a running system the safe order is stop, then uninstall.
-     *
-     * @param pluginId the plugin
-     * @param version  the version to remove
-     * @return true if something was removed
-     */
+    /** Removes storage only; the caller must stop any loaded local version first. */
     public boolean uninstall(final String pluginId, final String version) {
-        Objects.requireNonNull(pluginId, "pluginId");
-        Objects.requireNonNull(version, "version");
-
-        final Path pluginDir = repository.root().resolve(pluginId);
-        final Path target = pluginDir.resolve(version);
-        if (!Files.isDirectory(target)) {
-            return false;
-        }
-        deleteRecursively(target);
-        log.info("Uninstalled plugin {} version {}", pluginId, version);
-
-        // A plugin directory holding only bookkeeping is noise for the next scan.
-        if (remainingVersions(pluginDir).isEmpty()) {
-            deleteRecursively(pluginDir);
-            log.info("Removed plugin {} entirely: no versions remain", pluginId);
-        }
-        return true;
-    }
-
-    private List<Path> remainingVersions(final Path pluginDir) {
-        if (!Files.isDirectory(pluginDir)) {
-            return List.of();
-        }
-        try (var entries = Files.list(pluginDir)) {
-            return entries.filter(Files::isDirectory).toList();
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to list " + pluginDir, e);
-        }
+        final boolean removed = repository.remove(pluginId, version);
+        if (removed) { log.info("Uninstalled plugin {} version {}", pluginId, version); }
+        return removed;
     }
 
     /**
@@ -254,28 +191,4 @@ public class PluginInstaller {
         }
     }
 
-    private static void deleteQuietly(final Path path) {
-        if (path == null || !Files.exists(path)) {
-            return;
-        }
-        try {
-            deleteRecursively(path);
-        } catch (final RuntimeException e) {
-            log.warn("Failed to clean up {}", path, e);
-        }
-    }
-
-    private static void deleteRecursively(final Path path) {
-        try (var walk = Files.walk(path)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (final IOException e) {
-                    throw new UncheckedIOException("Failed to delete " + p, e);
-                }
-            });
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to delete " + path, e);
-        }
-    }
 }

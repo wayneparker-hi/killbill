@@ -39,7 +39,18 @@ public record DefaultPluginInfo(String pluginKey,
                                 String version,
                                 PluginState pluginState,
                                 Set<PluginServiceInfo> services,
-                                boolean selectedForStart) implements PluginInfo {
+                                boolean selectedForStart,
+                                Long runtimeRevision,
+                                String runtimeState) implements PluginInfo {
+
+    public DefaultPluginInfo(final String pluginKey, final String pluginName, final String version,
+                             final PluginState pluginState, final Set<PluginServiceInfo> services,
+                             final boolean selectedForStart) {
+        this(pluginKey, pluginName, version, pluginState, services, selectedForStart, null, null);
+    }
+
+    @Override public Long getRuntimeRevision() { return runtimeRevision; }
+    @Override public String getRuntimeState() { return runtimeState; }
 
     public DefaultPluginInfo {
         Objects.requireNonNull(pluginName, "pluginName");

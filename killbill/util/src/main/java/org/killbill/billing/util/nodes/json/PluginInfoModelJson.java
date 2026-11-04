@@ -42,6 +42,17 @@ public class PluginInfoModelJson {
 
     private final Boolean isSelectedForStart;
 
+    private final Long runtimeRevision;
+    private final String runtimeState;
+
+    public PluginInfoModelJson(final String pluginKey, final String pluginName, final String version,
+                               final PluginState state, final Boolean selected, final Set<PluginServiceInfoModelJson> services) {
+        this(pluginKey, pluginName, version, state, selected, services, null, null);
+    }
+
+    public Long getRuntimeRevision() { return runtimeRevision; }
+    public String getRuntimeState() { return runtimeState; }
+
     @JsonCreator
     public PluginInfoModelJson(
                                @JsonProperty("pluginKey") final String pluginKey,
@@ -49,7 +60,11 @@ public class PluginInfoModelJson {
                                @JsonProperty("version") final String version,
                                @JsonProperty("state") final PluginState state,
                                @JsonProperty("isSelectedForStart") final Boolean isSelectedForStart,
-                               @JsonProperty("services") final Set<PluginServiceInfoModelJson> services) {
+                               @JsonProperty("services") final Set<PluginServiceInfoModelJson> services,
+                               @JsonProperty("runtimeRevision") final Long runtimeRevision,
+                               @JsonProperty("runtimeState") final String runtimeState) {
+        this.runtimeRevision = runtimeRevision;
+        this.runtimeState = runtimeState;
         this.pluginKey = pluginKey;
         this.pluginName = pluginName;
         this.version = version;
@@ -67,7 +82,8 @@ public class PluginInfoModelJson {
              input.getServices()
                   .stream()
                   .map(serviceInfo -> new PluginServiceInfoModelJson(serviceInfo.getServiceTypeName(), serviceInfo.getRegistrationName()))
-                  .collect(Collectors.toUnmodifiableSet())
+                  .collect(Collectors.toUnmodifiableSet()),
+             input.getRuntimeRevision(), input.getRuntimeState()
             );
     }
 
@@ -89,7 +105,7 @@ public class PluginInfoModelJson {
 
     @JsonProperty("isSelectedForStart")
     public boolean isSelectedForStart() {
-        return isSelectedForStart;
+        return Boolean.TRUE.equals(isSelectedForStart);
     }
 
     public Set<PluginServiceInfoModelJson> getServices() {
@@ -121,18 +137,13 @@ public class PluginInfoModelJson {
         if (version != null ? !version.equals(that.version) : that.version != null) {
             return false;
         }
-        return !(services != null ? !services.equals(that.services) : that.services != null);
+        return Objects.equals(services, that.services) && Objects.equals(runtimeRevision, that.runtimeRevision)
+               && Objects.equals(runtimeState, that.runtimeState);
 
     }
 
     @Override
     public int hashCode() {
-        int result = pluginKey != null ? pluginKey.hashCode() : 0;
-        result = 31 * result + (pluginKey != null ? pluginKey.hashCode() : 0);
-        result = 31 * result + (pluginName != null ? pluginName.hashCode() : 0);
-        result = 31 * result + (version != null ? version.hashCode() : 0);
-        result = 31 * result + (state != null ? state.hashCode() : 0);
-        result = 31 * result + (services != null ? services.hashCode() : 0);
-        return result;
+        return Objects.hash(pluginKey, pluginName, version, state, services, isSelectedForStart, runtimeRevision, runtimeState);
     }
 }

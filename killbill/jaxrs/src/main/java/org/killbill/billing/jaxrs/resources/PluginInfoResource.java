@@ -88,4 +88,12 @@ public class PluginInfoResource extends JaxRsResourceBase {
         return Response.status(Status.OK).entity(result).build();
     }
 
+    @TimedResource
+    @GET
+    @Path("/cluster")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Retrieve desired and reported plugin state across cluster nodes")
+    public Response getClusterPluginsInfo() {
+        return Response.ok(pluginsInfoApi.getClusterPluginsInfo()).build();
+    }
 }

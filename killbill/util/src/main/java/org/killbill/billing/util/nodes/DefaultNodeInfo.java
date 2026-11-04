@@ -65,7 +65,7 @@ public class DefaultNodeInfo implements NodeInfo {
     public DefaultNodeInfo(final NodeInfoModelJson in) {
         this(in.getNodeName(),
              in.getBootTime(),
-             in.getBootTime(),
+             in.getUpdatedDate(),
              in.getKillbillVersion(),
              in.getApiVersion(),
              in.getPlatformVersion(),
@@ -89,7 +89,7 @@ public class DefaultNodeInfo implements NodeInfo {
     private static DefaultPluginInfo newDefaultPluginInfo(PluginInfoModelJson input) {
         return new DefaultPluginInfo(input.getPluginKey(), input.getPluginName(), input.getVersion(),
                                      input.getState(), toPluginServiceInfo(input.getServices()),
-                                     input.isSelectedForStart());
+                                     input.isSelectedForStart(), input.getRuntimeRevision(), input.getRuntimeState());
     }
 
     @Override

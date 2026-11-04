@@ -32,6 +32,11 @@ public interface PluginsInfoApi extends KillbillApi {
      */
     public Iterable<PluginInfo> getPluginsInfo();
 
+    /** Desired repository state and reported progress of every known node. */
+    default java.util.List<ClusterPluginStatus> getClusterPluginsInfo() {
+        throw new UnsupportedOperationException("Cluster plugin status is unavailable");
+    }
+
     /**
      * Tells the plugin runtime that a plugin's files changed underneath it.
      * <p>

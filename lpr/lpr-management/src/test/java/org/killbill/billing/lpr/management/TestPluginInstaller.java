@@ -23,7 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -50,7 +51,7 @@ public class TestPluginInstaller {
     @BeforeMethod(groups = "fast")
     public void beforeMethod() throws Exception {
         root = Files.createTempDirectory("lpr-installer-");
-        repository = new PluginRepository(root, new YamlDescriptorParser());
+        repository = new FileSystemPluginRepository(root, new YamlDescriptorParser());
         installer = new PluginInstaller(repository);
     }
 

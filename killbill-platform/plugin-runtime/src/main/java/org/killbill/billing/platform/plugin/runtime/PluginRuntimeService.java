@@ -62,6 +62,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     private final PluginHealthCheckManager healthCheckManager;
     private final PluginUpgradeMonitor upgradeMonitor;
     private final PluginStopExecutor stopExecutor;
+    private final PluginClusterCoordinator clusterCoordinator;
 
     @Inject
     public PluginRuntimeService(final DefaultPluginManager pluginManager,
@@ -72,12 +73,14 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
                                 final PluginInvocationGuard invocationGuard,
                                 final PluginHealthCheckManager healthCheckManager,
                                 final PluginUpgradeMonitor upgradeMonitor,
-                                final PluginStopExecutor stopExecutor) {
+                                final PluginStopExecutor stopExecutor,
+                                final PluginClusterCoordinator clusterCoordinator) {
         this.pluginManager = Objects.requireNonNull(pluginManager, "pluginManager");
         this.config = Objects.requireNonNull(config, "config");
         this.eventDispatcher = Objects.requireNonNull(eventDispatcher, "eventDispatcher");
         this.externalBus = Objects.requireNonNull(externalBus, "externalBus");
         this.nodeCommandListener = Objects.requireNonNull(nodeCommandListener, "nodeCommandListener");
+        this.clusterCoordinator = Objects.requireNonNull(clusterCoordinator, "clusterCoordinator");
         this.invocationGuard = invocationGuard;
         this.stopExecutor = Objects.requireNonNull(stopExecutor, "stopExecutor");
         this.healthCheckManager = healthCheckManager;
@@ -126,6 +129,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
         }
 
         if (!config.isPluginStartEnabled()) {
+            clusterCoordinator.start();
             log.warn("Plugin startup is disabled; {} plugin(s) discovered but none will run",
                      pluginManager.list().size());
             return;
@@ -139,6 +143,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
         if (upgradeMonitor != null) {
             upgradeMonitor.start();
         }
+        clusterCoordinator.start();
     }
 
     /**
@@ -150,6 +155,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
      */
     @LifecycleHandlerType(LifecycleLevel.STOP_PLUGIN)
     public void stop() {
+        clusterCoordinator.stop();
         try {
             externalBus.unregister(nodeCommandListener);
             eventDispatcher.unregister();

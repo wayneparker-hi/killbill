@@ -14,25 +14,24 @@
  * under the License.
  */
 
-package org.killbill.billing.lpr.core;
+package org.killbill.billing.lpr.repository.filesystem;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.killbill.billing.lpr.spi.DescriptorParser;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginDeployment;
+import org.killbill.billing.lpr.spi.RepositorySelection;
 import org.killbill.billing.lpr.spi.PluginArtifact;
 import org.killbill.billing.lpr.spi.PluginDescriptor;
 import org.killbill.billing.lpr.spi.SemanticVersion;
@@ -68,9 +67,9 @@ import org.slf4j.LoggerFactory;
  *       of any name is accepted, and anything ambiguous is rejected rather than resolved by luck.</li>
  * </ul>
  */
-public class PluginRepository {
+public class FileSystemPluginRepository implements PluginRepository {
 
-    private static final Logger log = LoggerFactory.getLogger(PluginRepository.class);
+    private static final Logger log = LoggerFactory.getLogger(FileSystemPluginRepository.class);
 
     /** Names the version to run. Absent means "the highest installed version". */
     public static final String ACTIVE_MARKER = "ACTIVE";
@@ -87,14 +86,22 @@ public class PluginRepository {
 
     private final Path root;
     private final DescriptorParser descriptorParser;
+    private final RepositoryFiles files;
+    private final SelectionStore selections;
 
     /**
      * @param root             directory holding one subdirectory per plugin
      * @param descriptorParser reads each version's descriptor
      */
-    public PluginRepository(final Path root, final DescriptorParser descriptorParser) {
-        this.root = Objects.requireNonNull(root, "root");
+    public FileSystemPluginRepository(final Path root, final DescriptorParser descriptorParser) {
+        this(root, descriptorParser, 5000);
+    }
+
+    public FileSystemPluginRepository(final Path root, final DescriptorParser descriptorParser, final long lockTimeoutMillis) {
+        this.root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
         this.descriptorParser = Objects.requireNonNull(descriptorParser, "descriptorParser");
+        this.files = new RepositoryFiles(this.root, lockTimeoutMillis);
+        this.selections = new SelectionStore(this.root, files);
     }
 
     public Path root() {
@@ -110,15 +117,15 @@ public class PluginRepository {
      *
      * @return one runtime per plugin, at the version that should run
      */
-    public List<PluginRuntime> scan() {
+    public List<PluginDeployment> scan() {
         if (!Files.isDirectory(root)) {
             log.info("Plugin directory {} does not exist; no plugins will be loaded", root);
             return List.of();
         }
 
-        final List<PluginRuntime> found = new ArrayList<>();
+        final List<PluginDeployment> found = new ArrayList<>();
         try (Stream<Path> pluginDirs = Files.list(root)) {
-            for (final Path pluginDir : pluginDirs.filter(Files::isDirectory).sorted().toList()) {
+            for (final Path pluginDir : pluginDirs.filter(Files::isDirectory).filter(path -> RepositoryFiles.validId(fileNameOf(path))).sorted().toList()) {
                 try {
                     resolve(pluginDir).ifPresent(found::add);
                 } catch (final RuntimeException e) {
@@ -137,7 +144,7 @@ public class PluginRepository {
      * @param pluginDir a directory under {@link #root()}
      * @return the runtime, or empty if the plugin has no runnable version
      */
-    public Optional<PluginRuntime> resolve(final Path pluginDir) {
+    public Optional<PluginDeployment> resolve(final Path pluginDir) {
         final Path versionDir = selectVersionDirectory(pluginDir).orElse(null);
         if (versionDir == null) {
             log.warn("Plugin {} has no enabled version installed", pluginDir.getFileName());
@@ -154,9 +161,9 @@ public class PluginRepository {
      * @param version  the version directory name
      * @return the runtime for that version
      */
-    public PluginRuntime loadVersion(final String pluginId, final String version) {
-        final Path pluginDir = root.resolve(pluginId);
-        final Path versionDir = pluginDir.resolve(version);
+    public PluginDeployment loadVersion(final String pluginId, final String version) {
+        final Path pluginDir = files.pluginPath(pluginId);
+        final Path versionDir = files.versionPath(pluginId, version);
         if (!Files.isDirectory(versionDir)) {
             throw new IllegalArgumentException("Plugin " + pluginId + " has no version " + version
                                                + " installed at " + versionDir);
@@ -173,82 +180,66 @@ public class PluginRepository {
      * @param pluginId the plugin
      * @param version  the version to activate
      */
-    public void setActiveVersion(final String pluginId, final String version) {
-        setActiveVersion(pluginId, version, null);
+    @Override
+    public RepositorySelection selection(final String pluginId) { return selections.read(pluginId); }
+
+    @Override
+    public RepositorySelection updateSelection(final String pluginId, final long expectedRevision,
+                                               final String version, final String previousVersion, final boolean enabled) {
+        return files.locked(pluginId, () -> {
+            if (!installedVersions(pluginId).contains(version)) {
+                throw new IllegalArgumentException("Cannot select uninstalled or disabled version " + version);
+            }
+            return selections.update(pluginId, expectedRevision, version, previousVersion, enabled);
+        });
     }
 
-    /**
-     * Records which version should run from now on, with an explicit previous version.
-     *
-     * @param pluginId        the plugin
-     * @param version         the version to activate
-     * @param previousVersion the version that was running before; null means "read from marker"
-     */
-    public void setActiveVersion(final String pluginId, final String version, final String previousVersion) {
-        final Path pluginDir = root.resolve(Objects.requireNonNull(pluginId, "pluginId"));
-        if (!Files.isDirectory(pluginDir.resolve(version))) {
-            throw new IllegalArgumentException("Cannot activate version " + version + " of plugin "
-                                               + pluginId + ": it is not installed");
-        }
-
-        final Properties marker = new Properties();
-        if (previousVersion != null) {
-            marker.setProperty(PREVIOUS_KEY, previousVersion);
-        } else {
-            readActiveMarker(pluginDir).ifPresent(previous -> marker.setProperty(PREVIOUS_KEY, previous));
-        }
-        marker.setProperty(ACTIVE_KEY, version);
-
-        final Path markerFile = pluginDir.resolve(ACTIVE_MARKER);
-        Path staging = null;
-        try {
-            staging = Files.createTempFile(pluginDir, ACTIVE_MARKER + '.', ".tmp");
-            try (var writer = Files.newBufferedWriter(staging, StandardCharsets.UTF_8)) {
-                marker.store(writer, "Managed by LPR. 'active' names the version to run.");
-            }
-            try {
-                Files.move(staging, markerFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (final AtomicMoveNotSupportedException e) {
-                // A same-directory temporary file is still the best available fallback on filesystems
-                // without atomic rename support. It guarantees readers never observe a partly
-                // written marker, which direct overwrite did not.
-                Files.move(staging, markerFile, StandardCopyOption.REPLACE_EXISTING);
-            }
-            staging = null;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Cannot write " + markerFile, e);
-        } finally {
-            if (staging != null) {
-                try {
-                    Files.deleteIfExists(staging);
-                } catch (final IOException e) {
-                    log.warn("Failed to remove incomplete active marker {}", staging, e);
-                }
-            }
-        }
-        log.info("Plugin {} will run version {}", pluginId, version);
+    @Override
+    public Path publish(final String pluginId, final String version, final byte[] jar, final String descriptor) {
+        return files.publish(pluginId, version, jar, descriptor);
     }
 
-    /**
-     * @param pluginId the plugin
-     * @return the version that ran before the current one, if any
-     */
-    public Optional<String> previousVersion(final String pluginId) {
-        final Path markerFile = root.resolve(pluginId).resolve(ACTIVE_MARKER);
-        return readProperties(markerFile).map(p -> p.getProperty(PREVIOUS_KEY));
+    @Override
+    public boolean remove(final String pluginId, final String version) {
+        return files.remove(pluginId, version, false);
     }
+
+    boolean removeShared(final String pluginId, final String version) {
+        return files.remove(pluginId, version, true);
+    }
+
+    PluginDeployment cachedVersion(final String pluginId, final String version, final Path cache) {
+        return files.locked(pluginId, () -> RepositoryCache.materialize(loadVersion(pluginId, version), cache));
+    }
+
+    Path publishShared(final String pluginId, final String version, final byte[] jar, final String descriptor) {
+        return files.locked(pluginId, () -> {
+            final RepositorySelection state = selections.read(pluginId);
+            final Path target = files.versionPath(pluginId, version);
+            if (Files.exists(target)) { files.publishUnlocked(pluginId, version, jar, descriptor, true); }
+            PublishedArtifactStore.bind(files.pluginPath(pluginId), version, jar, descriptor);
+            if (state.activeVersion() == null) {
+                selections.update(pluginId, state.revision(), version, null, false);
+            }
+            return files.publishUnlocked(pluginId, version, jar, descriptor, true);
+        });
+    }
+
+    @Override
+    public List<String> pluginIds() { return files.pluginIds(); }
 
     /**
      * @param pluginId the plugin
      * @return every installed version, highest first
      */
     public List<String> installedVersions(final String pluginId) {
-        return versionDirectories(root.resolve(pluginId)).stream()
+        return versionDirectories(files.pluginPath(pluginId)).stream()
                                                          .map(dir -> dir.getFileName().toString())
                                                          .toList();
     }
 
-    private PluginRuntime load(final Path pluginDir, final Path versionDir) {
+    private PluginDeployment load(final Path pluginDir, final Path versionDir) {
+        files.requireContained(versionDir);
         final PluginDescriptor descriptor = readDescriptor(versionDir);
         final String directoryName = fileNameOf(pluginDir);
 
@@ -265,7 +256,7 @@ public class PluginRepository {
                                                + versionName + "' declares version '" + descriptor.version() + "'");
         }
 
-        return new PluginRuntime(descriptor,
+        return new PluginDeployment(descriptor,
                                  new PluginArtifact(descriptor.pluginId(),
                                                     descriptor.version(),
                                                     resolveJar(versionDir, descriptor.pluginId()),
@@ -300,10 +291,12 @@ public class PluginRepository {
     private Path resolveJar(final Path versionDir, final String pluginId) {
         final Path conventional = versionDir.resolve(PLUGIN_JAR);
         if (Files.isRegularFile(conventional)) {
+            files.requireContained(conventional);
             return conventional;
         }
         final List<Path> jars = listMatching(versionDir, path -> path.getFileName().toString().endsWith(".jar"));
         if (jars.size() == 1) {
+            files.requireContained(jars.get(0));
             return jars.get(0);
         }
         if (jars.isEmpty()) {
@@ -319,7 +312,9 @@ public class PluginRepository {
         if (!Files.isDirectory(libDir)) {
             return List.of();
         }
-        return listMatching(libDir, path -> path.getFileName().toString().endsWith(".jar"));
+        final List<Path> libraries = listMatching(libDir, path -> path.getFileName().toString().endsWith(".jar"));
+        libraries.forEach(files::requireContained);
+        return libraries;
     }
 
     /**
@@ -332,7 +327,7 @@ public class PluginRepository {
             return Optional.empty();
         }
 
-        final Optional<String> requested = readActiveMarker(pluginDir);
+        final Optional<String> requested = Optional.ofNullable(selection(fileNameOf(pluginDir)).activeVersion());
         if (requested.isPresent()) {
             final Optional<Path> match = candidates.stream()
                                                    .filter(dir -> dir.getFileName().toString().equals(requested.get()))
@@ -369,24 +364,6 @@ public class PluginRepository {
                 .sorted(Comparator.comparing((Path dir) -> SemanticVersion.parse(dir.getFileName().toString()))
                                   .reversed())
                 .toList();
-    }
-
-    private Optional<String> readActiveMarker(final Path pluginDir) {
-        return readProperties(pluginDir.resolve(ACTIVE_MARKER)).map(p -> p.getProperty(ACTIVE_KEY));
-    }
-
-    private Optional<Properties> readProperties(final Path file) {
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            final Properties properties = new Properties();
-            properties.load(reader);
-            return Optional.of(properties);
-        } catch (final IOException e) {
-            log.warn("Cannot read {}; treating it as absent", file, e);
-            return Optional.empty();
-        }
     }
 
     private List<Path> listMatching(final Path directory, final java.util.function.Predicate<Path> filter) {

@@ -27,6 +27,12 @@ public class TestPluginRuntimeConfig implements PluginRuntimeConfig {
         return "/tmp/plugins";
     }
 
+    @Override public String getPluginRepositoryMode() { return "local"; }
+    @Override public String getPluginSharedRepositoryDir() { return null; }
+    @Override public long getPluginRepositoryLockTimeout() { return 5000; }
+    @Override public long getPluginRepositoryReconcileInterval() { return 5000; }
+    @Override public long getPluginReportStaleAfter() { return 30000; }
+
     @Override
     public String getMandatoryPlugins() {
         return null;

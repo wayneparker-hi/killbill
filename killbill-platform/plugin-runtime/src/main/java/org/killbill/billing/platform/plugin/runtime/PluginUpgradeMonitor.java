@@ -123,7 +123,7 @@ public final class PluginUpgradeMonitor implements PluginActivationListener {
         if (!retainPreviousVersion() || previousVersion.isEmpty()) {
             return;
         }
-        final Watch watch = new Watch(Instant.now().plusMillis(config.getPluginUpgradeHealthCheckWindow()));
+        final Watch watch = new Watch(Instant.now().plusMillis(config.getPluginUpgradeHealthCheckWindow()), pluginManager.appliedRevision(pluginId));
         watches.put(new PluginVersion(pluginId, newVersion), watch);
         if (!check(pluginId, newVersion, watch)) {
             return;
@@ -150,21 +150,25 @@ public final class PluginUpgradeMonitor implements PluginActivationListener {
             return false;
         }
         if (!pluginManager.get(pluginId).map(info -> info.version().equals(version)).orElse(false)) {
-            cancelWatch(pluginId, version);
+            cancelWatch(pluginId, version, watch);
+            return false;
+        }
+        if (pluginManager.appliedRevision(pluginId) != watch.revision) {
+            cancelWatch(pluginId, version, watch);
             return false;
         }
         healthCheckManager.runChecksOnce();
         final Optional<PluginHealthState> state = healthCheckManager.getState(pluginId, version);
         if (state.isPresent() && !state.get().healthy()) {
-            cancelWatch(pluginId, version);
-            if (pluginManager.rollbackIfCurrent(pluginId, version, state.get().message())) {
+            cancelWatch(pluginId, version, watch);
+            if (pluginManager.rollbackIfCurrent(pluginId, version, watch.revision, state.get().message())) {
                 metrics.recordUpgradeRollback();
             }
             return false;
         }
         if (!Instant.now().isBefore(watch.deadline)) {
-            cancelWatch(pluginId, version);
-            pluginManager.completeUpgrade(pluginId, version);
+            cancelWatch(pluginId, version, watch);
+            pluginManager.completeUpgrade(pluginId, version, watch.revision);
             return false;
         }
         return true;
@@ -175,6 +179,10 @@ public final class PluginUpgradeMonitor implements PluginActivationListener {
         if (watch != null) {
             watch.cancel();
         }
+    }
+
+    private void cancelWatch(final String pluginId, final String version, final Watch expected) {
+        if (watches.remove(new PluginVersion(pluginId, version), expected)) { expected.cancel(); }
     }
 
     private void publish(final PluginActivationEvent event) {
@@ -202,11 +210,13 @@ public final class PluginUpgradeMonitor implements PluginActivationListener {
 
     private static final class Watch {
         private final Instant deadline;
+        private final long revision;
         private ScheduledFuture<?> future;
         private boolean cancelled;
 
-        private Watch(final Instant deadline) {
+        private Watch(final Instant deadline, final long revision) {
             this.deadline = deadline;
+            this.revision = revision;
         }
 
         synchronized void attach(final ScheduledFuture<?> scheduled) {

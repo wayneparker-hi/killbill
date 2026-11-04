@@ -58,4 +58,9 @@ public interface PluginInfo {
      */
     public boolean isSelectedForStart();
 
+    /** Applied repository revision, or null for legacy/unselected entries. */
+    default Long getRuntimeRevision() { return null; }
+
+    /** Detailed lifecycle state; null means the node does not report it. */
+    default String getRuntimeState() { return null; }
 }

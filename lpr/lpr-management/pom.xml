@@ -31,6 +31,7 @@
         consistent.</description>
 
     <dependencies>
+
         <dependency>
             <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-lpr-core</artifactId>
@@ -39,6 +40,12 @@
         <dependency>
             <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-lpr-descriptor-yaml</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-repository-filesystem</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

@@ -38,6 +38,33 @@ public class TestNodeInfoMapper extends UtilTestSuiteNoDB {
     protected NodeInfoMapper nodeInfoMapper;
 
     @Test(groups = "fast")
+    public void testRuntimeRevisionStateAndReportTimestampSurviveRoundTrip() throws Exception {
+        final var boot = clock.getUTCNow().minusHours(1);
+        final var updated = clock.getUTCNow();
+        final var plugin = new PluginInfoModelJson("demo", "Demo", "2.0.0", PluginState.STOPPED, true, Set.of(), 7L, "STOPPING");
+        final var input = new NodeInfoModelJson("node", boot, updated, "1", "1", "1", "1", "1", List.of(plugin));
+        final var decoded = nodeInfoMapper.deserializeNodeInfo(nodeInfoMapper.serializeNodeInfo(input));
+        final var report = new DefaultNodeInfo(decoded);
+        Assert.assertEquals(report.getLastUpdatedDate(), updated);
+        Assert.assertEquals(report.getBootTime(), boot);
+        final var actual = report.getPluginInfo().iterator().next();
+        Assert.assertEquals(actual.getRuntimeRevision(), Long.valueOf(7));
+        Assert.assertEquals(actual.getRuntimeState(), "STOPPING");
+        Assert.assertEquals(decoded, input);
+    }
+
+    @Test(groups = "fast")
+    public void testLegacyNodeReportHasUnknownRuntimeRevision() throws Exception {
+        final var input = new NodeInfoModelJson("legacy", clock.getUTCNow(), clock.getUTCNow(), "1", "1", "1", "1", "1",
+                List.of(new PluginInfoModelJson("demo", "Demo", "1.0.0", PluginState.RUNNING, true, Set.of())));
+        final String legacy = nodeInfoMapper.serializeNodeInfo(input).replace(",\"runtimeRevision\":null", "")
+                .replace(",\"runtimeState\":null", "");
+        final var report = new DefaultNodeInfo(nodeInfoMapper.deserializeNodeInfo(legacy)).getPluginInfo().iterator().next();
+        Assert.assertNull(report.getRuntimeRevision());
+        Assert.assertNull(report.getRuntimeState());
+    }
+
+    @Test(groups = "fast")
     public void testNodeInfoSerialization() throws Exception {
 
         final PluginServiceInfoModelJson svc = new PluginServiceInfoModelJson("typeName", "registrationName");

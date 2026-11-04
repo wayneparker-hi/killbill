@@ -74,14 +74,14 @@
 - **Notes**: 独立 CLI 校验直接、泛型、异常、继承契约与重复类；缺输入失败。parent 在 prepare-package 生成 classpath、verify 执行门禁；根 CI 配置全量构建及回归。详见 [validation.md](validation.md)。
 
 ### T6: 多节点插件状态一致性
-- **Status**: `[ ]` pending
+- **Status**: `[x]` completed
 - **Owner**: TBD
 - **Acceptance Criteria**:
   - `PluginRepository` 抽象为接口。
   - 提供本地 FS / S3 / NFS / 分布式 KV 至少两种实现。
   - 提供集群级状态查询 API。
 - **Affected Specs**: `capability-plugin-installation.md`
-- **Notes**: 
+- **Notes**: Repository SPI、本地/共享 FS、跨进程 CAS、节点内容缓存、周期协调及集群 API 已验收；94 项目全量构建、22 个 ABI 门禁、224 项目标回归和 13 项负例守卫通过。真实 NFS / DB 集成未验证，详见 [t6-validation.md](t6-validation.md)。
 
 ---
 
@@ -136,6 +136,14 @@
 - **Notes**: 故障注入、停止执行器 SPI/adapter、超时版本隔离、卸载保护及并发操作已验收；详见 [t11-validation.md](t11-validation.md)。OOM 为显式 Error 注入，不代表真实全局内存耗尽下的进程存活保证。
 
 ---
+
+## T6 执行清单
+
+- [x] Repository SPI 与 deployment / selection 契约，迁出 Core 文件实现
+- [x] 本地 FS + 共享 FS 适配、节点独立缓存、跨进程 CAS
+- [x] manager 的修订号保护、目标状态协调与自动回滚防旧写
+- [x] 平台配置、周期协调、集群状态 API / REST
+- [x] 双节点 / 跨进程 / 故障与负例测试，全量构建
 
 ## T11 执行清单
 

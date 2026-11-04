@@ -55,6 +55,7 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
 
     private final DefaultPluginManager pluginManager;
     private final DefaultServiceRegistry serviceRegistry;
+    private final PluginClusterStatusService clusterStatus;
 
     /**
      * Injected as a {@code Provider} to break a genuine dependency cycle: the node service needs this
@@ -74,10 +75,12 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
                                         + "taken at injector-creation time, which is always empty.")
     public DefaultPluginsInfoApi(final DefaultPluginManager pluginManager,
                                  final DefaultServiceRegistry serviceRegistry,
-                                 final Provider<KillbillNodesApi> nodesApi) {
+                                 final Provider<KillbillNodesApi> nodesApi,
+                                 final PluginClusterStatusService clusterStatus) {
         this.pluginManager = pluginManager;
         this.serviceRegistry = serviceRegistry;
         this.nodesApi = nodesApi;
+        this.clusterStatus = clusterStatus;
     }
 
     /**
@@ -96,7 +99,9 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
                                              plugin.version(),
                                              toPluginState(plugin.state()),
                                              servicesOf(plugin.pluginId()),
-                                             true));
+                                             true,
+                                             pluginManager.appliedRevision(plugin.pluginId()),
+                                             plugin.state().name()));
 
             for (final String installed : plugin.installedVersions()) {
                 if (!installed.equals(plugin.version())) {
@@ -156,6 +161,11 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
         }
     }
 
+    @Override
+    public List<org.killbill.billing.runtime.api.ClusterPluginStatus> getClusterPluginsInfo() {
+        return clusterStatus.getStatus();
+    }
+
     private void notifyNodes(final String pluginId, final String pluginVersion) {
         final KillbillNodesApi api = nodesApi.get();
         if (api == null) {
@@ -167,7 +177,7 @@ public class DefaultPluginsInfoApi implements PluginsInfoApi {
                                                          pluginVersion,
                                                          current != null ? toPluginState(current.state()) : PluginState.STOPPED,
                                                          Set.of(),
-                                                         current != null && pluginVersion.equals(current.version()));
+                                                         current != null && java.util.Objects.equals(pluginVersion, current.version()));
         api.notifyPluginChanged(changed, getPluginsInfo());
     }
 

@@ -122,9 +122,30 @@ public class TestPluginRuntimeModule {
                    injector.getInstance(PluginEventDispatcher.class));
     }
 
-    private Injector createInjector() {
+    @Test(groups = "fast")
+    public void testSharedRepositoryConfigurationIsWired() throws Exception {
+        final Path root = Files.createTempDirectory("lpr-shared-binding-");
+        try {
+            final var source = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.repository.mode", "shared",
+                    "org.killbill.billing.plugin.repository.shared.dir", root.resolve("shared").toString(),
+                    "org.killbill.billing.plugin.install.dir", root.resolve("cache").toString()));
+            final var injector = createInjector(source);
+            final var repository = injector.getInstance(org.killbill.billing.lpr.spi.PluginRepository.class);
+            org.testng.Assert.assertTrue(repository.shared());
+            org.testng.Assert.assertEquals(repository.root(), root.resolve("shared").toRealPath());
+        } finally {
+            try (var paths = Files.walk(root)) {
+                for (final Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) { Files.deleteIfExists(path); }
+            }
+        }
+    }
+
+    private Injector createInjector() { return createInjector(configSource); }
+
+    private Injector createInjector(final KillbillConfigSource source) {
         return Guice.createInjector(Stage.PRODUCTION,
-                                    new PluginRuntimeModule(configSource),
+                                    new PluginRuntimeModule(source),
                                     binder -> {
                                         // Supplied by NodesModule in a real deployment. Bound here because
                                         // the cycle it participates in is exactly what this test protects:

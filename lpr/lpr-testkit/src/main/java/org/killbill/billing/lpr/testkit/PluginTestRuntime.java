@@ -35,7 +35,8 @@ import org.killbill.billing.lpr.event.DefaultEventBus;
 import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
 import org.killbill.billing.lpr.spi.PluginDescriptor;
@@ -66,7 +67,7 @@ public final class PluginTestRuntime implements AutoCloseable {
     private final DefaultPluginManager manager;
     private final DefaultPluginStopExecutor stopExecutor;
 
-    private PluginTestRuntime(final Path root, final Map<Class<?>, Object> platformServices, final long stopTimeoutMillis, final int maxStopThreads) {
+    private PluginTestRuntime(final Path root, final Map<Class<?>, Object> platformServices, final long stopTimeoutMillis, final int maxStopThreads, final Path sharedRoot) {
         this.stopExecutor = new DefaultPluginStopExecutor(maxStopThreads, stopTimeoutMillis);
         this.root = root;
         this.pluginsDir = root.resolve("plugins");
@@ -76,7 +77,8 @@ public final class PluginTestRuntime implements AutoCloseable {
             throw new UncheckedIOException("Cannot create plugin directory " + pluginsDir, e);
         }
 
-        this.repository = new PluginRepository(pluginsDir, descriptorParser);
+        this.repository = sharedRoot == null ? new FileSystemPluginRepository(pluginsDir, descriptorParser)
+                : new org.killbill.billing.lpr.repository.filesystem.SharedFileSystemPluginRepository(sharedRoot, pluginsDir, descriptorParser);
         final DefaultPluginLifecycleManager lifecycle = new DefaultPluginLifecycleManager(
                 new DefaultPluginClassLoaderFactory(),
                 ClassLoaderPolicy.defaultPolicy(),
@@ -112,10 +114,17 @@ public final class PluginTestRuntime implements AutoCloseable {
                                            final long stopTimeoutMillis, final int maxStopThreads) {
         try {
             return new PluginTestRuntime(Files.createTempDirectory("lpr-runtime-"),
-                                         Objects.requireNonNullElse(platformServices, Map.of()), stopTimeoutMillis, maxStopThreads);
+                                         Objects.requireNonNullElse(platformServices, Map.of()), stopTimeoutMillis, maxStopThreads, null);
         } catch (final IOException e) {
             throw new UncheckedIOException("Cannot create a temporary plugin runtime", e);
         }
+    }
+
+    /** Creates an independent node/cache over caller-owned shared storage. */
+    public static PluginTestRuntime shared(final Path sharedRoot, final Map<Class<?>, Object> platformServices) {
+        try {
+            return new PluginTestRuntime(Files.createTempDirectory("lpr-shared-node-"), platformServices, 30000, 8, sharedRoot);
+        } catch (final IOException e) { throw new UncheckedIOException(e); }
     }
 
     /**

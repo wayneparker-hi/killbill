@@ -32,7 +32,8 @@ import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.core.PluginInfo;
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
 import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
@@ -95,7 +96,7 @@ public class TestHelloWorldPluginMigration {
         runtimeRegistry = new DefaultServiceRegistry();
         runtimeRegistry.addListener(new KillbillPluginServiceBridge(List.<PluginServiceRegistry<?>>of(paymentRegistry)));
 
-        final PluginRepository repository = new PluginRepository(root.resolve("plugins"), new YamlDescriptorParser());
+        final PluginRepository repository = new FileSystemPluginRepository(root.resolve("plugins"), new YamlDescriptorParser());
         stopExecutor = new DefaultPluginStopExecutor(8, 30000);
         final DefaultPluginLifecycleManager lifecycle = new DefaultPluginLifecycleManager(
                 new DefaultPluginClassLoaderFactory(),

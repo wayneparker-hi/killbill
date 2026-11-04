@@ -31,7 +31,8 @@ import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
 import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.management.PluginInstaller;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
@@ -95,7 +96,7 @@ public class TestPluginNodeCommandListener {
         addDescriptorTo(artifact, "id: " + PLUGIN_ID + "\nversion: 1.0.0\nentrypoint:\n  class: " + CLASS_NAME + "\n");
 
         stopExecutor = new DefaultPluginStopExecutor(8, 100);
-        final PluginRepository repository = new PluginRepository(root, new YamlDescriptorParser());
+        final PluginRepository repository = new FileSystemPluginRepository(root, new YamlDescriptorParser());
         final DefaultServiceRegistry services = new DefaultServiceRegistry();
         manager = new DefaultPluginManager(repository,
                                            new DefaultPluginLifecycleManager(new DefaultPluginClassLoaderFactory(),

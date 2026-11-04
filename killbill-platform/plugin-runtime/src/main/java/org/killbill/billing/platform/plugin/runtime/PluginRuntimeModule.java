@@ -30,7 +30,9 @@ import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
-import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
+import org.killbill.billing.lpr.repository.filesystem.SharedFileSystemPluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.management.PluginInstaller;
 import org.killbill.billing.lpr.core.LprMetricsCollector;
@@ -105,6 +107,8 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
         bind(PluginRuntimeService.class).asEagerSingleton();
         bind(PluginRuntimeLifecycleService.class).to(PluginRuntimeService.class);
         bind(PluginUpgradeMonitor.class).asEagerSingleton();
+        bind(PluginClusterCoordinator.class).asEagerSingleton();
+        bind(PluginClusterStatusService.class).asEagerSingleton();
         bind(PluginsInfoApi.class).to(DefaultPluginsInfoApi.class).asEagerSingleton();
         installNotificationPlugins();
 
@@ -218,7 +222,19 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
     @Provides
     @Singleton
     PluginRepository providePluginRepository(final PluginRuntimeConfig config) {
-        return new PluginRepository(Path.of(config.getPluginInstallDir()), new YamlDescriptorParser());
+        final Path local = Path.of(config.getPluginInstallDir());
+        return switch (config.getPluginRepositoryMode()) {
+            case "local" -> new FileSystemPluginRepository(local, new YamlDescriptorParser(), config.getPluginRepositoryLockTimeout());
+            case "shared" -> {
+                final String shared = config.getPluginSharedRepositoryDir();
+                if (shared == null || shared.isBlank()) {
+                    throw new IllegalArgumentException("Shared repository directory is required in shared mode");
+                }
+                yield new SharedFileSystemPluginRepository(Path.of(shared), local, new YamlDescriptorParser(),
+                                                            config.getPluginRepositoryLockTimeout());
+            }
+            default -> throw new IllegalArgumentException("Unknown plugin repository mode: " + config.getPluginRepositoryMode());
+        };
     }
 
     /**

@@ -18,6 +18,7 @@ package org.killbill.billing.lpr.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.killbill.billing.lpr.api.Plugin;
+import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginDeployment;
+import org.killbill.billing.lpr.spi.RepositorySelection;
 import org.killbill.billing.lpr.api.PluginState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +54,7 @@ public class DefaultPluginManager {
     private final DefaultPluginLifecycleManager lifecycle;
     private final DefaultServiceRegistry serviceRegistry;
     private final LprMetricsCollector metrics;
+    private final Map<String, RepositorySelection> appliedSelections = new ConcurrentHashMap<>();
     private final Map<String, PluginRuntime> plugins = new ConcurrentHashMap<>();
     private final Map<String, PluginRuntime> previousRuntimes = new ConcurrentHashMap<>();
     private final Map<VersionKey, PluginRuntime> retiringRuntimes = new ConcurrentHashMap<>();
@@ -92,7 +97,8 @@ public class DefaultPluginManager {
      */
     public synchronized int discover() {
         final Map<String, PluginRuntime> discovered = new LinkedHashMap<>();
-        for (final PluginRuntime runtime : repository.scan()) {
+        for (final PluginDeployment deployment : repository.scan()) {
+            final PluginRuntime runtime = runtimeOf(deployment);
             final PluginRuntime previous = discovered.putIfAbsent(runtime.pluginId(), runtime);
             if (previous != null) {
                 log.warn("Ignoring duplicate plugin id {}", runtime.pluginId());
@@ -136,9 +142,7 @@ public class DefaultPluginManager {
 
         for (final PluginRuntime runtime : plugins.values()) {
             try {
-                if (lifecycle.start(runtime)) {
-                    started.add(runtime.pluginId());
-                }
+                if (startDiscovered(runtime)) { started.add(runtime.pluginId()); }
             } catch (final RuntimeException e) {
                 failures.put(runtime.pluginId(), e);
             }
@@ -155,6 +159,27 @@ public class DefaultPluginManager {
             log.error("{} plugin(s) failed to start and are unavailable: {}", failures.size(), failures.keySet());
         }
         return List.copyOf(started);
+    }
+
+    private boolean startDiscovered(final PluginRuntime runtime) {
+        final RepositorySelection selected = repository.selection(runtime.pluginId());
+        if (!selected.enabled()) {
+            appliedSelections.put(runtime.pluginId(), selected);
+            return false;
+        }
+        if (selected.activeVersion() != null && !selected.activeVersion().equals(runtime.version())) {
+            switchVersion(runtime.pluginId(), selected.activeVersion(), false, selected, false);
+            return true;
+        }
+        if (!lifecycle.start(runtime)) { return false; }
+        try {
+            assertSelection(runtime.pluginId(), selected);
+            appliedSelections.put(runtime.pluginId(), selected);
+            return true;
+        } catch (final RuntimeException stale) {
+            stopRuntime(runtime);
+            throw stale;
+        }
     }
 
     /**
@@ -179,7 +204,15 @@ public class DefaultPluginManager {
      * @return true if this call started it
      */
     public synchronized boolean start(final String pluginId) {
-        return lifecycle.start(require(pluginId));
+        final PluginRuntime current = require(pluginId);
+        if (current.state() == PluginState.STOPPING) {
+            throw new IllegalStateException("Plugin is still stopping: " + pluginId);
+        }
+        final RepositorySelection selected = repository.selection(pluginId);
+        final String version = selected.activeVersion() != null ? selected.activeVersion() : current.version();
+        final boolean wasActive = current.state().isRunning() && current.version().equals(version);
+        switchVersion(pluginId, version, false, selected, true);
+        return !wasActive;
     }
 
     /**
@@ -187,9 +220,15 @@ public class DefaultPluginManager {
      * @return true if this call stopped it
      */
     public synchronized boolean stop(final String pluginId) {
-        final PluginRuntime previous = previousRuntimes.remove(pluginId);
-        if (previous != null) { stopRuntime(previous); }
-        return stopRuntime(require(pluginId));
+        final PluginRuntime current = require(pluginId);
+        final RepositorySelection selected = repository.selection(pluginId);
+        if (selected.enabled()) {
+            final String version = selected.activeVersion() != null ? selected.activeVersion() : current.version();
+            final RepositorySelection stopped = repository.updateSelection(pluginId, selected.revision(), version,
+                                                                           selected.previousVersion(), false);
+            appliedSelections.put(pluginId, stopped);
+        }
+        return stopLocally(pluginId);
     }
 
     /**
@@ -217,33 +256,34 @@ public class DefaultPluginManager {
      * @throws IllegalStateException if the candidate cannot start
      */
     public synchronized void activateVersion(final String pluginId, final String version) {
-        switchVersion(pluginId, version, false);
+        switchVersion(pluginId, version, false, repository.selection(pluginId), true);
     }
 
-    private void switchVersion(final String pluginId, final String version, final boolean rollingBack) {
+    private void switchVersion(final String pluginId, final String version, final boolean rollingBack,
+                               final RepositorySelection expected, final boolean publish) {
         final PluginRuntime incumbent = require(pluginId);
         if (incumbent.version().equals(version) && incumbent.state().isRunning()) {
+            final RepositorySelection selected = commitSelection(pluginId, version, expected, publish);
+            final RepositorySelection previousSelection = appliedSelections.put(pluginId, selected);
+            final PluginRuntime retained = previousRuntimes.get(pluginId);
+            if (retained != null && !selected.equals(previousSelection)) {
+                fireActivated(pluginId, version, Optional.of(retained.version()));
+            }
             return;
         }
         completeUpgrade(pluginId, incumbent.version());
         if (isVersionLoaded(pluginId, version)) {
             throw new IllegalStateException("Plugin version is still loaded: " + pluginId + '/' + version);
         }
-        final PluginRuntime candidate = repository.loadVersion(pluginId, version);
+        final PluginRuntime candidate = runtimeOf(repository.loadVersion(pluginId, version));
         final boolean wasRunning = incumbent.state().isRunning();
         if (wasRunning) {
             serviceRegistry.selectVersion(pluginId, incumbent.version());
         }
         serviceRegistry.stageVersion(pluginId, version);
-        try {
-            lifecycle.start(candidate);
-            repository.setActiveVersion(pluginId, version, wasRunning ? incumbent.version() : null);
-        } catch (final RuntimeException e) {
-            stopRuntime(candidate);
-            serviceRegistry.clearStagedVersion(pluginId);
-            throw e;
-        }
+        final RepositorySelection committed = startCandidate(candidate, expected, publish);
         plugins.put(pluginId, candidate);
+        appliedSelections.put(pluginId, committed);
         final boolean retain = !rollingBack && wasRunning
                 && activationListeners.stream().anyMatch(PluginActivationListener::retainPreviousVersion);
         if (retain) {
@@ -261,30 +301,54 @@ public class DefaultPluginManager {
         }
     }
 
+    private RepositorySelection startCandidate(final PluginRuntime candidate, final RepositorySelection expected,
+                                                final boolean publish) {
+        final String pluginId = candidate.pluginId();
+        try {
+            lifecycle.start(candidate);
+            return commitSelection(pluginId, candidate.version(), expected, publish);
+        } catch (final RuntimeException e) {
+            try { stopRuntime(candidate); }
+            finally { serviceRegistry.clearStagedVersion(pluginId); }
+            throw e;
+        }
+    }
+
     public synchronized void rollback(final String pluginId) {
         rollback(pluginId, "Operator rollback");
     }
 
     private void rollback(final String pluginId, final String reason) {
         final PluginRuntime current = require(pluginId);
+        final RepositorySelection expected = repository.selection(pluginId);
+        if (!expected.equals(appliedSelections.get(pluginId))) {
+            throw new ConcurrentModificationException("Cannot roll back stale local selection for " + pluginId);
+        }
         final String failedVersion = current.version();
         final PluginRuntime previous = previousRuntimes.get(pluginId);
         final String version = previous != null ? previous.version() : repository.previousVersion(pluginId)
                 .orElseThrow(() -> new IllegalStateException("No previous version for " + pluginId));
         if (previous != null) {
-            repository.setActiveVersion(pluginId, version, failedVersion);
+            final RepositorySelection committed = repository.updateSelection(pluginId, expected.revision(), version, failedVersion, true);
             plugins.put(pluginId, previous);
+            appliedSelections.put(pluginId, committed);
             previousRuntimes.remove(pluginId);
             serviceRegistry.selectVersion(pluginId, version);
             stopRuntime(current);
         } else {
-            switchVersion(pluginId, version, true);
+            switchVersion(pluginId, version, true, expected, true);
         }
         fireRolledBack(pluginId, version, failedVersion, reason);
     }
 
     public synchronized boolean rollbackIfCurrent(final String pluginId, final String expectedVersion, final String reason) {
-        if (!require(pluginId).version().equals(expectedVersion) || !previousRuntimes.containsKey(pluginId)) {
+        return rollbackIfCurrent(pluginId, expectedVersion, appliedRevision(pluginId), reason);
+    }
+
+    public synchronized boolean rollbackIfCurrent(final String pluginId, final String expectedVersion,
+                                                   final long expectedRevision, final String reason) {
+        if (appliedRevision(pluginId) != expectedRevision || !require(pluginId).version().equals(expectedVersion) || !previousRuntimes.containsKey(pluginId)
+            || !repository.selection(pluginId).equals(appliedSelections.get(pluginId))) {
             return false;
         }
         rollback(pluginId, reason);
@@ -292,12 +356,75 @@ public class DefaultPluginManager {
     }
 
     public synchronized void completeUpgrade(final String pluginId, final String expectedVersion) {
-        if (require(pluginId).version().equals(expectedVersion)) {
+        completeUpgrade(pluginId, expectedVersion, appliedRevision(pluginId));
+    }
+
+    public synchronized void completeUpgrade(final String pluginId, final String expectedVersion, final long expectedRevision) {
+        if (appliedRevision(pluginId) == expectedRevision && require(pluginId).version().equals(expectedVersion)) {
             final PluginRuntime previous = previousRuntimes.remove(pluginId);
             if (previous != null) {
                 stopRuntime(previous);
             }
         }
+    }
+
+    public long appliedRevision(final String pluginId) {
+        final RepositorySelection selected = appliedSelections.get(pluginId);
+        return selected != null ? selected.revision() : -1;
+    }
+
+    /** Applies durable shared intent without publishing another command. Failed plugins retry next tick. */
+    public synchronized void reconcile() {
+        discover();
+        for (final String pluginId : List.copyOf(plugins.keySet())) {
+            try { reconcilePlugin(pluginId); }
+            catch (final RuntimeException e) { log.warn("Cannot reconcile plugin {}", pluginId, e); }
+        }
+    }
+
+    private void reconcilePlugin(final String pluginId) {
+        final RepositorySelection selected = repository.selection(pluginId);
+        final List<String> installed = repository.installedVersions(pluginId);
+        if (!selected.enabled() || installed.isEmpty()) {
+            stopLocally(pluginId);
+            appliedSelections.put(pluginId, selected);
+            return;
+        }
+        final String version = selected.activeVersion() != null ? selected.activeVersion() : installed.get(0);
+        if (!installed.contains(version)) {
+            throw new IllegalStateException("Desired plugin version is unavailable: " + pluginId + '/' + version);
+        }
+        switchVersion(pluginId, version, false, selected, false);
+    }
+
+    private boolean stopLocally(final String pluginId) {
+        final PluginRuntime previous = previousRuntimes.remove(pluginId);
+        if (previous != null) { stopRuntime(previous); }
+        for (final PluginRuntime retired : List.copyOf(retiringRuntimes.values())) {
+            if (retired.pluginId().equals(pluginId) && retired != plugins.get(pluginId)) { stopRuntime(retired); }
+        }
+        return stopRuntime(require(pluginId));
+    }
+
+    private RepositorySelection commitSelection(final String pluginId, final String version,
+                                                 final RepositorySelection expected, final boolean publish) {
+        if (publish && (!expected.enabled() || !version.equals(expected.activeVersion()))) {
+            final String previous = expected.activeVersion() != null ? expected.activeVersion() : require(pluginId).version();
+            return repository.updateSelection(pluginId, expected.revision(), version,
+                                              version.equals(previous) ? expected.previousVersion() : previous, true);
+        }
+        assertSelection(pluginId, expected);
+        return expected;
+    }
+
+    private void assertSelection(final String pluginId, final RepositorySelection expected) {
+        if (!repository.selection(pluginId).equals(expected)) {
+            throw new ConcurrentModificationException("Desired selection changed while starting " + pluginId);
+        }
+    }
+
+    private static PluginRuntime runtimeOf(final PluginDeployment deployment) {
+        return new PluginRuntime(deployment.descriptor(), deployment.artifact());
     }
 
     private void fireActivated(final String pluginId,

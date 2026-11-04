@@ -43,7 +43,7 @@ pom 的关键是**依赖的作用域**，见第五节。
 
 | 字段 | 必填 | 规则 | 违反时 |
 |---|---|---|---|
-| `id` | 是 | 匹配 `[a-z][a-z0-9._-]*` | 描述符解析失败，该版本被跳过 |
+| `id` | 是 | 匹配 `[a-z0-9][a-z0-9.-]*` | 描述符解析失败，该版本被跳过 |
 | `version` | 是 | SemVer（`MAJOR.MINOR.PATCH[-预发布]`） | 解析失败 |
 | `entrypoint.class` | 是 | 全限定类名，必须实现 `Plugin` 且有公开无参构造器 | 启动时 `FAILED`，其余插件照常 |
 | `name` | 否 | 展示用；缺省等于 `id` | — |
@@ -62,7 +62,7 @@ pom 的关键是**依赖的作用域**，见第五节。
 
 - **描述符格式**：`INIT_PLUGIN` 阶段扫描目录时。坏描述符 = 这个版本不存在，不影响启动。
 - **入口类**：`START_PLUGIN` 阶段实例化时。失败则该插件 `FAILED`，被列为 mandatory 时才中断启动。
-- **服务注册名**：注册时。不匹配 `[a-z][a-z0-9._-]*` 会被拒绝并记 warn——
+- **服务注册名**：注册时。不匹配 `[a-z0-9][a-z0-9.-]*` 会被拒绝并记 warn——
   **注册失败是静默的**，业务侧只会看到"查不到这个插件"。
 
 ---
@@ -216,8 +216,7 @@ PluginTestRuntime.create(Map.of(Clock.class, new DefaultClock()));
 
 ```
 plugins/my-plugin/
-├── ACTIVE          # properties 文件：active=1.3.0, previous=1.2.0
-├── DISABLED        # 存在则整个插件不加载
+├── ACTIVE          # properties：active=1.3.0, previous=1.2.0, revision=7, enabled=true
 ├── 1.2.0/
 │   ├── plugin.jar
 │   └── plugin.yaml
@@ -232,7 +231,7 @@ plugins/my-plugin/
 | 命令 | 效果 |
 |---|---|
 | `INSTALL_PLUGIN` | 按 `uri` 属性取 jar，校验 `sha1`，落盘成新版本。**不启动** |
-| `START_PLUGIN` | 启动；带 `pluginVersion` 时先切换 ACTIVE 再启动 |
+| `START_PLUGIN` | 启动；带 `pluginVersion` 时先启动候选，再提交目标并切换路由 |
 | `STOP_PLUGIN` | 停止（不删文件） |
 | `RESTART_PLUGIN` | 停止再启动，带版本时即为升级 |
 | `UNINSTALL_PLUGIN` | 先停止，再删除该版本目录 |
@@ -273,7 +272,7 @@ plugins/my-plugin/
 
 写完一个插件，逐条过：
 
-- [ ] `plugin.yaml` 的 `id` 匹配 `[a-z][a-z0-9._-]*`，`version` 是 SemVer
+- [ ] `plugin.yaml` 的 `id` 匹配 `[a-z0-9][a-z0-9.-]*`，`version` 是 SemVer
 - [ ] `entrypoint.class` 有公开无参构造器
 - [ ] `killbill-*` 和跨边界的第三方依赖都是 `provided`
 - [ ] 每个 executor / connection / 订阅都进了 `resources()`
@@ -315,3 +314,27 @@ plugins/my-plugin/
 停止超时后，该版本保持 `STOPPING`，服务已撤销、旧 Context 的注册能力已关闭；宿主继续处理其他插件。运行时只请求中断，待 stop 和资源清理真正结束后才关闭 ClassLoader、清除引用并转为 `STOPPED`。此期间禁止重新加载或卸载相同版本。若停止执行器已饱和，新停止操作会明确拒绝并保留原状态和服务；释放阻塞后可重试。升级若已完成路由切换、随后旧版停止被拒绝，新版继续服务，旧实例仍受管理并可由后续停止操作清理。
 
 使用 TestKit 注入停止故障时，可通过 `PluginTestRuntime.create(platformServices, stopTimeoutMillis, maxStopThreads)` 缩短等待并限制 worker。测试结束前应释放所有故意阻塞的门闩。注入 `OutOfMemoryError` 只验证插件错误边界；JVM 全局内存耗尽的进程存活保证属于进程隔离范围。
+
+
+## 十、共享仓库与集群状态
+
+默认 `repository.mode=local`：`install.dir` 是本地版本仓库。共享部署使用下列配置（均加 `org.killbill.billing.plugin.` 前缀）：
+
+| 后缀 | 默认值 | 用途 |
+|---|---|---|
+| `repository.mode` | local | local / shared |
+| `repository.shared.dir` | 空 | shared 模式必填，共享挂载的权威仓库 |
+| `install.dir` | /var/tmp/bundles | shared 模式下为每个节点独立的本地缓存，不得与共享根重叠 |
+| `repository.lockTimeout` | 5000 ms | 跨进程文件锁获取期限 |
+| `repository.reconcileInterval` | 5000 ms | 协调共享目标与刷新节点报告的间隔 |
+| `repository.reportStaleAfter` | 30000 ms | 集群查询的节点报告过期阈值，建议大于协调间隔 |
+
+例如：共享根 `/mnt/plugins`，节点缓存 `/var/cache/killbill/plugins`。共享挂载必须支持跨节点 advisory locks 和同目录原子 rename；不支持时操作失败，不降级为无锁写入。自动化验证使用本机共享目录及独立 JVM，真实 NFS 服务端和挂载选项需在部署环境验证。
+
+首次共享安装持久化 `enabled=false`，须显式发送 START。同内容安装广播幂等，版本内容不同则拒绝。启动、停止、切版及回滚通过 revision CAS 更新目标；遗漏广播的节点由周期协调追赶。宿主退出只停止本节点，不关闭整个集群目标。`localNodeOnly` 仅限制命令投递范围；共享模式中目标仍对所有共享节点生效。`start.enabled=false` 禁止本节点自动启动及协调启动，但继续报告状态。
+
+`GET /1.0/kb/pluginsInfo/cluster` 返回每个插件的 `desiredVersion`、`revision`、`enabled`、`observedAt` 和 `nodes`。节点条目包含实际 `version`、详细 `state`、`appliedRevision`、`reportedAt`、`stale`、`converged`。版本匹配但 revision 落后、STOPPING、旧节点未报告详细状态、缺报或过期都不算收敛；没有节点也不算收敛。此接口观察数据库中已知节点的报告，不证明未知节点存在或分布式强一致。
+
+缓存按版本内容 SHA-256 分目录，运行实例只引用本地副本。源版本删除后仍允许其他节点延迟加载类；删除最后版本也保留 selection/revision 和版本内容摘要，避免删装重置修订号或同一版本号换成不同 jar/descriptor；复用同一版本只允许原内容。缓存不自动回收，运维需在节点停止、确认无运行实例引用后清理；不支持直接原地修改已发布版本或手工覆盖 ACTIVE。
+
+TestKit 的 `PluginTestRuntime.shared(sharedRoot, platformServices)` 可创建共享权威仓库、独立缓存的节点；关闭节点不会删除调用方管理的共享根。

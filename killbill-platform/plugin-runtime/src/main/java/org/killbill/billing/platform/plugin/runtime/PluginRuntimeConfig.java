@@ -39,6 +39,28 @@ public interface PluginRuntimeConfig extends KillbillPlatformConfig {
     @Description("Root directory holding installed plugins, one sub-directory per plugin id")
     String getPluginInstallDir();
 
+    @Config("org.killbill.billing.plugin.repository.mode")
+    @Default("local")
+    @Description("Repository mode: local or shared (shared filesystem with cross-node locks and atomic rename)")
+    String getPluginRepositoryMode();
+
+    @Config("org.killbill.billing.plugin.repository.shared.dir")
+    @DefaultNull
+    @Description("Authoritative shared repository; install.dir is the node-local cache in shared mode")
+    String getPluginSharedRepositoryDir();
+
+    @Config("org.killbill.billing.plugin.repository.lockTimeout")
+    @Default("5000")
+    long getPluginRepositoryLockTimeout();
+
+    @Config("org.killbill.billing.plugin.repository.reconcileInterval")
+    @Default("5000")
+    long getPluginRepositoryReconcileInterval();
+
+    @Config("org.killbill.billing.plugin.repository.reportStaleAfter")
+    @Default("30000")
+    long getPluginReportStaleAfter();
+
     @Config("org.killbill.billing.plugin.mandatory.plugins")
     @DefaultNull
     @Description("Comma-separated plugin ids whose failure to start should abort startup")
