@@ -91,7 +91,7 @@ public class TestPluginInstaller {
     @Test(groups = "fast")
     public void testAFailedInstallLeavesNothingBehind() throws Exception {
         final Path jar = someJar("payload");
-        final ArtifactSource wrongChecksum = ArtifactSource.of(jar).withSha1("0".repeat(40));
+        final ArtifactSource wrongChecksum = ArtifactSource.of(jar).withSha256("0".repeat(64));
 
         expectThrows(UncheckedIOException.class,
                      () -> installer.install(PLUGIN_ID, VERSION, wrongChecksum, DESCRIPTOR));
@@ -105,11 +105,11 @@ public class TestPluginInstaller {
 
     @Test(groups = "fast")
     public void testInstallAcceptsAMatchingChecksum() throws Exception {
-        // SHA-1 of "payload"
+        // SHA-256 of "payload"
         final Path jar = someJar("payload");
-        final String sha1 = sha1Of("payload");
+        final String sha256 = sha256Of("payload");
 
-        installer.install(PLUGIN_ID, VERSION, ArtifactSource.of(jar).withSha1(sha1), DESCRIPTOR);
+        installer.install(PLUGIN_ID, VERSION, ArtifactSource.of(jar).withSha256(sha256), DESCRIPTOR);
 
         assertEquals(repository.installedVersions(PLUGIN_ID), List.of(VERSION));
     }
@@ -181,8 +181,8 @@ public class TestPluginInstaller {
         return jar;
     }
 
-    private static String sha1Of(final String content) throws Exception {
+    private static String sha256Of(final String content) throws Exception {
         return java.util.HexFormat.of().formatHex(
-                java.security.MessageDigest.getInstance("SHA-1").digest(content.getBytes(StandardCharsets.UTF_8)));
+                java.security.MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)));
     }
 }

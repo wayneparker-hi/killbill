@@ -107,14 +107,14 @@
 - **Notes**: 
 
 ### T9: 插件安装安全校验升级
-- **Status**: `[ ]` pending
+- **Status**: `[x]` completed
 - **Owner**: TBD
 - **Acceptance Criteria**:
   - SHA-1 替换为 SHA-256 或更强。
   - 可选 jar 签名/证书链校验。
   - 记录插件来源审计。
 - **Affected Specs**: `capability-plugin-installation.md`
-- **Notes**: 
+- **Notes**: SHA-256、可选完整 JAR 签名/PKIX、来源脱敏文件审计及资源大小/外部类路径守卫已验收；94 项目全量构建、22 个 ABI 门禁、252 项目标回归与 22 项负例守卫通过。SHA-1 API/参数为破坏性迁移，详见 [t9-validation.md](t9-validation.md)。
 
 ### T10: 进程外插件模型（研究项）
 - **Status**: `[ ]` pending
@@ -136,6 +136,14 @@
 - **Notes**: 故障注入、停止执行器 SPI/adapter、超时版本隔离、卸载保护及并发操作已验收；详见 [t11-validation.md](t11-validation.md)。OOM 为显式 Error 注入，不代表真实全局内存耗尽下的进程存活保证。
 
 ---
+
+## T9 执行清单
+
+- [x] SHA-256 契约、命令迁移及旧参数拒绝
+- [x] 完整 JAR 签名、证书信任及 descriptor 一致性校验
+- [x] 来源脱敏审计 SPI、文件 adapter、失败边界
+- [x] 平台配置与装配、真实签名及端到端测试
+- [x] 负例守卫、全量构建、回归、文档与提交
 
 ## T6 执行清单
 

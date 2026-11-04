@@ -141,6 +141,53 @@ public class TestPluginRuntimeModule {
         }
     }
 
+    @Test(groups = "fast")
+    public void testInstallPolicyAndDurableAuditAreWired() throws Exception {
+        final Path root = Files.createTempDirectory("lpr-install-policy-binding-");
+        try {
+            final var source = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", root.toString(),
+                    "org.killbill.billing.plugin.installation.requireSha256", "true"));
+            final var injector = createInjector(source);
+            final var policy = injector.getInstance(org.killbill.billing.lpr.management.ArtifactVerificationPolicy.class);
+            org.testng.Assert.assertTrue(policy.requireSha256());
+            org.testng.Assert.assertFalse(policy.requireSignature());
+            org.testng.Assert.assertTrue(injector.getInstance(org.killbill.billing.lpr.spi.PluginInstallAuditSink.class)
+                    instanceof org.killbill.billing.lpr.repository.filesystem.FileSystemPluginInstallAudit);
+            org.testng.Assert.assertTrue(Files.isDirectory(root.resolve(".install-audit")));
+            final var invalid = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", root.toString(),
+                    "org.killbill.billing.plugin.installation.signature.required", "true"));
+            org.testng.Assert.assertThrows(com.google.inject.CreationException.class, () -> createInjector(invalid));
+            final var unsafeAudit = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", root.toString(),
+                    "org.killbill.billing.plugin.installation.audit.dir", root.resolve("demo/1.0.0/audit").toString()));
+            org.testng.Assert.assertThrows(com.google.inject.CreationException.class, () -> createInjector(unsafeAudit));
+        } finally {
+            try (var paths = Files.walk(root)) {
+                for (final Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) { Files.deleteIfExists(path); }
+            }
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testAuditDirectoryAliasCannotPointInsidePluginStorage() throws Exception {
+        final Path root = Files.createTempDirectory("lpr-audit-alias-");
+        try {
+            final Path repository = Files.createDirectories(root.resolve("repository"));
+            final Path version = Files.createDirectories(repository.resolve("demo/1.0.0"));
+            Files.createSymbolicLink(root.resolve("alias"), version);
+            final var source = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", repository.toString(),
+                    "org.killbill.billing.plugin.installation.audit.dir", root.resolve("alias/audit").toString()));
+            org.testng.Assert.assertThrows(com.google.inject.CreationException.class, () -> createInjector(source));
+        } finally {
+            try (var paths = Files.walk(root)) {
+                for (final Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) { Files.deleteIfExists(path); }
+            }
+        }
+    }
+
     private Injector createInjector() { return createInjector(configSource); }
 
     private Injector createInjector(final KillbillConfigSource source) {

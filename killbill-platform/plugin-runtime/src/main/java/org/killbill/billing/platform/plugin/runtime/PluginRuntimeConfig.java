@@ -61,6 +61,36 @@ public interface PluginRuntimeConfig extends KillbillPlatformConfig {
     @Default("30000")
     long getPluginReportStaleAfter();
 
+    @Config("org.killbill.billing.plugin.installation.maxArtifactBytes")
+    @Default("67108864")
+    @Description("Maximum downloaded artifact bytes, default 64 MiB")
+    long getPluginInstallMaxArtifactBytes();
+
+    @Config("org.killbill.billing.plugin.installation.maxExpandedBytes")
+    @Default("268435456")
+    @Description("Maximum total uncompressed signed JAR bytes, default 256 MiB")
+    long getPluginInstallMaxExpandedBytes();
+
+    @Config("org.killbill.billing.plugin.installation.requireSha256")
+    @Default("false")
+    @Description("Require an expected SHA-256 for each INSTALL_PLUGIN command")
+    boolean isPluginInstallSha256Required();
+
+    @Config("org.killbill.billing.plugin.installation.signature.required")
+    @Default("false")
+    @Description("Require every payload entry to share a trusted JAR signer")
+    boolean isPluginInstallSignatureRequired();
+
+    @Config("org.killbill.billing.plugin.installation.signature.trustedCertificates")
+    @DefaultNull
+    @Description("PEM file containing administrator trusted signer/root certificates; required in signature mode")
+    String getPluginInstallTrustedCertificates();
+
+    @Config("org.killbill.billing.plugin.installation.audit.dir")
+    @DefaultNull
+    @Description("Node-local install audit directory; defaults to install.dir/.install-audit")
+    String getPluginInstallAuditDir();
+
     @Config("org.killbill.billing.plugin.mandatory.plugins")
     @DefaultNull
     @Description("Comma-separated plugin ids whose failure to start should abort startup")

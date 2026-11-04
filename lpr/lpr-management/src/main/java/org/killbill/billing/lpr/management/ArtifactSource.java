@@ -30,14 +30,20 @@ import java.util.Optional;
  * convenience that produces one.
  *
  * @param uri      where to fetch the jar from; {@code file:} and {@code http(s):} both work
- * @param sha1     expected SHA-1 of the jar, if known
+ * @param sha256   expected SHA-256 of the jar, if known
  * @param fileName the name to store the jar under, if it should not be derived from the URI
  */
-public record ArtifactSource(URI uri, Optional<String> sha1, Optional<String> fileName) {
+public record ArtifactSource(URI uri, Optional<String> sha256, Optional<String> fileName) {
 
     public ArtifactSource {
         Objects.requireNonNull(uri, "uri");
-        sha1 = Objects.requireNonNullElse(sha1, Optional.empty());
+        sha256 = Objects.requireNonNullElse(sha256, Optional.<String>empty()).map(value -> {
+            final String normalized = value.trim().toLowerCase(java.util.Locale.ROOT);
+            if (!normalized.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("SHA-256 must contain exactly 64 hexadecimal characters");
+            }
+            return normalized;
+        });
         fileName = Objects.requireNonNullElse(fileName, Optional.empty());
     }
 
@@ -94,10 +100,10 @@ public record ArtifactSource(URI uri, Optional<String> sha1, Optional<String> fi
     }
 
     /**
-     * @param sha1Hex the expected SHA-1, hex-encoded
+     * @param sha256Hex the expected SHA-256, hex-encoded
      * @return a copy of this source that will be verified after download
      */
-    public ArtifactSource withSha1(final String sha1Hex) {
-        return new ArtifactSource(uri, Optional.of(sha1Hex), fileName);
+    public ArtifactSource withSha256(final String sha256Hex) {
+        return new ArtifactSource(uri, Optional.of(sha256Hex), fileName);
     }
 }

@@ -56,7 +56,7 @@ jobs:
           killbill-mvn -pl lpr/lpr-core,lpr/lpr-lifecycle-default,lpr/lpr-classloader-default,lpr/lpr-repository-filesystem,lpr/lpr-testkit,lpr/lpr-abi-validator,killbill-platform/plugin-runtime,plugins/hello-world-plugin test \
             -DsurefireArgLine="$TEST_JVM_ARGS"
           killbill-mvn -pl lpr/lpr-spi,lpr/lpr-descriptor-yaml,lpr/lpr-event-default,lpr/lpr-management,plugins/email-notifications-plugin,plugins/custom-email-invoice-formatter-plugin,plugins/payment-retries-plugin,plugins/catalog-plugin-test test \
-            -Dtest=TestSemanticVersion,TestYamlDescriptorParser,TestDefaultEventBus,TestPluginInstaller,TestDynamicInvoiceFormatter,TestSharedFormatterContract,TestKillbillApiWrapper,TestRulesComputer,TestPaymentRetriesStats,TestCatalogTestPluginApi \
+            -Dtest=TestSemanticVersion,TestYamlDescriptorParser,TestDefaultEventBus,TestPluginInstaller,TestJarSignatureVerifier,TestPluginInstallAudit,TestDynamicInvoiceFormatter,TestSharedFormatterContract,TestKillbillApiWrapper,TestRulesComputer,TestPaymentRetriesStats,TestCatalogTestPluginApi \
             -Dsurefire.failIfNoSpecifiedTests=false -DsurefireArgLine="$TEST_JVM_ARGS"
           killbill-mvn -pl killbill/util,killbill/jaxrs test \
             -Dtest=TestNodeInfoMapper,TestPluginClusterResource \

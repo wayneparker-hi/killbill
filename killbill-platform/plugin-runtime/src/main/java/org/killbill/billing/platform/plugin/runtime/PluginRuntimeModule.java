@@ -31,6 +31,9 @@ import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginInstallAuditSink;
+import org.killbill.billing.lpr.management.ArtifactVerificationPolicy;
+import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginInstallAudit;
 import org.killbill.billing.lpr.repository.filesystem.FileSystemPluginRepository;
 import org.killbill.billing.lpr.repository.filesystem.SharedFileSystemPluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
@@ -243,8 +246,43 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
      */
     @Provides
     @Singleton
-    PluginInstaller providePluginInstaller(final PluginRepository repository) {
-        return new PluginInstaller(repository);
+    PluginInstaller providePluginInstaller(final PluginRepository repository,
+                                           final ArtifactVerificationPolicy policy,
+                                           final PluginInstallAuditSink audit) {
+        return new PluginInstaller(repository, policy, audit);
+    }
+
+    @Provides
+    @Singleton
+    ArtifactVerificationPolicy provideArtifactVerificationPolicy(final PluginRuntimeConfig config)
+            throws java.io.IOException {
+        final String pem = config.getPluginInstallTrustedCertificates();
+        final ArtifactVerificationPolicy policy = ArtifactVerificationPolicy.fromPem(config.isPluginInstallSha256Required(),
+                config.isPluginInstallSignatureRequired(), pem == null ? null : Path.of(pem));
+        return new ArtifactVerificationPolicy(policy.requireSha256(), policy.requireSignature(), policy.trustedCertificates(),
+                                              config.getPluginInstallMaxArtifactBytes(), config.getPluginInstallMaxExpandedBytes());
+    }
+
+    @Provides
+    @Singleton
+    PluginInstallAuditSink providePluginInstallAuditSink(final PluginRuntimeConfig config, final PluginRepository repository)
+            throws java.io.IOException {
+        final String configured = config.getPluginInstallAuditDir();
+        final Path directory = configured == null ? Path.of(config.getPluginInstallDir()).resolve(".install-audit") : Path.of(configured);
+        validateAuditLocation(directory.toAbsolutePath().normalize(), repository.root().toAbsolutePath().normalize());
+        java.nio.file.Files.createDirectories(repository.root());
+        java.nio.file.Files.createDirectories(directory);
+        validateAuditLocation(directory.toRealPath(), repository.root().toRealPath());
+        return new FileSystemPluginInstallAudit(directory);
+    }
+
+    private static void validateAuditLocation(final Path normalized, final Path storage) {
+        if (normalized.startsWith(storage)) {
+            final Path relative = storage.relativize(normalized);
+            if (relative.toString().isEmpty() || !relative.getName(0).toString().startsWith(".")) {
+                throw new IllegalArgumentException("Install audit directory must not be inside a plugin/version directory");
+            }
+        }
     }
 
     @Provides

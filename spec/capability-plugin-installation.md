@@ -30,18 +30,62 @@
 
 ### Requirement: 完整性校验
 
-安装 SHALL 支持 SHA-1 校验；校验失败时 MUST 清理临时文件并拒绝安装。
+安装 SHALL 计算 SHA-256；给定的 `sha256` 必须为 64 位 hex 并匹配实际 artifact。SHA-1 不再支持，旧命令参数必须拒绝。平台可要求摘要必填；校验失败时 MUST 拒绝发布。
 
 #### Scenario: 校验失败
-- **IF** 提供的 sha1 与实际不符
+- **IF** 提供的 sha256 与实际不符
 - **THEN** 安装失败，不留半成品
+
+#### Scenario: 旧参数与必填策略
+- **WHEN** 命令携带 sha1，或平台要求 sha256 而请求未提供
+- **THEN** 明确拒绝，版本目录不出现
+
+### Requirement: 可选完整签名与证书校验
+
+平台 SHALL 可配置强制 JAR 签名与 PEM 信任证书；完整读取每个 payload entry 并使用 JDK 签名及 PKIX 验证。所有 payload 必须有共同可信 signer；证书有效期、签名用途及 codeSigning EKU 必须有效。不能使用命令参数降低要求。离线校验不包含撤销状态查询。
+
+#### Scenario: 篡改或不完整签名
+- **WHEN** 已签名内容被篡改、增加未签名 entry、JAR 未签名或 signer 不可信/失效
+- **THEN** 安装失败，无已发布版本；合法可信完整签名允许安装
+
+#### Scenario: 外部 descriptor 覆盖签名内容
+- **WHEN** 强制签名且外部 descriptor 不等于 jar 内的已签名 descriptor
+- **THEN** 拒绝安装，不能切换已认证入口或配置
+
+#### Scenario: 签名包引用外部类路径
+- **WHEN** 包含 manifest Class-Path 或 META-INF/INDEX.LIST
+- **THEN** 拒绝安装，防止加载未验证的外部依赖
+
+### Requirement: 有界安装读取
+
+平台 SHALL 限制 file/HTTP 包读取大小（默认 64 MiB），签名 JAR 展开内容总量（默认 256 MiB）及内嵌 descriptor（1 MiB）。平台大小配置必须为正，包上限不得超出 int 范围。
+
+#### Scenario: 超过读取上限
+- **WHEN** 文件或 chunked HTTP 响应超过包上限，或签名包展开总量/descriptor 超限
+- **THEN** 安装失败且不发布；包大小等于上限时允许继续验证
+
+### Requirement: 来源审计
+
+平台安装 SHALL 持久化关联同次操作的开始、验证与结果记录，包含脱敏请求及重定向实际来源、实际 SHA-256、descriptor 摘要、签名要求与 signer 指纹。凭据与异常原文不得进入审计。审计目录不随卸载删除；发布前审计失败必须阻止发布。
+
+#### Scenario: 校验失败与安装成功
+- **WHEN** 安装校验失败或发布成功
+- **THEN** 可从审计记录区分阶段、结果与实际内容，原 URI 的凭据/query/fragment 不泄漏
+
+#### Scenario: 审计目录的符号链接别名
+- **WHEN** 配置路径经符号链接解析后落入插件/version 目录
+- **THEN** 装配失败，不能让卸载删除审计记录
+
+#### Scenario: 发布后的审计写入失败
+- **WHEN** artifact 已发布而结果记录写失败
+- **THEN** 显式报告 artifact 已发布、审计未完成，保留文件；不得报告已回滚
 
 ### Requirement: 支持从 jar 内提取 descriptor
 
 安装时若未提供 descriptor，SHALL 从 jar 内读取 `plugin.yaml` 并写出到版本目录。
 
 #### Scenario: 安装不带外部 descriptor 的 jar
-- **WHEN** 只提供 jar 和 sha1
+- **WHEN** 只提供 jar 和 sha256
 - **THEN** 安装器从 jar 内拷贝 descriptor 到 `plugins/<id>/<version>/plugin.yaml`
 
 ### Requirement: 卸载不停止运行插件
@@ -91,7 +135,7 @@
 | 目录布局 | `FileSystemPluginRepository` | `TestPluginInstaller.testInstallLaysOutTheVersionWhereTheRepositoryLooksForIt` |
 | 身份校验 | `FileSystemPluginRepository.load` | `TestPluginRuntimeEndToEnd.testAPluginWhoseDescriptorContradictsItsLocationIsRejected` |
 | 不覆盖运行版本 | `RepositoryFiles.publishUnlocked` | `TestPluginInstaller` |
-| SHA-1 校验 | `PluginInstaller.verify` | `TestPluginInstaller` |
+| SHA-256 / 必填策略 / 旧参数拒绝 | `ArtifactSource`、`PluginInstaller.verify`、`PluginNodeCommandListener` | `TestPluginInstaller`、`TestPluginInstallAudit`、`TestPluginNodeCommandListener` |
 | 提取 descriptor | `PluginInstaller.descriptorInside` | `TestPluginInstaller` |
 | 卸载语义 | `PluginInstaller.uninstall` | `TestPluginInstaller` |
 | 仓库 port / 架构边界 | `PluginRepository`（lpr-spi）、独立 filesystem adapter | `TestArchitecturalConstraints.testRuntimeShipsNoInfrastructureImplementation` |
@@ -99,3 +143,7 @@
 | 共享缓存 | `SharedFileSystemPluginRepository`、`RepositoryCache` | `TestFileSystemPluginRepository.testCacheContainsPrivateLibrariesAndSurvivesSourceDeletion`、`TestSharedRepositoryEndToEnd.testSourceUninstallDoesNotBreakOtherNodesLazyClassLoading` |
 | 协调 / 过期候选 / 回滚防旧写 | `DefaultPluginManager`、`PluginClusterCoordinator`、`PluginUpgradeMonitor` | `TestSharedRepositoryEndToEnd`、`TestPluginClusterStatusService` |
 | 集群查询 / 过期与缺报 | `PluginClusterStatusService`、`PluginsInfoApi`、`PluginInfoResource` | `TestPluginClusterStatusService`、`TestPluginClusterResource`、`TestNodeInfoMapper` |
+| 安装字节上限 | `ArtifactStreams`、`ArtifactVerificationPolicy` | `TestPluginInstallAudit#testFileAndHttpArtifactLimitsPreventPublication`、`TestJarSignatureVerifier#testExpandedJarAndDescriptorLimitsAreEnforced` |
+| JAR 签名 / PKIX / descriptor | `JarSignatureVerifier`、`ArtifactVerificationPolicy` | `TestJarSignatureVerifier`、`TestSignedPluginInstallation` |
+| 审计目录卸载保护 | `PluginRuntimeModule.validateAuditLocation` | `TestPluginRuntimeModule`：直接路径与符号链接别名 |
+| 来源 / 阶段审计与失败边界 | `PluginInstallAuditSink`、`InstallAuditOperation`、`FileSystemPluginInstallAudit` | `TestPluginInstallAudit`、`TestFileSystemPluginInstallAudit` |

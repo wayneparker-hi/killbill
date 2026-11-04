@@ -79,7 +79,7 @@ public class PluginNodeCommandListener {
      * is a URI rather than a name.
      */
     private static final String PROPERTY_URI = "uri";
-    private static final String PROPERTY_SHA1 = "sha1";
+    private static final String PROPERTY_SHA256 = "sha256";
     private static final String PROPERTY_DESCRIPTOR = "descriptor";
 
     private final ObjectMapper objectMapper;
@@ -119,7 +119,7 @@ public class PluginNodeCommandListener {
         } catch (final IOException | RuntimeException e) {
             // A malformed or unactionable command must not poison the bus subscription for every
             // other node command.
-            log.warn("Failed to handle node command from event {}", event, e);
+            log.warn("Failed to handle plugin node command: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -202,10 +202,11 @@ public class PluginNodeCommandListener {
         }
 
         ArtifactSource source = ArtifactSource.of(URI.create(uri));
-        final String sha1 = property(command, PROPERTY_SHA1);
-        if (sha1 != null) {
-            source = source.withSha1(sha1);
+        if (property(command, "sha1") != null) {
+            throw new IllegalArgumentException("SHA-1 is no longer supported; provide sha256");
         }
+        final String sha256 = property(command, PROPERTY_SHA256);
+        if (sha256 != null) { source = source.withSha256(sha256); }
 
         // A null descriptor means "use the plugin.yaml the jar carries", which is the normal case.
         // The property exists for artifacts that predate the descriptor, or to correct one.

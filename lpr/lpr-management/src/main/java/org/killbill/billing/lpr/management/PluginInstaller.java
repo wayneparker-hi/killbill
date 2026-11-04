@@ -27,15 +27,15 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.HexFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 import org.killbill.billing.lpr.spi.PluginRepository;
+import org.killbill.billing.lpr.spi.PluginInstallAuditSink;
+import org.killbill.billing.lpr.spi.PluginInstallAudit.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,18 +69,29 @@ public class PluginInstaller {
 
     private final PluginRepository repository;
     private final HttpClient httpClient;
+    private final ArtifactVerificationPolicy policy;
+    private final PluginInstallAuditSink auditSink;
 
     public PluginInstaller(final PluginRepository repository) {
-        this(repository,
-             HttpClient.newBuilder()
-                       .connectTimeout(Duration.ofSeconds(30))
-                       .followRedirects(HttpClient.Redirect.NORMAL)
-                       .build());
+        this(repository, ArtifactVerificationPolicy.optional(), event -> log.info("Plugin install audit {}", event));
+    }
+
+    public PluginInstaller(final PluginRepository repository, final ArtifactVerificationPolicy policy,
+                           final PluginInstallAuditSink auditSink) {
+        this(repository, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30))
+                .followRedirects(HttpClient.Redirect.NORMAL).build(), policy, auditSink);
     }
 
     public PluginInstaller(final PluginRepository repository, final HttpClient httpClient) {
+        this(repository, httpClient, ArtifactVerificationPolicy.optional(), event -> log.info("Plugin install audit {}", event));
+    }
+
+    public PluginInstaller(final PluginRepository repository, final HttpClient httpClient,
+                           final ArtifactVerificationPolicy policy, final PluginInstallAuditSink auditSink) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
+        this.policy = Objects.requireNonNull(policy, "policy");
+        this.auditSink = Objects.requireNonNull(auditSink, "auditSink");
     }
 
     /**
@@ -107,20 +118,61 @@ public class PluginInstaller {
         Objects.requireNonNull(pluginId, "pluginId");
         Objects.requireNonNull(version, "version");
         Objects.requireNonNull(source, "source");
+        if (!pluginId.matches("[a-z0-9][a-z0-9.-]*")) { throw new IllegalArgumentException("Invalid plugin id"); }
+        org.killbill.billing.lpr.spi.SemanticVersion.parse(version);
 
+        final InstallAuditOperation audit = new InstallAuditOperation(auditSink, pluginId, version, source, policy.requireSignature());
+        return installVerified(pluginId, version, source, descriptor, audit);
+    }
+
+    private Path installVerified(final String pluginId, final String version, final ArtifactSource source,
+                                 final String descriptor, final InstallAuditOperation audit) {
+        String phase = "START_AUDIT";
+        boolean published = false;
         try {
-            final byte[] jar = fetch(source);
+            audit.record(Stage.STARTED, null);
+            phase = "FETCH";
+            final FetchedArtifact fetched = fetch(source);
+            final byte[] jar = fetched.bytes();
+            audit.downloaded(jar, fetched.uri());
+            phase = "CHECKSUM";
             verify(source, jar);
-            final String resolved = descriptor != null ? descriptor : descriptorInside(jar);
-            if (resolved == null) {
-                throw new IllegalStateException("Cannot install " + pluginId + ' ' + version + ": missing " + DESCRIPTOR);
-            }
-            final Path installed = repository.publish(pluginId, version, jar, resolved);
-            log.info("Installed plugin {} version {} from {} into {}", pluginId, version, source.uri(), installed);
+            phase = "SIGNATURE_OR_DESCRIPTOR";
+            final VerifiedArtifact verified = resolveDescriptor(jar, descriptor);
+            audit.verified(verified.descriptor(), verified.signers());
+            phase = "VERIFIED_AUDIT";
+            audit.record(Stage.VERIFIED, null);
+            phase = "PUBLISH";
+            final Path installed = repository.publish(pluginId, version, jar, verified.descriptor());
+            published = true;
+            phase = "RESULT_AUDIT";
+            audit.record(Stage.PUBLISHED, null);
+            log.info("Installed plugin {} version {} into {}", pluginId, version, installed);
             return installed;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to install plugin " + pluginId + ' ' + version, e);
+        } catch (final IOException | RuntimeException failure) {
+            try { audit.record(Stage.FAILED, phase); }
+            catch (final IOException | RuntimeException auditFailure) { failure.addSuppressed(auditFailure); }
+            if (published) {
+                throw new IllegalStateException("Plugin artifact is published, but its result audit failed", failure);
+            }
+            if (failure instanceof IOException io) { throw new UncheckedIOException("Plugin installation failed at " + phase, io); }
+            throw (RuntimeException) failure;
         }
+    }
+
+    private record VerifiedArtifact(String descriptor, List<String> signers) { }
+
+    private VerifiedArtifact resolveDescriptor(final byte[] jar, final String external) throws IOException {
+        if (policy.requireSignature()) {
+            final var signed = new JarSignatureVerifier(policy).verify(jar);
+            if (external != null && !external.equals(signed.descriptor())) {
+                throw new IOException("External descriptor differs from signed plugin.yaml");
+            }
+            return new VerifiedArtifact(signed.descriptor(), signed.signers());
+        }
+        final String descriptor = external != null ? external : descriptorInside(jar);
+        if (descriptor == null) { throw new IOException("Missing plugin.yaml"); }
+        return new VerifiedArtifact(descriptor, List.of());
     }
 
     /** Removes storage only; the caller must stop any loaded local version first. */
@@ -141,54 +193,48 @@ public class PluginInstaller {
      * @param jar the fetched jar
      * @return the descriptor, or null if the jar does not carry one
      */
-    private static String descriptorInside(final byte[] jar) throws IOException {
+    private String descriptorInside(final byte[] jar) throws IOException {
         try (JarInputStream in = new JarInputStream(new ByteArrayInputStream(jar))) {
             JarEntry entry;
             while ((entry = in.getNextJarEntry()) != null) {
                 if (DESCRIPTOR.equals(entry.getName())) {
-                    return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                    return new String(ArtifactStreams.read(in, 1024 * 1024), StandardCharsets.UTF_8);
                 }
             }
         }
         return null;
     }
 
-    private byte[] fetch(final ArtifactSource source) throws IOException {
+    private record FetchedArtifact(byte[] bytes, URI uri) { }
+
+    private FetchedArtifact fetch(final ArtifactSource source) throws IOException {
         final URI uri = source.uri();
         if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return Files.readAllBytes(Path.of(uri));
+            try (InputStream input = Files.newInputStream(Path.of(uri))) {
+                return new FetchedArtifact(ArtifactStreams.read(input, policy.maxArtifactBytes()), uri);
+            }
         }
         try {
             final HttpRequest request = HttpRequest.newBuilder(uri).timeout(REQUEST_TIMEOUT).GET().build();
             final HttpResponse<InputStream> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() / 100 != 2) {
-                throw new IOException("Fetching " + uri + " returned HTTP " + response.statusCode());
-            }
             try (InputStream body = response.body()) {
-                return body.readAllBytes();
+                if (response.statusCode() / 100 != 2) { throw new IOException("Artifact HTTP status " + response.statusCode()); }
+                return new FetchedArtifact(ArtifactStreams.read(body, policy.maxArtifactBytes()), response.uri());
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while fetching " + uri, e);
+            throw new IOException("Interrupted while fetching artifact", e);
         }
     }
 
     private void verify(final ArtifactSource source, final byte[] jar) throws IOException {
-        if (source.sha1().isEmpty()) {
+        if (source.sha256().isEmpty()) {
+            if (policy.requireSha256()) { throw new IOException("SHA-256 is required by installation policy"); }
             return;
         }
-        final String expected = source.sha1().get().trim().toLowerCase(java.util.Locale.ROOT);
-        final String actual;
-        try {
-            actual = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(jar));
-        } catch (final NoSuchAlgorithmException e) {
-            throw new IOException("SHA-1 is unavailable in this JVM", e);
-        }
-        if (!expected.equals(actual)) {
-            throw new IOException("Checksum mismatch for " + source.uri()
-                                  + ": expected " + expected + " but got " + actual);
+        if (!source.sha256().orElseThrow().equals(ArtifactDigests.sha256(jar))) {
+            throw new IOException("SHA-256 checksum mismatch");
         }
     }
-
 }

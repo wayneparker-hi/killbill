@@ -230,7 +230,7 @@ plugins/my-plugin/
 
 | 命令 | 效果 |
 |---|---|
-| `INSTALL_PLUGIN` | 按 `uri` 属性取 jar，校验 `sha1`，落盘成新版本。**不启动** |
+| `INSTALL_PLUGIN` | 按 `uri` 属性取 jar，校验 `sha256`，落盘成新版本。**不启动** |
 | `START_PLUGIN` | 启动；带 `pluginVersion` 时先启动候选，再提交目标并切换路由 |
 | `STOP_PLUGIN` | 停止（不删文件） |
 | `RESTART_PLUGIN` | 停止再启动，带版本时即为升级 |
@@ -241,7 +241,7 @@ plugins/my-plugin/
 | key | 说明 |
 |---|---|
 | `uri` | **必填**。`file:` 或 `http(s):`。Maven 坐标可用 `ArtifactSource.ofMavenCoordinates` 换算 |
-| `sha1` | 可选，校验不过则整个安装回滚 |
+| `sha256` | 64 位 hex；可由平台要求必填，校验失败不发布。旧 `sha1` 参数拒绝 |
 | `descriptor` | 可选，覆盖默认写入的 `plugin.yaml` |
 
 ### 无空窗升级怎么实现的
@@ -338,3 +338,46 @@ plugins/my-plugin/
 缓存按版本内容 SHA-256 分目录，运行实例只引用本地副本。源版本删除后仍允许其他节点延迟加载类；删除最后版本也保留 selection/revision 和版本内容摘要，避免删装重置修订号或同一版本号换成不同 jar/descriptor；复用同一版本只允许原内容。缓存不自动回收，运维需在节点停止、确认无运行实例引用后清理；不支持直接原地修改已发布版本或手工覆盖 ACTIVE。
 
 TestKit 的 `PluginTestRuntime.shared(sharedRoot, platformServices)` 可创建共享权威仓库、独立缓存的节点；关闭节点不会删除调用方管理的共享根。
+
+
+## 十一、安装完整性、JAR 签名与来源审计
+
+T9 将 `ArtifactSource.sha1()` / `withSha1()` 迁为 `sha256()` / `withSha256()`；三参数构造器的摘要现在只接受 64 位 SHA-256 hex。`INSTALL_PLUGIN` 的旧 `sha1` 参数明确拒绝，即使同时给出 `sha256` 也拒绝。需要重新计算摘要，不能把 SHA-1 值填入新字段：
+
+```bash
+shasum -a 256 plugin.jar
+# Linux 也可使用 sha256sum plugin.jar
+```
+
+以下配置加 `org.killbill.billing.plugin.` 前缀，通过 `PluginRuntimeConfig` 读取：
+
+| 后缀 | 默认值 | 用途 |
+|---|---|---|
+| `installation.requireSha256` | false | 安装时必须提供预期 SHA-256；无论是否必填都记录实际摘要 |
+| `installation.signature.required` | false | 必须验证完整 JAR 签名与 signer 证书 |
+| `installation.signature.trustedCertificates` | 空 | 启用验签时必填，管理员分发的 PEM signer/root 信任证书文件 |
+| `installation.maxArtifactBytes` | 67108864 | file/HTTP 安装包读取上限（64 MiB） |
+| `installation.maxExpandedBytes` | 268435456 | 签名 JAR 解压内容总上限（256 MiB） |
+| `installation.audit.dir` | install.dir/.install-audit | 节点本地审计目录；不可配置到某个插件版本目录 |
+
+签名要求由宿主配置控制，命令属性不能关闭。启用后，JDK 完整读取和验证每个 payload entry；只有标准 manifest / 签名元数据豁免，`META-INF/services` 等内容必须签名。所有 payload 需共享至少一个可信 signer；拒绝 unsigned、部分签名、篡改、重复/歧义路径、过期证书、错误 KU/EKU 以及不可信证书链。使用 PKIX 验证到配置的信任锚；支持显式信任自签名 signer。信任证书路径错误、缺失或无法解析时装配失败。校验采用当前时间，不使用历史签名时间豁免过期；当前离线策略不查询 OCSP/CRL，不宣称验证证书撤销状态。
+
+签名安装拒绝 manifest `Class-Path` 与 `META-INF/INDEX.LIST`，避免 ClassLoader 从包外加载未经验证的依赖。读取签名 JAR 前检查声明的解压总量，并在读取每个 entry 时再次计数；内嵌 descriptor 上限为 1 MiB。这些限制用于约束安装读取，不构成运行时沙箱。
+
+签名模式必须携带已签名 `plugin.yaml`；外部 `descriptor` 只接受与 jar 内完全相同的内容。应先生成最终 jar 和 descriptor，再签名，最后计算 SHA-256；后续任何修改都需要重新签名与更新摘要：
+
+```bash
+jarsigner -keystore signer.p12 -digestalg SHA-256 -sigalg SHA256withRSA plugin.jar signer
+keytool -exportcert -rfc -alias signer -keystore signer.p12 -file trusted-signer.pem
+shasum -a 256 plugin.jar
+```
+
+不要将不明来源 jar 自带的证书直接当作信任锚；PEM 应由部署管理员通过既定渠道配置。私钥与 keystore 密码不要放进节点命令或插件目录。
+
+平台每次进入安装器都会持久化一组 Properties 审计记录，文件名以 operationId、阶段和随机 UUID 组成，原子发布且不覆盖。开始 `STARTED` → 验证 `VERIFIED` → 发布 `PUBLISHED`，失败则追加 `FAILED`。记录 UTC 时间、插件身份、脱敏请求及重定向实际来源、预期/实际 jar SHA-256、descriptor SHA-256、签名策略、可信 signer 证书指纹及固定失败阶段码。拒绝旧参数/无效请求发生在安装器之前，仅记录节点命令失败，不生成安装操作记录。通用库简便构造器使用结构化日志 sink；平台 provider 始终装配文件 sink。
+
+发布前审计写失败会阻止发布。artifact 与审计不处于同一事务：如果发布后写结果失败，调用明确抛出“artifact is published, but its result audit failed”，文件保留；通过 operationId 对照 `VERIFIED` 与仓库内容处理，不能当成回滚完成。进程突停也可能留下只有开始/验证的操作，需核对仓库。
+
+审计目录不会随正常卸载删除；文件写入先 flush/force 再原子 rename，但不保证断电下目录元数据持久化。部署需限制写权限、集中收集并制定保留策略，当前文件不具备防管理员篡改能力。禁止将 audit.dir 放入会随卸载删除的插件/version 子目录；共享模式建议保留默认节点本地目录。安装仍支持未提供 SHA-256 和签名的兼容模式；生产可同时启用两项强制策略。
+
+真实性校验覆盖安装器入口；人工修改仓库、绕过安装器写入后直接发现/启动不在此保证内。应限制仓库写权限。

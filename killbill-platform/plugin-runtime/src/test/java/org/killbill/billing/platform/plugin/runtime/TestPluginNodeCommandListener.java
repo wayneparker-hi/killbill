@@ -226,10 +226,49 @@ public class TestPluginNodeCommandListener {
     public void testInstallWithAWrongChecksumLeavesNothingBehind() {
         listener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0",
                                              Map.of("uri", artifact.toUri().toString(),
-                                                    "sha1", "0".repeat(40))));
+                                                    "sha256", "0".repeat(64))));
 
         assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0")));
         assertTrue(manager.list().isEmpty());
+    }
+
+    @Test(groups = "fast")
+    public void testInstallWithMatchingSha256AndRequiredPolicy() throws Exception {
+        final var repository = new FileSystemPluginRepository(root, new YamlDescriptorParser());
+        final var audit = new java.util.ArrayList<org.killbill.billing.lpr.spi.PluginInstallAudit>();
+        final var secured = new PluginInstaller(repository,
+                new org.killbill.billing.lpr.management.ArtifactVerificationPolicy(true, false, java.util.List.of()), audit::add);
+        final var securedListener = new PluginNodeCommandListener(manager, secured, new NoopPluginsInfoApi(), NoopNodesApi::new);
+        securedListener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of("uri", artifact.toUri().toString())));
+        assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0")));
+        final String digest = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(artifact)));
+        securedListener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0",
+                Map.of("uri", artifact.toUri().toString(), "sha256", digest)));
+        assertTrue(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0/plugin.jar")));
+        assertEquals(audit.get(audit.size() - 1).stage(), org.killbill.billing.lpr.spi.PluginInstallAudit.Stage.PUBLISHED);
+        securedListener.handleKillbillEvent(command("START_PLUGIN", PLUGIN_ID, null, Map.of()));
+        assertTrue(manager.isRunning(PLUGIN_ID));
+    }
+
+    @Test(groups = "fast")
+    public void testLegacySha1IsRejectedEvenWithMatchingSha256() throws Exception {
+        final String digest = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(artifact)));
+        listener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of(
+                "uri", artifact.toUri().toString(), "sha1", "0".repeat(40), "sha256", digest)));
+        assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0")));
+        assertTrue(manager.list().isEmpty());
+    }
+
+    @Test(groups = "fast")
+    public void testUnsignedNodeCommandCannotBypassHostSignatureRequirement() throws Exception {
+        final var signer = org.mockito.Mockito.mock(java.security.cert.X509Certificate.class);
+        final var repository = new FileSystemPluginRepository(root, new YamlDescriptorParser());
+        final var secured = new PluginInstaller(repository,
+                new org.killbill.billing.lpr.management.ArtifactVerificationPolicy(false, true, java.util.List.of(signer)), event -> { });
+        final var securedListener = new PluginNodeCommandListener(manager, secured, new NoopPluginsInfoApi(), NoopNodesApi::new);
+        securedListener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of(
+                "uri", artifact.toUri().toString(), "signature.required", "false")));
+        assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0")));
     }
 
     /**
