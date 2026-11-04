@@ -28,6 +28,7 @@
 | [capability-security-rbac.md](capability-security-rbac.md) | 认证、RBAC 与多租户隔离 |
 | [capability-jaxrs-api.md](capability-jaxrs-api.md) | JAX-REST API 与插件 HTTP 路由 |
 | [capability-metrics-health.md](capability-metrics-health.md) | Micrometer 指标与健康检查 |
+| [capability-release-validation.md](capability-release-validation.md) | 独立数据库与生产 WAR 发布验收 |
 
 ### 插件运行时能力（由 LPR 实现）
 

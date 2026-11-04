@@ -104,3 +104,5 @@ ClassLoader 默认后端改为自研、EventBus 没有抽 port、`org.killbill.b
 - **进度只在一个地方记**：`migration/osgi-to-lpr-plan.md` 的 Phase 状态 + 本文的进度表。不要在多处复制进度，会不一致。
 
 - [进程外插件 PoC](development/process-plugin-poc.md)：Unix socket、独立 JVM、支付授权与故障隔离研究。
+
+- [本地发布验收](development/release-validation.md)：复用 PostgreSQL/Redis，独立数据库、真实 WAR 业务与重启验证。

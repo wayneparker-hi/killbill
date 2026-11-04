@@ -74,7 +74,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
   -Dcheck.skip-duplicate-finder=true -Dcheck.skip-enforcer=true -Dcheck.skip-rat=true
 ```
 
-参考耗时：**73 个模块，3 分 17 秒**（`-T 1C`，依赖已缓存）。
+当前 reactor 为 **95 个项目**；耗时受并发负载和本地依赖缓存影响。
 
 ### 跑测试
 
@@ -82,7 +82,8 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
 ```bash
 mvn test                        # default profile → group: fast
-mvn test -Ptravis               # group: fast,slow
+mvn test -Ptravis               # group: fast,slow，强制 H2
+mvn test -Ppostgresql           # group: fast,slow,postgresql
 mvn test -Pmysql                # group: fast,slow,mysql
 mvn test -Pintegration-mysql    # group: fast,slow,mysql,integration
 ```
@@ -173,8 +174,7 @@ docker exec dev-shared-postgres psql -U dev -d dev -c "ALTER ROLE dev WITH SUPER
 docker exec -i dev-shared-postgres psql -U dev -d killbill < <生成的 ddl.sql>
 ```
 
-> 官方的 `killbill/bin/db-helper` 也能生成，但它依赖 **gnu-getopt**（macOS 自带的 BSD getopt 不行），
-> 且会改写 `~/.pgpass`。本机 `/usr/local/opt/gnu-getopt` 是悬空 symlink，实际没装。
+> 本 fork 不包含上游 `killbill/bin/db-helper`。推荐用 [发布验收入口](release-validation.md) 初始化独立数据库并执行测试，避免改动共用的 `killbill` 库。
 
 **跑测试**：
 
@@ -346,3 +346,7 @@ MySQL 在非严格模式下会给它塞一个空串，PostgreSQL 直接拒绝—
 mvn -fae test -Dtest='!TestInternalCallContextFactory#testCreateInternalCallContextWithAccountRecordIdFromSimpleObjectType' \
               -Dsurefire.failIfNoSpecifiedTests=false
 ```
+
+## 可复现发布验收
+
+[release-validation.md](release-validation.md) 提供全量构建、独立 PostgreSQL 数据库、生产 WAR HTTP 冒烟和重启恢复的一致入口；Redis 当前仅验证 PING。

@@ -28,36 +28,20 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 mvn -B -ff -T 1C clean install -DskipTests
 ```
 
-88 个模块，约 3 分钟。跑测试见[构建环境](development/build-environment.md)——
+当前 reactor 为 95 个项目。跑测试见[构建环境](development/build-environment.md)——
 本机跑 DB 测试需要一串特定参数，缺任何一段都会产生看起来像回归的失败。
 
-### 建库
+### 本地启动与业务验收
+
+复用已有 PostgreSQL / Redis，一条命令完成独立建库、真实 WAR 启动、LPR 插件支付和重启恢复验证：
 
 ```bash
-./killbill/bin/db-helper -a create        # 官方脚本，需要 gnu-getopt
+python3 tools/validation/validate.py
 ```
 
-本机 `gnu-getopt` 常常没装。替代做法见
-[构建环境 · 坑 4](development/build-environment.md#解决用-orbstack-dev-infra-的-postgresql)，
-那里有按正确顺序拼 DDL 的方法（顺序错了表结构就不对）。
+服务仅监听本机随机端口，验收后自动停止；成功时删除本次数据库，失败时保留日志和库名。参数、保留数据库和执行范围见 [发布验收](development/release-validation.md)。
 
-### 起服务器
-
-```bash
-./killbill/bin/start-server -s              # 默认 8080，JMX 8989
-./killbill/bin/start-server -s -p 9090       # 换端口
-./killbill/bin/start-server -s -d            # 开调试端口 12345
-```
-
-它跑的是 `mvn jetty:run`，配置取自
-`killbill/profiles/killbill/src/main/resources/killbill-server.properties`，
-用 `PROPERTIES=/path/to/your.properties` 覆盖。
-
-确认起来了：
-
-```bash
-curl -v http://127.0.0.1:8080/1.0/healthcheck
-```
+本 fork 已没有 `killbill/bin/db-helper` / `start-server`；不要再依赖这些上游脚本。长期运行时，应把构建的 `killbill/profiles/killbill/target/*.war` 部署到兼容 Jakarta Servlet 的容器，使用自己的数据库及 `org.killbill.server.properties` 配置。验收入口提供的是临时验证实例。
 
 ---
 
@@ -129,7 +113,7 @@ curl -X POST http://127.0.0.1:8080/1.0/kb/nodesInfo \
           {"key": "pluginName",    "value": "killbill-stripe"},
           {"key": "pluginVersion", "value": "1.3.0"},
           {"key": "uri",           "value": "file:///tmp/stripe-plugin-1.3.0.jar"},
-          {"key": "sha1",          "value": "..."}
+          {"key": "sha256",          "value": "..."}
         ]
       }'
 ```
@@ -137,7 +121,7 @@ curl -X POST http://127.0.0.1:8080/1.0/kb/nodesInfo \
 | 属性 | |
 |---|---|
 | `uri` | **必填**。`file:` 或 `http(s):` |
-| `sha1` | 可选。校验不过则整个安装回滚，不留残骸 |
+| `sha256` | 可选。校验不过则整个安装回滚，不留残骸 |
 | `descriptor` | 可选。默认用 jar 里自带的 `plugin.yaml` |
 
 **安装不等于启动。** 装完插件是 `INSTALLED`，不提供任何服务。

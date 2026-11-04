@@ -24,6 +24,7 @@ changes/
 
 | 变更 | 主题 | 归档日期 |
 |---|---|---|
+| [archive/lpr-release-validation](archive/lpr-release-validation/ARCHIVED.md) | 独立 PostgreSQL、生产 WAR 业务与重启验收 | 2026-11-04 |
 | [archive/lpr-production-readiness](archive/lpr-production-readiness/ARCHIVED.md) | T1–T11：可观测性、故障隔离、运维一致性及进程外研究 PoC | 2026-11-04 |
 | [archive/osgi-to-lpr](archive/osgi-to-lpr/ARCHIVED.md) | 用 LPR 替换 OSGi/Felix，迁移插件与扩展点 | 2026-10-21 |
 
