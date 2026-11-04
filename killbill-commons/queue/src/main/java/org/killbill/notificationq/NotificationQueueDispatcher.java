@@ -203,7 +203,9 @@ public class NotificationQueueDispatcher extends DefaultQueueLifecycle {
                 isStarted = false;
                 return terminated;
             }
-            return false;
+            // This logical queue stopped successfully; other queues still own the dispatcher.
+            // Shared handler/completion draining is deferred until the last queue stops.
+            return true;
         }
     }
 

@@ -135,14 +135,17 @@ class Validation:
         if self.args.db_host not in ("127.0.0.1", "localhost") or self.args.db_port != 5432:
             raise ValueError("Existing slow DB test helper requires localhost:5432")
         database = self.infrastructure.create(ROOT, "slow-tests", testing=True)
-        properties = " ".join(JVM + [
-            "-Dorg.killbill.billing.dbi.test.postgresql=true", "-Dorg.killbill.billing.dbi.test.useLocalDb=true",
-            f"-Dorg.killbill.billing.dbi.test.localDb.database={database}",
-            f"-Dorg.killbill.billing.dbi.test.localDb.username={self.args.db_user}",
-            f"-Dorg.killbill.billing.dbi.test.localDb.password={self.args.password}"])
         for label, module, tests in (
             ("postgres-account", "killbill/account", "TestAccountDao#testBasic+testMinimalFields"),
-            ("postgres-business", "killbill/beatrix", "TestIntegration#testBasePlanCompleteWithBillingDayInPast")):
+            ("postgres-business", "killbill/beatrix", "TestIntegration#testBasePlanCompleteWithBillingDayInPast"),
+            ("postgres-queue-shutdown", "killbill-commons/queue", "TestNotificationQueueShutdown")):
+            if label == "postgres-queue-shutdown":
+                database = self.infrastructure.create(ROOT, "queue-shutdown")
+            properties = " ".join(JVM + [
+                "-Dorg.killbill.billing.dbi.test.postgresql=true", "-Dorg.killbill.billing.dbi.test.useLocalDb=true",
+                f"-Dorg.killbill.billing.dbi.test.localDb.database={database}",
+                f"-Dorg.killbill.billing.dbi.test.localDb.username={self.args.db_user}",
+                f"-Dorg.killbill.billing.dbi.test.localDb.password={self.args.password}"])
             self.maven(label, "-pl", module, "test", "-Ppostgresql", f"-Dtest={tests}", f"-DsurefireArgLine={properties}")
             self.check_test_reports(label)
 
@@ -189,6 +192,7 @@ class Validation:
                    "-Dorg.killbill.server.properties=" + self.config.as_uri(),
                    "-cp", self.classpath, "WarServer", str(self.war), str(port_file), str(work)]
         log = self.output / f"server-{generation}.log"
+        self.server_log = log
         with log.open("w") as output:
             self.server = subprocess.Popen(command, cwd=self.output, env=self.environment, stdout=output,
                                            stderr=subprocess.STDOUT, start_new_session=True)
@@ -212,6 +216,8 @@ class Validation:
         self.server = None
         if forced:
             raise RuntimeError("WAR needed forced termination")
+        check_queue_shutdown(self.server_log)
+        self.record("queue-shutdown", status="passed", log=str(self.server_log))
 
     def http_smoke(self):
         database = self.infrastructure.create(ROOT, "http")
@@ -251,6 +257,13 @@ class Validation:
 
 def property_value(value):
     return str(value).replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r")
+
+
+def check_queue_shutdown(log):
+    warning = re.search(r"Timed out while shutting down|Stopped queue with \d+ event/notifications non completed",
+                        log.read_text())
+    if warning:
+        raise RuntimeError(f"Queue shutdown did not complete cleanly: {warning.group()}; see {log}")
 
 
 def stop_process(process):

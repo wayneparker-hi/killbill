@@ -29,14 +29,17 @@ python3 tools/validation/validate.py \
 |---|---|
 | 基础设施 | PostgreSQL 版本、Redis PING；不读写 Redis 业务键，不启用 Redis 缓存/时钟 |
 | 构建 | reactor 全量构建与插件 ABI；七项静态检查按项目规约跳过，构建阶段跳过测试 |
-| 数据库回归 | 全新数据库，`TestAccountDao#testBasic+testMinimalFields`（2 项）和 `TestIntegration#testBasePlanCompleteWithBillingDayInPast`（1 项） |
+| 数据库回归 | 全新数据库，账户（2 项）、业务集成（1 项）和 `TestNotificationQueueShutdown`（3 项）；队列验证共享停用、在途排空、真实超时与重启恢复 |
 | 启动 | 另一个全新数据库，部署实际 WAR/web.xml/生产 Guice 装配；只监听 `127.0.0.1` 的随机端口 |
 | 插件与业务 | 从构建产物安装 hello-world；创建租户/账户/支付方式，standard-monthly EVERGREEN 订阅生成发票，手动通过测试插件支付 |
 | 恢复 | 停服后用同一数据库和插件目录再次启动，验证插件 RUNNING、订阅 ACTIVE、发票金额/COMMITTED/余额为零以及唯一 SUCCESS/PURCHASE 交易 |
+| 停机 | 两次停服日志不得有队列 timeout 或未完成记录告警；出现则验收失败并保留数据库 |
 
 测试使用 `postgresql` profile；`travis` profile 强制 H2，不能用于这组 PostgreSQL 验收。DB 参数经 `-DsurefireArgLine` 传入，并保留英文 locale、四个 add-opens。现有测试 DB helper 固定 localhost:5432，脚本拒绝用其他地址运行这组 slow 测试。不同模块顺序执行。
 
 HTTP 冒烟使用生产模式（`server.test.mode=false`），没有替换 Guice 模块或模拟 HTTP 响应。支付通过已有本地成功型 hello-world 插件，不调用外部支付网关；插件交易内存的持久化不在本轮保证范围。发票列表需 `includeInvoiceComponents=true` 才能按实际金额/余额判断应付账单。
+
+多个逻辑通知队列共享调度器，非最后一个队列停止返回成功，只代表逻辑停用；最后一个停止才等待 handler 和完成写库。正常排空后重启的已完成通知不重复；超时后过期的 IN_PROCESSING 记录会由 reaper 恢复，handler 的副作用可能重复，业务仍需幂等。
 
 ## 输出与清理
 
@@ -54,7 +57,7 @@ HTTP 冒烟使用生产模式（`server.test.mode=false`），没有替换 Guice
 python3 -m unittest discover -s tools/validation -p 'test_*.py' -v
 ```
 
-守卫覆盖越权清库、DDL 错误保留、子命令失败/超时、空测试/跳过/错误后端、缺失插件及错误交易/账单状态。新增守卫已逐项临时破坏保护条件确认检出，详见 [验证报告](../../changes/archive/lpr-release-validation/validation.md)。
+守卫覆盖越权清库、DDL 错误保留、子命令失败/超时、空测试/跳过/错误后端、缺失插件、错误交易/账单状态及停机队列异常。初版守卫验证见 [发布验收记录](../../changes/archive/lpr-release-validation/validation.md)；队列修复记录见 [队列停机变更](../../changes/archive/queue-shutdown-drain/validation.md)。
 
 GitHub workflow 在现有全量构建及运行时回归之后，复用 job 的 PostgreSQL 16 / Redis 7 services 执行同一入口（`--skip-build`），上传 JSON 报告与日志。配置了 Linux 验收入口，不等于本机已执行过远端 CI。
 

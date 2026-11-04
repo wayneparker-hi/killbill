@@ -79,6 +79,15 @@ jobs:
             -Dsurefire.failIfNoSpecifiedTests=false -DsurefireArgLine="$TEST_JVM_ARGS"
       - name: Verify acceptance failure guards
         run: python3 -m unittest discover -s tools/validation -p 'test_*.py' -v
+      - name: Verify notification shutdown and completion drain
+        run: >-
+          killbill-mvn -pl killbill-commons/queue test
+          -Dtest=TestQueueCompletionShutdown,TestNotificationQueueShutdown
+          -DsurefireArgLine="-Xmx1024m -Duser.language=en -Duser.country=US
+          --add-opens=java.base/java.lang=ALL-UNNAMED
+          --add-opens=java.base/java.io=ALL-UNNAMED
+          --add-opens=java.base/java.util=ALL-UNNAMED
+          --add-opens=java.base/java.base=ALL-UNNAMED"
       - name: Validate PostgreSQL business flow and production WAR recovery
         run: >-
           python3 tools/validation/validate.py --skip-build

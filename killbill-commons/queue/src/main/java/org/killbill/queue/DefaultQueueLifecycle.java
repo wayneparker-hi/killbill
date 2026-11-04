@@ -219,7 +219,8 @@ public abstract class DefaultQueueLifecycle implements QueueLifecycle {
 
                 while (true) {
 
-                    if (!isCompletingEvents) {
+                    // Handlers stop before completion shutdown. Flush every remaining batch.
+                    if (!isCompletingEvents && completedOrFailedEvents.isEmpty() && retriedEvents.isEmpty()) {
                         break;
                     }
 

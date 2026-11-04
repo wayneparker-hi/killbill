@@ -12,7 +12,7 @@ from unittest.mock import Mock
 
 from infrastructure import Infrastructure
 from http_smoke import check_plugin, verify_business
-from validate import Validation
+from validate import Validation, check_queue_shutdown
 
 
 class ValidationGuards(unittest.TestCase):
@@ -85,6 +85,19 @@ class ValidationGuards(unittest.TestCase):
         api.get = lambda _: [{"pluginKey": "hello-world", "state": "STOPPED"}]
         with self.assertRaises(RuntimeError):
             check_plugin(api)
+
+    def test_queue_shutdown_timeout_and_uncompleted_records_reject_acceptance(self):
+        log = self.output / "shutdown.log"
+        log.write_text("notifications: Completion thread has exited\n")
+        check_queue_shutdown(log)
+        for warning in ("Timed out while shutting down subscription-service:subscription-events queue",
+                        "notifications: Stopped queue with 40 event/notifications non completed"):
+            log.write_text(warning)
+            self.validation.server = Mock(returncode=0)
+            self.validation.server.poll.return_value = 0
+            self.validation.server_log = log
+            with self.assertRaisesRegex(RuntimeError, "Queue shutdown did not complete cleanly"):
+                self.validation.stop_server()
 
     def test_business_recovery_requires_active_subscription_and_exact_paid_amount(self):
         state = {"accountId": "account", "subscriptionPath": "/subscription", "invoiceId": "invoice",

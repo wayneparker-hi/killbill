@@ -685,10 +685,18 @@ lombok 通过内部 API 改写 AST，**版本与 JDK 强耦合**；1.18.22 不�
 |---|---|
 | PostgreSQL slow 测试误用 H2 | `travis` profile 强制 H2；保持同一临时库，仅改为 `postgresql` profile 后 3 项测试通过 |
 | 发票列表金额/余额为零 | 默认响应不含发票组件；增加 `includeInvoiceComponents=true` 后读到实际 100.00 USD 账单，支付与重启恢复通过 |
-| 停服队列超时告警 | 两次进程均在预算内退出，业务恢复通过；仍出现队列 timeout，尚不能保证队列排空或在途任务无损，待专项排查 |
+| 停服队列超时告警 | 后续对照定位：非最后一个逻辑队列成功停用返回 false，调用方误报 timeout；完成线程也会因停止标记提前丢下后续批次。见下节专项记录 |
 | 偶发 PluginsInfoApi 发布告警 | 诊断运行出现一次，最终两次启动均发布 24 项服务；尚未取得单变量根因证据，不认定已修复 |
 
 命令、失败对照、17 项变异守卫及验证边界见 [发布验收记录](../../changes/archive/lpr-release-validation/validation.md)。临时数据库均按本次创建记录中的精确库名清理。
+
+## 七、通知队列停机专项（2026-11-04）
+
+- 根因：`NotificationQueueDispatcher.stopQueue()` 在仍有其他活动队列时返回 false；8 条告警在几毫秒内出现，并未等待默认 15s 超时。修正为逻辑停用成功，最后一个队列仍负责共享资源关闭。
+- 关联缺陷：`CompletionRunnable` 只检查停止标记，会留下超过单批次的完成记录；改为停止且完成/重试队列均为空才退出。
+- 门闩测试在旧实现上分别检出误报、完成批次遗漏与重试批次遗漏；另验证真实 handler 超时仍返回 false、过期 claim 可恢复且可能重复执行。
+- 默认 queue 测试遇到旧 MySQL 测试夹具缺失 ARM64 包：`archive not found: /mysql-Mac_OS_X-aarch64.tar.gz`，日志 `/tmp/killbill-queue-fast.log`；不按业务回归计算通过。
+- 实施、负例和最终验收见 [队列停机变更](../../changes/archive/queue-shutdown-drain/validation.md)。
 
 ---
 

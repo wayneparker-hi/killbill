@@ -52,6 +52,22 @@
 - **WHEN** 插件投递持续失败超过重试次数
 - **THEN** 历史表中有相同 UUID 的 FAILED 记录
 
+### Requirement: 共享通知队列停止结果与完成排空
+
+通知队列 SHALL 区分逻辑队列停用与共享调度器关闭。非最后一个逻辑队列停用成功 MUST 返回 true；最后一个队列停止时按 reaper → 获取线程 → handler → 完成线程关闭，实际超时 MUST 返回 false。完成线程退出前 SHALL 排空已经入队的完成与重试记录。
+
+#### Scenario: 多队列依次停止
+- **WHEN** 两个逻辑队列共享调度器，依次停止
+- **THEN** 第一次停止成功且其他队列仍可处理通知；最后一次等待已开始的 handler 与完成写库，重复停止安全
+
+#### Scenario: 完成批次超过单次处理上限
+- **WHEN** 停止完成线程时仍有多个批次的完成或重试记录
+- **THEN** 所有已入队记录均写库后线程退出，不能仅因停止标记丢下剩余批次
+
+#### Scenario: 真实超时与恢复
+- **WHEN** handler 超过关闭预算，或持久化的待处理通知在重启时仍未完成
+- **THEN** 超时停止返回 false；同库重新注册队列可处理待处理通知，成功完成的通知不因正常重启而重复执行；崩溃恢复仍遵循至少一次语义
+
 ## MODIFIED Requirements
 
 无。
@@ -67,3 +83,5 @@
 | 严格写入 / 注册 / 内存拒绝 | `PersistentBus.postReliable` / `registerReliable` | `TestPersistentPluginEventStorage.testStrictEntryRejectsUninitializedMemorySerializationAndStorageFailures` |
 | 插件持久化恢复 / 重试 / 死信 | `PersistentPluginEventBus`、队列历史表 | `TestPersistentPluginEventStorage`（隔离 H2 文件数据库 + 生产 DDL/DAO） |
 | 停机不静默 ACK | 保留拒绝监听器至总线停止 | `TestPersistentPluginEventStorage.testStoppedAdapterDoesNotSilentlyAcknowledgeQueueDrain` |
+| 共享队列停止 / 超时 / 重启 | `NotificationQueueDispatcher.stopQueue` | `TestNotificationQueueShutdown` |
+| 完成与重试排空 | `DefaultQueueLifecycle.CompletionRunnable` | `TestQueueCompletionShutdown` |
