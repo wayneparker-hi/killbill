@@ -128,6 +128,9 @@ public class TestArchitecturalConstraints {
                                               org.killbill.billing.lpr.api.ServiceRegistry.class,
                                               org.killbill.billing.lpr.api.ServiceApiVersion.class,
                                               org.killbill.billing.lpr.api.EventBus.class,
+                                              org.killbill.billing.lpr.api.DurableEventBus.class,
+                                              org.killbill.billing.lpr.api.DurableEvent.class,
+                                              org.killbill.billing.lpr.api.DurableEventHandler.class,
                                               org.killbill.billing.lpr.api.ResourceRegistry.class)) {
             for (final var method : apiType.getMethods()) {
                 assertNotThirdParty(apiType, method.getReturnType());

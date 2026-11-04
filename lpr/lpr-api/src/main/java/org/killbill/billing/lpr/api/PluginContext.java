@@ -72,12 +72,17 @@ public interface PluginContext {
 
     /**
      * In-process publish/subscribe. Delivery is best-effort within this JVM -- no durability, no
-     * delivery guarantee, no ordering across publishers. Anything needing those belongs on a real
-     * message bus, not here.
+     * delivery guarantee, no ordering across publishers. Use {@link #durableEvents()} when the host
+     * supports persistent delivery.
      *
      * @return the event bus; never null
      */
     EventBus eventBus();
+
+    /** Optional persistent delivery; throws if the host has not enabled this capability. */
+    default DurableEventBus durableEvents() {
+        throw new UnsupportedOperationException("Durable plugin events are not enabled");
+    }
 
     /**
      * Where to hand anything that must be released when the plugin stops: executors, subscriptions,

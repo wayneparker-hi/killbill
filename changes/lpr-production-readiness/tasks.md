@@ -97,14 +97,14 @@
 - **Notes**: 独立接口版本、兼容性 lookup、统一宿主要求和普通/单值/健康检查桥接已实现；94 项目全量构建、22 个 ABI 门禁、268 项目标回归、18 项负例守卫通过。旧注册默认 1.0.0；详见 [t7-validation.md](t7-validation.md)。
 
 ### T8: Event Bus 背压与持久化
-- **Status**: `[ ]` pending
+- **Status**: `[x]` completed
 - **Owner**: TBD
 - **Acceptance Criteria**:
   - 插件事件可选择走 Kill Bill `PersistentBus`。
   - 支持重试与死信队列。
   - 纯内存 EventBus 保留为轻量选项。
 - **Affected Specs**: `capability-event-bus.md`, `capability-notifications-queues.md`
-- **Notes**: 
+- **Notes**: JDK-only 持久化契约、严格数据库确认、平台固定信封、并发准入、版本路由及自动资源释放已完成；真实 H2 文件数据库恢复/重试/FAILED、ClassLoader/GC 与 Guice 装配验证通过。94 项目构建、22 ABI 门禁、284 项回归和 20 项变异守卫通过。默认关闭，要求全部 externalBus 消费节点一致启用；详见 [t8-validation.md](t8-validation.md)。
 
 ### T9: 插件安装安全校验升级
 - **Status**: `[x]` completed
@@ -136,6 +136,13 @@
 - **Notes**: 故障注入、停止执行器 SPI/adapter、超时版本隔离、卸载保护及并发操作已验收；详见 [t11-validation.md](t11-validation.md)。OOM 为显式 Error 注入，不代表真实全局内存耗尽下的进程存活保证。
 
 ---
+
+## T8 执行清单
+
+- [x] 全量构建基线、持久化边界与接口设计
+- [x] 公共契约、严格写入、平台适配与配置
+- [x] 持久化重启/重试/死信、背压、版本路由及卸载验证
+- [x] 负例守卫、全量构建、回归、文档与提交
 
 ## T7 执行清单
 

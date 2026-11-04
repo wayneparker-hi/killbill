@@ -54,6 +54,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     private static final Logger log = LoggerFactory.getLogger(PluginRuntimeService.class);
 
     private final DefaultPluginManager pluginManager;
+    private final PersistentPluginEventBus durableEvents;
     private final PluginRuntimeConfig config;
     private final PluginEventDispatcher eventDispatcher;
     private final PersistentBus externalBus;
@@ -63,6 +64,20 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     private final PluginUpgradeMonitor upgradeMonitor;
     private final PluginStopExecutor stopExecutor;
     private final PluginClusterCoordinator clusterCoordinator;
+
+    public PluginRuntimeService(final DefaultPluginManager pluginManager,
+                                final PluginRuntimeConfig config,
+                                final PluginEventDispatcher eventDispatcher,
+                                @Named("externalBus") final PersistentBus externalBus,
+                                final PluginNodeCommandListener nodeCommandListener,
+                                final PluginInvocationGuard invocationGuard,
+                                final PluginHealthCheckManager healthCheckManager,
+                                final PluginUpgradeMonitor upgradeMonitor,
+                                final PluginStopExecutor stopExecutor,
+                                final PluginClusterCoordinator clusterCoordinator) {
+        this(pluginManager, config, eventDispatcher, externalBus, nodeCommandListener, invocationGuard,
+             healthCheckManager, upgradeMonitor, stopExecutor, clusterCoordinator, null);
+    }
 
     @Inject
     public PluginRuntimeService(final DefaultPluginManager pluginManager,
@@ -74,7 +89,9 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
                                 final PluginHealthCheckManager healthCheckManager,
                                 final PluginUpgradeMonitor upgradeMonitor,
                                 final PluginStopExecutor stopExecutor,
-                                final PluginClusterCoordinator clusterCoordinator) {
+                                final PluginClusterCoordinator clusterCoordinator,
+                                final PersistentPluginEventBus durableEvents) {
+        this.durableEvents = durableEvents;
         this.pluginManager = Objects.requireNonNull(pluginManager, "pluginManager");
         this.config = Objects.requireNonNull(config, "config");
         this.eventDispatcher = Objects.requireNonNull(eventDispatcher, "eventDispatcher");
@@ -128,6 +145,13 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
                       + "could not subscribe to the external bus", e);
         }
 
+        if (durableEvents != null) {
+            try {
+                durableEvents.start();
+            } catch (final PersistentBus.EventBusException e) {
+                throw new IllegalStateException("Configured durable plugin events require a database-backed initialized bus", e);
+            }
+        }
         if (!config.isPluginStartEnabled()) {
             clusterCoordinator.start();
             log.warn("Plugin startup is disabled; {} plugin(s) discovered but none will run",
@@ -156,6 +180,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     @LifecycleHandlerType(LifecycleLevel.STOP_PLUGIN)
     public void stop() {
         clusterCoordinator.stop();
+        if (durableEvents != null) { durableEvents.close(); }
         try {
             externalBus.unregister(nodeCommandListener);
             eventDispatcher.unregister();

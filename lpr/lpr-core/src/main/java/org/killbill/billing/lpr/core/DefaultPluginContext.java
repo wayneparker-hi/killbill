@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.killbill.billing.lpr.api.EventBus;
+import org.killbill.billing.lpr.api.DurableEventBus;
+import org.killbill.billing.lpr.spi.DurableEventBusFactory;
 import org.killbill.billing.lpr.api.PluginConfig;
 import org.killbill.billing.lpr.api.PluginContext;
 import org.killbill.billing.lpr.api.ResourceRegistry;
@@ -40,6 +42,8 @@ import org.killbill.billing.lpr.api.ServiceRegistry;
  */
 public class DefaultPluginContext implements PluginContext {
 
+    private final DurableEventBusFactory durableEventBusFactory;
+    private DurableEventBus durableEventBus;
     private final String pluginId;
     private final String version;
     private final PluginConfig config;
@@ -59,6 +63,14 @@ public class DefaultPluginContext implements PluginContext {
                                 final EventBus eventBus,
                                 final ResourceRegistry resources,
                                 final Map<Class<?>, Object> platformServices) {
+        this(pluginId, version, config, pluginRoot, jarPath, services, eventBus, resources, platformServices, null);
+    }
+
+    public DefaultPluginContext(final String pluginId, final String version, final PluginConfig config,
+                                final Path pluginRoot, final Path jarPath, final ServiceRegistry services,
+                                final EventBus eventBus, final ResourceRegistry resources,
+                                final Map<Class<?>, Object> platformServices, final DurableEventBusFactory durableEventBusFactory) {
+        this.durableEventBusFactory = durableEventBusFactory;
         this.pluginId = Objects.requireNonNull(pluginId, "pluginId");
         this.version = Objects.requireNonNull(version, "version");
         this.config = Objects.requireNonNull(config, "config");
@@ -93,6 +105,17 @@ public class DefaultPluginContext implements PluginContext {
     @Override
     public EventBus eventBus() {
         return eventBus;
+    }
+
+    @Override
+    public synchronized DurableEventBus durableEvents() {
+        if (durableEventBusFactory == null) {
+            throw new UnsupportedOperationException("Durable plugin events are not enabled");
+        }
+        if (durableEventBus == null) {
+            durableEventBus = resources.manage(durableEventBusFactory.open(pluginId, services));
+        }
+        return durableEventBus;
     }
 
     @Override

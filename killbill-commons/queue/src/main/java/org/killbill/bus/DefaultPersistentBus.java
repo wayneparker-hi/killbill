@@ -298,6 +298,31 @@ public class DefaultPersistentBus extends DefaultQueueLifecycle implements Persi
     }
 
     @Override
+    public void registerReliable(final Object handlerInstance) throws EventBusException {
+        requireReliable();
+        eventBusDelegate.register(handlerInstance);
+    }
+
+    @Override
+    public void postReliable(final BusEvent event) throws EventBusException {
+        requireReliable();
+        try {
+            final String json = objectWriter.writeValueAsString(event);
+            final BusEventModelDao entry = new BusEventModelDao(CreatorName.get(), clock.getUTCNow(), event.getClass().getName(), json,
+                                                                event.getUserToken(), event.getSearchKey1(), event.getSearchKey2());
+            dao.insertEntry(entry);
+        } catch (final Exception e) {
+            throw new EventBusException("Failed to persist BusEvent", e);
+        }
+    }
+
+    private void requireReliable() throws EventBusException {
+        if (!isInitialized.get() || config.isInMemory()) {
+            throw new EventBusException("Reliable bus requires initialized database persistence");
+        }
+    }
+
+    @Override
     public void postFromTransaction(final BusEvent event, final Connection connection) throws EventBusException {
         if (!isInitialized.get()) {
             log.warn("Attempting to post event " + event + " in a non initialized bus");

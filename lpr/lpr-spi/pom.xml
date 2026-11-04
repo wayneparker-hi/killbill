@@ -27,11 +27,12 @@
         against them. Keeping the runtime on this side of the boundary is what makes SOFAArk,
         Guava or Micrometer swappable rather than load-bearing (CLAUDE.md, A1).</description>
 
-    <!-- No dependency on lpr-api: none of the ports currently name a plugin-facing type. That is
-         a fact about today's ports rather than a rule. An EventBus provider would return lpr-api's
-         EventBus, and the dependency comes back when one lands. Declaring it before then would be
-         an unused dependency, which the build rejects. -->
     <dependencies>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

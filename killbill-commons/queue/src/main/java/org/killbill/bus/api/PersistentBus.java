@@ -78,6 +78,16 @@ public interface PersistentBus extends QueueLifecycle {
      */
     void post(BusEvent event) throws EventBusException;
 
+    /** Opt-in durable acknowledgement. Legacy/in-memory implementations fail explicitly. */
+    default void postReliable(final BusEvent event) throws EventBusException {
+        throw new EventBusException("Reliable posting is not supported by this bus");
+    }
+
+    /** Strict registration: rejects unavailable or non-persistent implementations. */
+    default void registerReliable(final Object handlerInstance) throws EventBusException {
+        throw new EventBusException("Reliable registration is not supported by this bus");
+    }
+
     /**
      * Post an event from within a transaction.
      * Guarantees that the event is persisted on disk from within the same transaction

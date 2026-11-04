@@ -215,6 +215,19 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
 
     @Provides
     @Singleton
+    org.killbill.billing.lpr.spi.DurableEventBusFactory provideDurableEventBusFactory(final PersistentPluginEventBus bus) {
+        return bus;
+    }
+
+    @Provides
+    @Singleton
+    PersistentPluginEventBus providePersistentPluginEventBus(@jakarta.inject.Named("externalBus") final org.killbill.bus.api.PersistentBus bus,
+                                                            final DefaultServiceRegistry services, final PluginRuntimeConfig config) {
+        return new PersistentPluginEventBus(bus, services, config);
+    }
+
+    @Provides
+    @Singleton
     ClassLoaderPolicy provideClassLoaderPolicy(final PluginRuntimeConfig config) {
         final String extra = config.getExtraParentFirstPackages();
         if (extra == null || extra.isBlank()) {
@@ -309,6 +322,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
     DefaultPluginManager providePluginManager(final PluginRepository repository,
                                               final DefaultServiceRegistry serviceRegistry,
                                               final EventBus eventBus,
+                                              final org.killbill.billing.lpr.spi.DurableEventBusFactory durableEvents,
                                               final ClassLoaderPolicy policy,
                                               final LprMetricsCollector metrics,
                                               final PluginInvocationGuard invocationGuard,
@@ -326,7 +340,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                 serviceRegistry,
                 eventBus,
                 PlatformServices.resolve(injector),
-                metrics, stopExecutor);
+                metrics, stopExecutor, durableEvents);
         final DefaultPluginManager pluginManager = new DefaultPluginManager(repository, lifecycle, serviceRegistry, metrics);
 
         serviceRegistry.setHealthPredicate(healthCheckManager::isHealthy);

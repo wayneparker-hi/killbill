@@ -78,6 +78,7 @@ pom 的关键是**依赖的作用域**，见第五节。
 | `pluginRoot()` / `jarPath()` | 自己的安装目录与 jar。**随 jar 发布的数据文件从这里读** |
 | `services()` | 注册自己提供的服务、查找别的插件提供的服务 |
 | `eventBus()` | 进程内发布订阅（尽力而为，无持久化） |
+| `durableEvents()` | 可选数据库持久化、目标插件/稳定订阅 ID、至少一次消费 |
 | `resources()` | 托管一切需要释放的东西 |
 | `getPlatformService(Class)` | 平台能力，见下表 |
 
@@ -410,3 +411,47 @@ org.killbill.billing.plugin.services.api.requiredVersions=org.killbill.billing.p
 ```
 
 嵌套接口使用 binary name（含 `$`）。配置解析成不可变 map，重复/非法配置启动失败。无版本 lookup 使用此策略；普通、单值和 healthcheck 业务桥接在代理创建/注册前应用相同策略，subtype 按宿主实际消费的接口检查。不兼容 provider 会 warn 并跳过，不进入路由历史；内部 `publishedServices` 仍保留它用于诊断。不兼容服务不会自动令插件启动失败；自动回滚仍依赖升级健康检查。
+
+
+## 持久化插件事件
+
+默认继续使用同步 `context.eventBus()`，生命周期 STARTED 不变。需要重启恢复和失败重试时，宿主设置：
+
+```properties
+org.killbill.billing.plugin.events.durable.enabled=true
+org.killbill.billing.plugin.events.durable.maxPublications=16
+org.killbill.billing.plugin.events.durable.maxDeliveries=16
+org.killbill.billing.plugin.events.durable.maxBytes=2048
+```
+
+这些值限制单节点并发写入、执行中的 handler 和整个序列化信封的 UTF-8 字节数。信封上限只能配置为 1..2048（既有队列表字段预算）；payload 的可用预算还需扣除地址、topic、UUID 与 JSON 转义。超过容量立即抛异常，调用方应按业务策略稍后重试。数据库 backlog 总量没有全局容量上限。
+
+必须使用已初始化的数据库 `externalBus`；内存总线、写库失败、能力未开启均显式拒绝。所有共享该外部队列表的消费者节点须部署相同代码并开启此能力，再发布消息；混合启停或旧节点会忽略无订阅的事件，不支持此部署方式。POLLING 模式会由任意节点消费，目标插件须在所有消费节点可用；离线、无订阅、unhealthy 和执行准入拒绝都会消耗重试预算。
+
+```java
+final DurableEventBus durable = context.durableEvents();
+durable.subscribe("invoice-created-v1", event -> {
+    // 将 event.id() 与业务结果一起记入数据库，重复投递时直接返回。
+    handleIdempotently(event.id(), event.topic(), event.payload());
+});
+durable.publish("invoice-consumer", "invoice-created-v1",
+        new DurableEvent(UUID.randomUUID(), "invoice.created.v1", "{\"invoiceId\":\"123\"}"));
+```
+
+`subscriptionId` 是业务消费者的稳定身份，重启或插件升级不要随实例改变。发布只指定一个消费者，多个消费者需分别发布；没有发布时在线 fanout，也不持久化插件私有类名。payload 为应用自定义文本，业务自行维护 schema。UUID、topic 和 payload 都是 JDK 类型，跨插件 ClassLoader 无第三方序列化契约。
+
+成功返回只确认数据库已接收，不确认 handler 完成；没有顺序和 exactly-once 保证。handler 异常会让队列重试，必须实现业务幂等。订阅自动纳入 ResourceRegistry，关闭可重复调用；停止后 Context 拒绝新增订阅/发布，清除回调与 ClassLoader 引用。执行中的调用可以完成。升级/回滚沿用 ServiceRegistry 的版本、staging 与健康选择，每条记录仅选择一个可见 handler。
+
+重试、worker、队列和历史保留配置复用 `org.killbill.persistent.bus.external.*`（默认 instanceName 为 external，表为 bus_ext_events / bus_ext_events_history，以宿主配置为准），包括 `max.failure.retry`、`nbThreads`、`queue.capacity`、`queue.mode`。持续失败进入相应 `historyTableName` 的 `processing_state='FAILED'`。停机时保留宿主拒绝监听器直到总线停止，防止无订阅被静默 ACK；停机期间达到重试上限的消息也可能成为死信。
+
+排查时对实际外部历史表执行只读查询（示意，不是新增自动运维入口）：
+
+```sql
+SELECT record_id, user_token, created_date, error_count, event_json
+FROM bus_ext_events_history
+WHERE processing_state = 'FAILED'
+  AND class_name = 'org.killbill.billing.platform.plugin.runtime.PersistentPluginEvent'
+ORDER BY record_id DESC;
+```
+
+`user_token` 为消息 UUID。既有历史查询 API 不返回 processing_state，不能据此识别死信。人工确认失败原因和业务幂等后，通过同一 durable API 使用原 UUID 重新发布；没有自动重放端点。消息内容会进入现有队列存储与诊断日志，请按部署的数据访问和保留策略管理。

@@ -22,6 +22,11 @@ package org.killbill.billing.platform.plugin.runtime;
  */
 public class TestPluginRuntimeConfig implements PluginRuntimeConfig {
 
+    @Override public boolean isPluginDurableEventsEnabled() { return false; }
+    @Override public int getPluginDurableEventMaxPublications() { return 16; }
+    @Override public int getPluginDurableEventMaxDeliveries() { return 16; }
+    @Override public int getPluginDurableEventMaxBytes() { return 2048; }
+
     @Override
     public String getPluginInstallDir() {
         return "/tmp/plugins";

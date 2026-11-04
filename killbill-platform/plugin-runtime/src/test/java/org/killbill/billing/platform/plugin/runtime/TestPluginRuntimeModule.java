@@ -218,9 +218,79 @@ public class TestPluginRuntimeModule {
         }
     }
 
+    @Test(groups = "fast")
+    public void testDurableEventConfigurationFactoryAndLifecycleAreWired() throws Exception {
+        final var bus = org.mockito.Mockito.mock(PersistentBus.class);
+        final var source = new DefaultKillbillConfigSource(Map.of(
+                "org.killbill.billing.plugin.install.dir", configSource.getString("org.killbill.billing.plugin.install.dir"),
+                "org.killbill.billing.plugin.events.durable.enabled", "true",
+                "org.killbill.billing.plugin.events.durable.maxBytes", "300",
+                "org.killbill.billing.plugin.start.enabled", "false"));
+        final var injector = createInjector(source, bus);
+        final var runtime = injector.getInstance(PluginRuntimeService.class);
+        runtime.initialize();
+        try {
+            runtime.start();
+            final var adapter = injector.getInstance(PersistentPluginEventBus.class);
+            assertSame(injector.getInstance(org.killbill.billing.lpr.spi.DurableEventBusFactory.class), adapter);
+            org.mockito.Mockito.verify(bus).registerReliable(adapter);
+            final var registry = injector.getInstance(org.killbill.billing.lpr.core.DefaultServiceRegistry.class);
+            final var scope = adapter.open("sender", registry.forPlugin("sender", "1.0.0"));
+            final var event = TestPersistentPluginEventBus.envelope("target", "jobs");
+            scope.publish("target", "jobs", event.message());
+            org.mockito.Mockito.verify(bus).postReliable(org.mockito.ArgumentMatchers.any());
+            org.testng.Assert.assertThrows(IllegalArgumentException.class, () -> scope.publish("target", "jobs",
+                    new org.killbill.billing.lpr.api.DurableEvent(java.util.UUID.randomUUID(), "test", "x".repeat(301))));
+            scope.close();
+        } finally { runtime.stop(); }
+        org.testng.Assert.assertThrows(IllegalStateException.class, () -> injector.getInstance(PersistentPluginEventBus.class)
+                .open("sender", injector.getInstance(org.killbill.billing.lpr.core.DefaultServiceRegistry.class).forPlugin("sender", "1.0.0")));
+    }
+
+    @Test(groups = "fast")
+    public void testModuleStartsRealDurablePluginAndReleasesSubscription() throws Exception {
+        final Path root = Files.createTempDirectory("lpr-durable-module-");
+        final Path version = Files.createDirectories(root.resolve("target/1.0.0"));
+        final String entrypoint = "org.killbill.billing.plugin.durable.ModulePlugin";
+        new org.killbill.billing.lpr.testkit.PluginJarBuilder().build(Map.of(entrypoint, """
+                package org.killbill.billing.plugin.durable;
+                import org.killbill.billing.lpr.api.*;
+                public final class ModulePlugin implements Plugin {
+                    public void start(PluginContext context) {
+                        context.durableEvents().subscribe("jobs", event -> {});
+                    }
+                    public void stop() {}
+                }
+                """), version.resolve("plugin.jar"));
+        Files.writeString(version.resolve("plugin.yaml"), "id: target\nname: target\nversion: 1.0.0\nentrypoint: " + entrypoint + "\n");
+        final var source = new DefaultKillbillConfigSource(Map.of(
+                "org.killbill.billing.plugin.install.dir", root.toString(),
+                "org.killbill.billing.plugin.events.durable.enabled", "true",
+                "org.killbill.billing.plugin.mandatory.plugins", "target"));
+        final var injector = createInjector(source, org.mockito.Mockito.mock(PersistentBus.class));
+        final var runtime = injector.getInstance(PluginRuntimeService.class);
+        final var registry = injector.getInstance(org.killbill.billing.lpr.core.DefaultServiceRegistry.class);
+        try {
+            runtime.initialize();
+            runtime.start();
+            org.testng.Assert.assertEquals(registry.getServices(org.killbill.billing.lpr.api.DurableEventHandler.class).size(), 1);
+            injector.getInstance(PersistentPluginEventBus.class).onEvent(TestPersistentPluginEventBus.envelope("target", "jobs"));
+        } finally {
+            runtime.stop();
+            try (var paths = Files.walk(root)) {
+                for (final var path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) { Files.deleteIfExists(path); }
+            }
+        }
+        org.testng.Assert.assertTrue(registry.getServices(org.killbill.billing.lpr.api.DurableEventHandler.class).isEmpty());
+    }
+
     private Injector createInjector() { return createInjector(configSource); }
 
     private Injector createInjector(final KillbillConfigSource source) {
+        return createInjector(source, stub(PersistentBus.class));
+    }
+
+    private Injector createInjector(final KillbillConfigSource source, final PersistentBus bus) {
         return Guice.createInjector(Stage.PRODUCTION,
                                     new PluginRuntimeModule(source),
                                     binder -> {
@@ -234,7 +304,7 @@ public class TestPluginRuntimeModule {
                                         // rather than mocked because this test never fires an event.
                                         binder.bind(PersistentBus.class)
                                               .annotatedWith(Names.named("externalBus"))
-                                              .toInstance(stub(PersistentBus.class));
+                                              .toInstance(bus);
                                         binder.bind(NotificationQueueService.class)
                                               .toInstance(stub(NotificationQueueService.class));
                                         binder.bind(org.killbill.clock.Clock.class).toInstance(new DefaultClock());

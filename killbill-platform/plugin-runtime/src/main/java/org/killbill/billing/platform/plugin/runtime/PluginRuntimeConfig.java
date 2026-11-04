@@ -34,6 +34,23 @@ import org.skife.config.Description;
  */
 public interface PluginRuntimeConfig extends KillbillPlatformConfig {
 
+    @Config("org.killbill.billing.plugin.events.durable.enabled")
+    @Default("false")
+    @Description("Enable on all externalBus consumer nodes; requires a database-backed external bus")
+    boolean isPluginDurableEventsEnabled();
+
+    @Config("org.killbill.billing.plugin.events.durable.maxPublications")
+    @Default("16")
+    int getPluginDurableEventMaxPublications();
+
+    @Config("org.killbill.billing.plugin.events.durable.maxDeliveries")
+    @Default("16")
+    int getPluginDurableEventMaxDeliveries();
+
+    @Config("org.killbill.billing.plugin.events.durable.maxBytes")
+    @Default("2048")
+    int getPluginDurableEventMaxBytes();
+
     @Config("org.killbill.billing.plugin.install.dir")
     @Default("/var/tmp/bundles")
     @Description("Root directory holding installed plugins, one sub-directory per plugin id")

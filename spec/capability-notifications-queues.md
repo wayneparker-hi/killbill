@@ -36,6 +36,22 @@
 - **IF** 多个订阅者中一个抛异常
 - **THEN** 其他订阅者仍正常处理，失败事件进入重试/死信
 
+### Requirement: 可确认的持久化入口
+
+`PersistentBus.postReliable` 和 `registerReliable` SHALL 为可选严格入口，默认拒绝不支持的实现；数据库实现仅在初始化且非内存模式接受。写入失败 MUST 向调用方传播；旧 `post` 的兼容行为保留。
+
+#### Scenario: 严格写入失败
+- **WHEN** 使用未初始化、内存或写库失败的总线
+- **THEN** 严格入口抛出 EventBusException
+
+### Requirement: 插件事件失败历史
+
+持久化插件信封 SHALL 复用 PersistentBus 的重试及 `*_history.processing_state=FAILED`；运维按信封 class_name 与 UUID 查询死信。历史查询 API 不含 processing_state，不得用它判断死信。
+
+#### Scenario: 失败持久化
+- **WHEN** 插件投递持续失败超过重试次数
+- **THEN** 历史表中有相同 UUID 的 FAILED 记录
+
 ## MODIFIED Requirements
 
 无。
@@ -48,3 +64,6 @@
 | 至少一次 | `InMemoryPersistentBus` 测试 / DB 表 `bus_events` | `TestEventBase` |
 | 通知队列 | `DefaultNotificationQueue` / `NotificationEvent` | `TestNotificationQueue` |
 | handler 隔离 | `DefaultPersistentBus.deliverEvent` catch 块 | `TestBus` |
+| 严格写入 / 注册 / 内存拒绝 | `PersistentBus.postReliable` / `registerReliable` | `TestPersistentPluginEventStorage.testStrictEntryRejectsUninitializedMemorySerializationAndStorageFailures` |
+| 插件持久化恢复 / 重试 / 死信 | `PersistentPluginEventBus`、队列历史表 | `TestPersistentPluginEventStorage`（隔离 H2 文件数据库 + 生产 DDL/DAO） |
+| 停机不静默 ACK | 保留拒绝监听器至总线停止 | `TestPersistentPluginEventStorage.testStoppedAdapterDoesNotSilentlyAcknowledgeQueueDrain` |

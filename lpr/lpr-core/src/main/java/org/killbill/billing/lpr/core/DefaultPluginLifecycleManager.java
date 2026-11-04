@@ -23,6 +23,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.killbill.billing.lpr.api.EventBus;
+import org.killbill.billing.lpr.spi.DurableEventBusFactory;
 import org.killbill.billing.lpr.api.Plugin;
 import org.killbill.billing.lpr.api.PluginContext;
 import org.killbill.billing.lpr.api.PluginHealthCheck;
@@ -65,6 +66,7 @@ public class DefaultPluginLifecycleManager {
     private final ClassLoader parentClassLoader;
     private final DefaultServiceRegistry serviceRegistry;
     private final EventBus eventBus;
+    private final DurableEventBusFactory durableEventBusFactory;
     private final Map<Class<?>, Object> platformServices;
     private final LprMetricsCollector metrics;
     private final PluginStopExecutor stopExecutor;
@@ -87,6 +89,15 @@ public class DefaultPluginLifecycleManager {
                                          final Map<Class<?>, Object> platformServices,
                                          final LprMetricsCollector metrics,
                                          final PluginStopExecutor stopExecutor) {
+        this(classLoaderFactory, policy, parentClassLoader, serviceRegistry, eventBus, platformServices, metrics, stopExecutor, null);
+    }
+
+    public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory, final ClassLoaderPolicy policy,
+                                         final ClassLoader parentClassLoader, final DefaultServiceRegistry serviceRegistry,
+                                         final EventBus eventBus, final Map<Class<?>, Object> platformServices,
+                                         final LprMetricsCollector metrics, final PluginStopExecutor stopExecutor,
+                                         final DurableEventBusFactory durableEventBusFactory) {
+        this.durableEventBusFactory = durableEventBusFactory;
         this.classLoaderFactory = Objects.requireNonNull(classLoaderFactory, "classLoaderFactory");
         this.policy = Objects.requireNonNull(policy, "policy");
         this.parentClassLoader = Objects.requireNonNull(parentClassLoader, "parentClassLoader");
@@ -141,7 +152,7 @@ public class DefaultPluginLifecycleManager {
                     new PluginServiceScope(serviceRegistry, runtime.pluginId(), runtime.version()),
                     eventBus,
                     resources,
-                    platformServices);
+                    platformServices, durableEventBusFactory);
 
             runtime.loaded(handle, instance, context, resources);
             runWithPluginClassLoader(handle.classLoader(), () -> instance.start(context));
