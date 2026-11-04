@@ -50,5 +50,5 @@ public record PersistentPluginEvent(int schemaVersion, String sourcePluginId, St
     public Long getSearchKey1() { return null; }
     @Override
     @JsonIgnore
-    public Long getSearchKey2() { return null; }
+    public Long getSearchKey2() { return 0L; }
 }

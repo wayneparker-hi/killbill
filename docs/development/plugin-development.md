@@ -442,6 +442,8 @@ durable.publish("invoice-consumer", "invoice-created-v1",
 
 成功返回只确认数据库已接收，不确认 handler 完成；没有顺序和 exactly-once 保证。handler 异常会让队列重试，必须实现业务幂等。订阅自动纳入 ResourceRegistry，关闭可重复调用；停止后 Context 拒绝新增订阅/发布，清除回调与 ClassLoader 引用。执行中的调用可以完成。升级/回滚沿用 ServiceRegistry 的版本、staging 与健康选择，每条记录仅选择一个可见 handler。
 
+真实 PostgreSQL 故障验收见 [发布验收](release-validation.md)。确认前崩溃可导致同 UUID 再次执行 handler；可将消息 UUID 的唯一记录与业务修改放在同一事务中，实现业务去重。夹具的唯一键只演示这一责任，不会让队列变为 exactly-once。信封的 `search_key2=0` 是平台非空索引的中性值，不携带业务租户授权；租户身份与权限需在业务协议中另行验证。
+
 重试、worker、队列和历史保留配置复用 `org.killbill.persistent.bus.external.*`（默认 instanceName 为 external，表为 bus_ext_events / bus_ext_events_history，以宿主配置为准），包括 `max.failure.retry`、`nbThreads`、`queue.capacity`、`queue.mode`。持续失败进入相应 `historyTableName` 的 `processing_state='FAILED'`。停机时保留宿主拒绝监听器直到总线停止，防止无订阅被静默 ACK；停机期间达到重试上限的消息也可能成为死信。
 
 排查时对实际外部历史表执行只读查询（示意，不是新增自动运维入口）：

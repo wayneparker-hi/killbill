@@ -59,6 +59,7 @@ public class TestPersistentPluginEventBus {
             scope.publish("consumer", "invoices", message);
             final var captured = org.mockito.ArgumentCaptor.forClass(PersistentPluginEvent.class);
             verify(bus).postReliable(captured.capture());
+            assertEquals(captured.getValue().getSearchKey2(), Long.valueOf(0), "Core external queue requires a non-null search_key2");
             verify(bus, never()).post(any());
             final String json = QueueObjectMapper.get().writeValueAsString(captured.getValue());
             assertFalse(json.contains("@class"));

@@ -700,6 +700,15 @@ lombok 通过内部 API 改写 AST，**版本与 JDK 强耦合**；1.18.22 不�
 
 ---
 
+## 八、PostgreSQL durableEvents（2026-11-04）
+
+- 真实外部队列表 `search_key2 NOT NULL`，但固定信封返回 null，严格发布报 PostgreSQL 23502；旧 H2 测试使用的通用 DDL 允许空值。修正为中性值 0，并补生产 DDL 下的进程故障测试。
+- reaper 会将过期 claim 归档为 REAPED，再以同 UUID 重投；恢复后的历史可同时有 REAPED 与 PROCESSED，不能假设 UUID 对应唯一历史行。
+- 发布后 halt、新 JVM 消费、业务效果提交后确认前 halt、真实表锁超时均在独立验收库验证；没有停止共享数据库或变更角色。
+- 证据、变异及验证边界见 [durableEvents 验证](../../changes/archive/durable-events-postgresql/validation.md)。
+
+---
+
 ## 附：文档职责划分
 
 避免同一件事记在多处后不一致：

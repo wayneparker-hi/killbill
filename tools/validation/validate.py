@@ -138,13 +138,15 @@ class Validation:
         for label, module, tests in (
             ("postgres-account", "killbill/account", "TestAccountDao#testBasic+testMinimalFields"),
             ("postgres-business", "killbill/beatrix", "TestIntegration#testBasePlanCompleteWithBillingDayInPast"),
-            ("postgres-queue-shutdown", "killbill-commons/queue", "TestNotificationQueueShutdown")):
-            if label == "postgres-queue-shutdown":
-                database = self.infrastructure.create(ROOT, "queue-shutdown")
+            ("postgres-queue-shutdown", "killbill-commons/queue", "TestNotificationQueueShutdown"),
+            ("postgres-durable-events", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEvents")):
+            if label in ("postgres-queue-shutdown", "postgres-durable-events"):
+                database = self.infrastructure.create(ROOT, label)
             properties = " ".join(JVM + [
                 "-Dorg.killbill.billing.dbi.test.postgresql=true", "-Dorg.killbill.billing.dbi.test.useLocalDb=true",
                 f"-Dorg.killbill.billing.dbi.test.localDb.database={database}",
                 f"-Dorg.killbill.billing.dbi.test.localDb.username={self.args.db_user}",
+                f'-Dorg.killbill.billing.dbi.test.localDb.output="{self.output}"',
                 f"-Dorg.killbill.billing.dbi.test.localDb.password={self.args.password}"])
             self.maven(label, "-pl", module, "test", "-Ppostgresql", f"-Dtest={tests}", f"-DsurefireArgLine={properties}")
             self.check_test_reports(label)

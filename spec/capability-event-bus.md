@@ -48,6 +48,7 @@
 
 插件 MAY 使用 `PluginContext.durableEvents()`。宿主未启用时 MUST 显式拒绝；现有 `eventBus()` 与生命周期事件保持同步内存分发。
 持久化消息 MUST 只有平台加载的固定信封及 JDK 数据（消息 UUID、topic、文本 payload），不得反序列化插件私有类型。
+信封 SHALL 兼容 Kill Bill 外部队列表的非空 search_key2，使用平台中性值 0；此索引不表达业务租户授权。
 发布 MUST 指定目标 pluginId 与稳定 subscriptionId；发布成功仅表示数据库已接收，消费至少一次，插件 MUST 按消息 UUID 幂等。不保证顺序或 exactly-once。
 
 #### Scenario: 离线后重启消费
@@ -57,6 +58,18 @@
 #### Scenario: 严格发布失败
 - **WHEN** 总线未初始化、使用内存实现、序列化失败或数据库写入失败
 - **THEN** 持久化发布显式失败，不得返回成功
+
+#### Scenario: PostgreSQL 发布后进程退出
+- **WHEN** 严格发布已返回成功，发布进程在消费前立即退出
+- **THEN** 新 JVM 使用同库和相同订阅可消费原消息，UUID/topic/payload 不变，队列记录最终为 PROCESSED
+
+#### Scenario: PostgreSQL 消费确认前崩溃
+- **WHEN** handler 已提交业务副作用，但进程在队列完成确认前退出
+- **THEN** IN_PROCESSING 记录在 claim 过期后由生产 reaper 恢复，新 JVM 再次收到相同 UUID；按 UUID 去重的业务副作用只保留一次，不承诺 handler 只调用一次
+
+#### Scenario: PostgreSQL 写入受阻
+- **WHEN** 独立验收库中的目标表被另一事务锁住，发布连接达到 lock_timeout
+- **THEN** 严格发布显式失败且没有消息被误接收；释放锁后可重新发布并消费
 
 ### Requirement: 有界准入与持久化失败处理
 
@@ -96,5 +109,6 @@
 | 固定持久化信封 / 严格发布 | `DurableEventBus` / `PersistentPluginEventBus` / `PersistentPluginEvent` | `TestPersistentPluginEventBus`、`TestPersistentPluginEventStorage` |
 | 发布 / 投递背压 | adapter semaphore、信封 UTF-8 字节预算 | `TestPersistentPluginEventBus.testPublicationBackpressureAndPermitRelease`、`testDeliveryBackpressureAndTcclRestoration` |
 | 重启 / 重试 / FAILED | `DefaultPersistentBus.postReliable`、队列 dispatcher / 历史表 | `TestPersistentPluginEventStorage` |
+| PostgreSQL 进程退出 / 确认前崩溃 / 写入失败 | 同生产 external bus 表、reaper、固定信封与 adapter | `ITPostgresqlDurableEvents`、`DurableEventsCrashWorker` |
 | 版本选择 / 资源释放 / TCCL | `DurablePluginEventScope`、ServiceRegistry、ResourceRegistry | `TestPersistentPluginEventBus.testVersionSelectionRollbackAndOldCleanup`、`TestDurablePluginEventIsolation` |
 | 平台装配 / 生命周期 | `PluginRuntimeModule` / `PluginRuntimeService` | `TestPluginRuntimeModule.testModuleStartsRealDurablePluginAndReleasesSubscription` |

@@ -30,11 +30,16 @@
 - **WHEN** 真实 WAR 停服日志出现队列 timeout 或已完成记录尚未排空的告警
 - **THEN** 验收失败、保留数据库与日志；进程已退出不能单独作为排空成功的依据
 
+#### Scenario: 持久化插件事件的进程故障
+- **WHEN** 独立 PostgreSQL 验收运行发布后退出、确认前崩溃、重试/死信与真实写锁超时测试
+- **THEN** 子 JVM 故障退出码、消息身份、队列状态与幂等业务结果均须符合预期；保留子进程日志且不上传连接密码
+
 ## 实现与验证对照
 
 | Requirement | 实现 | 验证 |
 |---|---|---|
 | 隔离数据与 DDL | `tools/validation/infrastructure.py` | `ValidationGuards`、真实 PostgreSQL DDL 错误/事务回滚探针 |
 | 真实启动与恢复 | `WarServer.java`、`http_smoke.py` | `validate.py` HTTP 业务与重启冒烟、`ValidationGuards` 失败结果守卫 |
-| 结果与退出码 | `tools/validation/validate.py` | PostgreSQL 6 项目标测试、`ValidationGuards`、SIGTERM 实际进程探针 |
+| 结果与退出码 | `tools/validation/validate.py` | PostgreSQL 10 项目标测试、`ValidationGuards`、SIGTERM 实际进程探针 |
 | 停机异常传播 | `Validation.stop_server` / `check_queue_shutdown` | `ValidationGuards.test_queue_shutdown_timeout_and_uncompleted_records_reject_acceptance` |
+| 插件事件进程故障 | PostgreSQL 独立库与外部队列 | `ITPostgresqlDurableEvents`、`DurableEventsWorkerProcess` |
