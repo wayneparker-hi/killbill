@@ -24,9 +24,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.killbill.billing.lpr.api.PluginHealthCheck;
+import org.killbill.billing.lpr.api.ServiceApiVersion;
 import org.killbill.billing.lpr.api.ServiceReference;
 import org.killbill.billing.lpr.core.ServiceRegistryListener;
 import org.killbill.billing.platform.plugin.api.DefaultPluginServiceDescriptor;
@@ -70,6 +72,7 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
     private final PluginHealthCheckManager healthCheckManager;
     private final PluginInvocationGuard guard;
     private final Predicate<ServiceReference<?>> visible;
+    private final Function<Class<?>, ServiceApiVersion> apiRequirements;
     private final Map<RouteKey, RoutedRegistration> currentRoutes = new HashMap<>();
 
     /*
@@ -137,6 +140,18 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
                                        final PluginHealthCheckManager healthCheckManager,
                                        final PluginInvocationGuard guard,
                                        final Predicate<ServiceReference<?>> visible) {
+        this(registries, singleRegistries, healthcheckRegistry, healthCheckManager, guard, visible,
+             type -> ServiceApiVersion.LEGACY);
+    }
+
+    public KillbillPluginServiceBridge(final List<PluginServiceRegistry<?>> registries,
+                                       final List<SinglePluginServiceRegistry<?>> singleRegistries,
+                                       final PluginServiceRegistry<Healthcheck> healthcheckRegistry,
+                                       final PluginHealthCheckManager healthCheckManager,
+                                       final PluginInvocationGuard guard,
+                                       final Predicate<ServiceReference<?>> visible,
+                                       final Function<Class<?>, ServiceApiVersion> apiRequirements) {
+        this.apiRequirements = Objects.requireNonNull(apiRequirements, "apiRequirements");
         this.registries = List.copyOf(withoutNulls(registries));
         this.singleRegistries = List.copyOf(withoutNulls(singleRegistries));
         this.healthcheckRegistry = healthcheckRegistry;
@@ -174,20 +189,31 @@ public class KillbillPluginServiceBridge implements ServiceRegistryListener {
 
         final Optional<PluginServiceRegistry<?>> registry = findRegistryFor(reference.type());
         if (registry.isPresent()) {
+            if (!compatible(reference, registry.get().getServiceType())) { return; }
             route(reference, register(registry.get(), reference, registrationName));
             return;
         }
         final Optional<SinglePluginServiceRegistry<?>> single = findSingleRegistryFor(reference.type());
         if (single.isPresent()) {
+            if (!compatible(reference, single.get().getServiceType())) { return; }
             route(reference, registerSingle(single.get(), reference, registrationName));
             return;
         }
         if (healthcheckRegistry != null && reference.type() == PluginHealthCheck.class) {
+            if (!compatible(reference, PluginHealthCheck.class)) { return; }
             route(reference, registerHealthcheck(reference, registrationName));
             return;
         }
         log.debug("Plugin {} published {}, which this deployment does not consume",
                   reference.pluginId(), reference.type().getName());
+    }
+
+    private boolean compatible(final ServiceReference<?> reference, final Class<?> consumedType) {
+        final ServiceApiVersion required = Objects.requireNonNull(apiRequirements.apply(consumedType), "required API version");
+        if (reference.apiVersion().supports(required)) { return true; }
+        log.warn("Ignoring incompatible service {} from plugin {} {}: API {}, required {}",
+                 consumedType.getName(), reference.pluginId(), reference.version(), reference.apiVersion(), required);
+        return false;
     }
 
     @Override

@@ -236,6 +236,47 @@ public class TestKillbillPluginServiceBridge {
         assertEquals(host.getService().charge(), "first");
     }
 
+    @Test(groups = "fast")
+    public void testIncompatibleNormalRouteNeverEntersHistoryOrRevivesOnRefresh() {
+        runtimeRegistry.register("acme", "1.0.0", Gateway.class, () -> "old", Map.of());
+        runtimeRegistry.register("acme", "2.0.0", Gateway.class, () -> { throw new AssertionError("incompatible called"); },
+                Map.of(org.killbill.billing.lpr.api.ServiceApiVersion.PROPERTY, "2.0.0"));
+        assertEquals(gatewayRegistry.getServiceForName("acme").charge(), "old");
+        runtimeRegistry.refreshVisibility();
+        assertEquals(gatewayRegistry.getServiceForName("acme").charge(), "old");
+        runtimeRegistry.unregisterAll("acme", "1.0.0");
+        runtimeRegistry.refreshVisibility();
+        assertNull(gatewayRegistry.getServiceForName("acme"));
+    }
+
+    @Test(groups = "fast")
+    public void testSingleAndHealthcheckRoutesRejectIncompatibleContracts() {
+        final var services = new DefaultServiceRegistry();
+        final var single = new RecordingSingle();
+        final var health = new RecordingRegistry<Healthcheck>(Healthcheck.class);
+        services.addListener(new KillbillPluginServiceBridge(List.of(), List.of(single), health, null, null));
+        final var props = Map.<String, Object>of(org.killbill.billing.lpr.api.ServiceApiVersion.PROPERTY, "2.0.0");
+        services.register("single", "1.0.0", Gateway.class, () -> "wrong", props);
+        services.register("probe", "1.0.0", PluginHealthCheck.class, () -> { throw new AssertionError("wrong probe"); }, props);
+        services.refreshVisibility();
+        assertNull(single.getService());
+        assertTrue(health.getAllServices().isEmpty());
+    }
+
+    @Test(groups = "fast")
+    public void testSubtypeUsesHostConsumerTypeRequirement() {
+        final var required = org.killbill.billing.lpr.api.ServiceApiVersion.parse("1.2.0");
+        final var services = new DefaultServiceRegistry(null, Map.of(Gateway.class.getName(), required));
+        final var host = new RecordingRegistry<Gateway>(Gateway.class);
+        services.addListener(new KillbillPluginServiceBridge(List.of(host), List.of(), null, null, null,
+                services::isVisible, services::requiredApiVersion));
+        services.forPlugin("old", "99.0.0").register(PremiumGateway.class, () -> "old");
+        assertTrue(host.getAllServices().isEmpty());
+        services.forPlugin("current", "1.0.0").register(PremiumGateway.class, () -> "ok", required, Map.of());
+        assertEquals(host.getServiceForName("current").charge(), "ok");
+        assertEquals(host.getAllServices(), Set.of("current"));
+    }
+
     private static final class RecordingSingle implements org.killbill.billing.platform.plugin.api.SinglePluginServiceRegistry<Gateway> {
         private Gateway service;
         @Override public void registerService(final PluginServiceDescriptor descriptor, final Gateway service) { this.service = service; }

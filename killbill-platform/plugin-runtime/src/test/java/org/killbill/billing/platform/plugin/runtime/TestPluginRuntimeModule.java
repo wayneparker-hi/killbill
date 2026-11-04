@@ -188,6 +188,36 @@ public class TestPluginRuntimeModule {
         }
     }
 
+    @Test(groups = "fast")
+    public void testServiceApiRequirementConfigurationReachesRegistry() throws Exception {
+        final Path root = Files.createTempDirectory("lpr-api-requirements-");
+        try {
+            final var source = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", root.toString(),
+                    "org.killbill.billing.plugin.services.api.requiredVersions", Runnable.class.getName() + "=1.2.0," + NotificationPluginApi.class.getName() + "=1.2.0"));
+            final var injector = createInjector(source);
+            final var store = injector.getInstance(org.killbill.billing.lpr.core.DefaultServiceRegistry.class);
+            org.testng.Assert.assertEquals(store.requiredApiVersion(Runnable.class).toString(), "1.2.0");
+            store.forPlugin("old", "1.0.0").register(Runnable.class, () -> { });
+            org.testng.Assert.assertTrue(store.getService(Runnable.class, "old").isEmpty());
+            final var host = injector.getInstance(Key.get(new TypeLiteral<PluginServiceRegistry<NotificationPluginApi>>() { }));
+            final var implementation = org.mockito.Mockito.mock(NotificationPluginApi.class);
+            store.forPlugin("old", "1.0.0").register(NotificationPluginApi.class, implementation);
+            org.testng.Assert.assertTrue(host.getAllServices().isEmpty());
+            store.forPlugin("current", "1.0.0").register(NotificationPluginApi.class, implementation,
+                    org.killbill.billing.lpr.api.ServiceApiVersion.parse("1.2.0"), Map.of());
+            org.testng.Assert.assertNotNull(host.getServiceForName("current"));
+            final var invalid = new DefaultKillbillConfigSource(Map.of(
+                    "org.killbill.billing.plugin.install.dir", root.toString(),
+                    "org.killbill.billing.plugin.services.api.requiredVersions", "java.lang.Runnable=bad"));
+            org.testng.Assert.assertThrows(com.google.inject.CreationException.class, () -> createInjector(invalid));
+        } finally {
+            try (var paths = Files.walk(root)) {
+                for (final Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) { Files.deleteIfExists(path); }
+            }
+        }
+    }
+
     private Injector createInjector() { return createInjector(configSource); }
 
     private Injector createInjector(final KillbillConfigSource source) {

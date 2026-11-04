@@ -88,13 +88,13 @@
 ## P2 — 长期架构
 
 ### T7: Service Registry API 版本协商
-- **Status**: `[ ]` pending
+- **Status**: `[x]` completed
 - **Owner**: TBD
 - **Acceptance Criteria**:
   - 注册时附带接口版本元数据。
   - Core 调用前做兼容性检查。
 - **Affected Specs**: `capability-service-registry.md`
-- **Notes**: 
+- **Notes**: 独立接口版本、兼容性 lookup、统一宿主要求和普通/单值/健康检查桥接已实现；94 项目全量构建、22 个 ABI 门禁、268 项目标回归、18 项负例守卫通过。旧注册默认 1.0.0；详见 [t7-validation.md](t7-validation.md)。
 
 ### T8: Event Bus 背压与持久化
 - **Status**: `[ ]` pending
@@ -136,6 +136,13 @@
 - **Notes**: 故障注入、停止执行器 SPI/adapter、超时版本隔离、卸载保护及并发操作已验收；详见 [t11-validation.md](t11-validation.md)。OOM 为显式 Error 注入，不代表真实全局内存耗尽下的进程存活保证。
 
 ---
+
+## T7 执行清单
+
+- [x] 公共版本契约、注册元数据与兼容性 lookup
+- [x] 平台配置、统一要求与三类业务桥接
+- [x] 真实 ClassLoader 端到端及新增守卫变异验证
+- [x] 全量构建、回归、规格同步与提交
 
 ## T9 执行清单
 

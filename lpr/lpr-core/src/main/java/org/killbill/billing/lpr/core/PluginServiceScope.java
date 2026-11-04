@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.killbill.billing.lpr.api.ServiceApiVersion;
 import org.killbill.billing.lpr.api.ServiceReference;
 import org.killbill.billing.lpr.api.ServiceRegistration;
 import org.killbill.billing.lpr.api.ServiceRegistry;
@@ -63,6 +64,11 @@ final class PluginServiceScope implements ServiceRegistry, AutoCloseable {
     public <T> Optional<T> getService(final Class<T> type, final String id) { return delegate.getService(type, id); }
     @Override
     public <T> List<ServiceReference<T>> getServices(final Class<T> type) { return delegate.getServices(type); }
+    @Override
+    public <T> List<ServiceReference<T>> getServices(final Class<T> type,
+                                                   final ServiceApiVersion required) {
+        return delegate.getServices(type, required);
+    }
     @Override
     public List<String> getPluginIds(final Class<?> type) { return delegate.getPluginIds(type); }
 }

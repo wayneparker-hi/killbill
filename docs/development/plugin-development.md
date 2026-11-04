@@ -381,3 +381,32 @@ shasum -a 256 plugin.jar
 审计目录不会随正常卸载删除；文件写入先 flush/force 再原子 rename，但不保证断电下目录元数据持久化。部署需限制写权限、集中收集并制定保留策略，当前文件不具备防管理员篡改能力。禁止将 audit.dir 放入会随卸载删除的插件/version 子目录；共享模式建议保留默认节点本地目录。安装仍支持未提供 SHA-256 和签名的兼容模式；生产可同时启用两项强制策略。
 
 真实性校验覆盖安装器入口；人工修改仓库、绕过安装器写入后直接发现/启动不在此保证内。应限制仓库写权限。
+
+## 十二、Service Registry 接口版本协商
+
+插件发布版本（plugin.yaml 的 version）与服务接口版本独立。旧注册默认接口 `1.0.0`；新代码可显式声明已实现的接口契约：
+
+```java
+context.services().register(PaymentPluginApi.class, paymentApi,
+        ServiceApiVersion.parse("1.2.0"), Map.of("priority", 10));
+```
+
+也可在原三参数注册方法的属性中提供 `service.api.version` 字符串；只接受规范 MAJOR.MINOR.PATCH，不接受预发布、build 标签、负数、前导零。错误声明在注册及 listener 通知前拒绝；元数据不可变。不要用插件发布版本代替接口版本；版本声明不能证明实现满足接口语义，仍须通过 ABI 门禁和业务测试。
+
+消费者可显式请求所需版本，查找失败时按业务处理无可用 provider：
+
+```java
+context.services().getService(PaymentPluginApi.class, "acme-payment",
+        ServiceApiVersion.parse("1.2.0"));
+context.services().getServices(PaymentPluginApi.class, ServiceApiVersion.parse("1.2.0"));
+```
+
+稳定版本支持相同 major 且不低于消费者要求的版本，例如 1.3.0 支持 1.2.0，1.1.0/2.0.0 不支持；0.x 仅精确匹配。版本过滤保留 priority 顺序、健康过滤、暂存隔离及插件版本选择，不能绕过 selected version 回到旧版。不得缓存服务引用跨停止/升级，否则仍会固定旧 ClassLoader。
+
+宿主配置 `org.killbill.billing.plugin.services.api.requiredVersions`，值为逗号分隔的 `接口全限定名=版本`，未列出的接口默认要求 1.0.0。例如：
+
+```properties
+org.killbill.billing.plugin.services.api.requiredVersions=org.killbill.billing.payment.plugin.api.PaymentPluginApi=1.2.0
+```
+
+嵌套接口使用 binary name（含 `$`）。配置解析成不可变 map，重复/非法配置启动失败。无版本 lookup 使用此策略；普通、单值和 healthcheck 业务桥接在代理创建/注册前应用相同策略，subtype 按宿主实际消费的接口检查。不兼容 provider 会 warn 并跳过，不进入路由历史；内部 `publishedServices` 仍保留它用于诊断。不兼容服务不会自动令插件启动失败；自动回滚仍依赖升级健康检查。

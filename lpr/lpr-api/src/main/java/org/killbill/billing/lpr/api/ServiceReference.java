@@ -38,6 +38,9 @@ public interface ServiceReference<T> {
      */
     String version();
 
+    /** Service contract version; older registrations use 1.0.0. */
+    default ServiceApiVersion apiVersion() { return ServiceApiVersion.fromProperties(properties()); }
+
     /**
      * @return the service interface this was registered under
      */

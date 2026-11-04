@@ -16,8 +16,10 @@
 
 package org.killbill.billing.lpr.core;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.killbill.billing.lpr.api.ServiceApiVersion;
 import org.killbill.billing.lpr.api.ServiceReference;
 
 /**
@@ -36,6 +38,7 @@ final class DefaultServiceReference<T> implements ServiceReference<T> {
     private final Class<T> type;
     private final T service;
     private final Map<String, Object> properties;
+    private final ServiceApiVersion apiVersion;
 
     DefaultServiceReference(final String pluginId,
                             final String version,
@@ -47,7 +50,10 @@ final class DefaultServiceReference<T> implements ServiceReference<T> {
         this.type = type;
         this.service = service;
         // Copied, so a plugin mutating the map it passed in cannot reorder lookups afterwards.
-        this.properties = properties == null ? Map.of() : Map.copyOf(properties);
+        final var copied = new HashMap<String, Object>(properties == null ? Map.of() : properties);
+        this.apiVersion = ServiceApiVersion.fromProperties(copied);
+        copied.put(ServiceApiVersion.PROPERTY, apiVersion.toString());
+        this.properties = Map.copyOf(copied);
     }
 
     @Override
@@ -74,6 +80,9 @@ final class DefaultServiceReference<T> implements ServiceReference<T> {
     public Map<String, Object> properties() {
         return properties;
     }
+
+    @Override
+    public ServiceApiVersion apiVersion() { return apiVersion; }
 
     int priority() {
         final Object priority = properties.get(DefaultServiceRegistry.PRIORITY_PROPERTY);

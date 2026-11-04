@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 
+import org.killbill.billing.lpr.api.ServiceApiVersion;
 import org.killbill.billing.lpr.api.ServiceReference;
 import org.killbill.billing.lpr.api.ServiceRegistration;
 import org.killbill.billing.lpr.api.ServiceRegistry;
@@ -71,6 +72,7 @@ public class DefaultServiceRegistry {
     private final Map<String, String> selectedVersions = new ConcurrentHashMap<>();
     private final Map<String, String> stagedVersions = new ConcurrentHashMap<>();
     private final LprMetricsCollector metrics;
+    private final Map<String, ServiceApiVersion> apiRequirements;
 
     /**
      * Decides whether a plugin version is healthy enough to route traffic to. Set from the runtime
@@ -83,7 +85,16 @@ public class DefaultServiceRegistry {
     }
 
     public DefaultServiceRegistry(final LprMetricsCollector metrics) {
+        this(metrics, Map.of());
+    }
+
+    public DefaultServiceRegistry(final LprMetricsCollector metrics, final Map<String, ServiceApiVersion> apiRequirements) {
         this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
+        this.apiRequirements = Map.copyOf(apiRequirements);
+    }
+
+    public ServiceApiVersion requiredApiVersion(final Class<?> type) {
+        return apiRequirements.getOrDefault(type.getName(), ServiceApiVersion.LEGACY);
     }
 
     /**
@@ -222,11 +233,15 @@ public class DefaultServiceRegistry {
      * @return the service, or empty if that plugin publishes no such service right now
      */
     public <T> Optional<T> getService(final Class<T> type, final String pluginId) {
+        return getService(type, pluginId, requiredApiVersion(type));
+    }
+
+    public <T> Optional<T> getService(final Class<T> type, final String pluginId, final ServiceApiVersion required) {
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(pluginId, "pluginId");
-
+        Objects.requireNonNull(required, "required");
         for (final DefaultServiceReference<?> reference : referencesFor(type)) {
-            if (reference.pluginId().equals(pluginId) && isVisible(reference)) {
+            if (reference.pluginId().equals(pluginId) && isVisible(reference) && reference.apiVersion().supports(required)) {
                 return Optional.of(type.cast(reference.service()));
             }
         }
@@ -238,13 +253,18 @@ public class DefaultServiceRegistry {
      * @param <T>  service type
      * @return live references, highest priority first, ties broken by plugin id
      */
-    @SuppressWarnings("unchecked")
     public <T> List<ServiceReference<T>> getServices(final Class<T> type) {
+        return getServices(type, requiredApiVersion(type));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> List<ServiceReference<T>> getServices(final Class<T> type, final ServiceApiVersion required) {
         Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(required, "required");
 
         final List<ServiceReference<T>> ordered = new ArrayList<>();
         for (final DefaultServiceReference<?> reference : referencesFor(type)) {
-            if (isVisible(reference)) {
+            if (isVisible(reference) && reference.apiVersion().supports(required)) {
                 ordered.add((ServiceReference<T>) reference);
             }
         }
@@ -446,6 +466,11 @@ public class DefaultServiceRegistry {
         @Override
         public <T> List<ServiceReference<T>> getServices(final Class<T> type) {
             return store.getServices(type);
+        }
+
+        @Override
+        public <T> List<ServiceReference<T>> getServices(final Class<T> type, final ServiceApiVersion required) {
+            return store.getServices(type, required);
         }
 
         @Override

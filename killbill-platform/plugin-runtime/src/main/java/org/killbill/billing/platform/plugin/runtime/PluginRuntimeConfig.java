@@ -61,6 +61,11 @@ public interface PluginRuntimeConfig extends KillbillPlatformConfig {
     @Default("30000")
     long getPluginReportStaleAfter();
 
+    @Config("org.killbill.billing.plugin.services.api.requiredVersions")
+    @DefaultNull
+    @Description("Comma-separated interface binary name=MAJOR.MINOR.PATCH requirements; default 1.0.0")
+    String getPluginServiceApiRequiredVersions();
+
     @Config("org.killbill.billing.plugin.installation.maxArtifactBytes")
     @Default("67108864")
     @Description("Maximum downloaded artifact bytes, default 64 MiB")

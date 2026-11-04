@@ -181,8 +181,14 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
 
     @Provides
     @Singleton
-    DefaultServiceRegistry provideServiceRegistry(final LprMetricsCollector metrics) {
-        return new DefaultServiceRegistry(metrics);
+    DefaultServiceRegistry provideServiceRegistry(final LprMetricsCollector metrics, final ServiceApiRequirements requirements) {
+        return new DefaultServiceRegistry(metrics, requirements.versions());
+    }
+
+    @Provides
+    @Singleton
+    ServiceApiRequirements provideServiceApiRequirements(final PluginRuntimeConfig config) {
+        return ServiceApiRequirements.parse(config.getPluginServiceApiRequiredVersions());
     }
 
     @Provides
@@ -331,7 +337,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                                                                     healthcheckRegistry,
                                                                     healthCheckManager,
                                                                     invocationGuard,
-                                                                    serviceRegistry::isVisible));
+                                                                    serviceRegistry::isVisible, serviceRegistry::requiredApiVersion));
         return pluginManager;
     }
 

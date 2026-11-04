@@ -33,6 +33,8 @@ public class TestPluginRuntimeConfig implements PluginRuntimeConfig {
     @Override public long getPluginRepositoryReconcileInterval() { return 5000; }
     @Override public long getPluginReportStaleAfter() { return 30000; }
 
+    @Override public String getPluginServiceApiRequiredVersions() { return null; }
+
     @Override public long getPluginInstallMaxArtifactBytes() { return 67108864; }
     @Override public long getPluginInstallMaxExpandedBytes() { return 268435456; }
     @Override public boolean isPluginInstallSha256Required() { return false; }

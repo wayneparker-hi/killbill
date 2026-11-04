@@ -126,6 +126,7 @@ public class TestArchitecturalConstraints {
         for (final Class<?> apiType : List.of(org.killbill.billing.lpr.api.Plugin.class,
                                               org.killbill.billing.lpr.api.PluginContext.class,
                                               org.killbill.billing.lpr.api.ServiceRegistry.class,
+                                              org.killbill.billing.lpr.api.ServiceApiVersion.class,
                                               org.killbill.billing.lpr.api.EventBus.class,
                                               org.killbill.billing.lpr.api.ResourceRegistry.class)) {
             for (final var method : apiType.getMethods()) {

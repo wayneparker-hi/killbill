@@ -60,6 +60,34 @@ Core 代码 SHALL NOT 出现 `instanceof XxxPlugin` 或指向具体插件的 pom
 - **WHEN** 当前版本健康检查失败，随后恢复
 - **THEN** 平台普通、单值与支付等注册表撤回不健康版本并在恢复后重新提供；存在保留旧版时优先回退到健康旧版
 
+### Requirement: 独立接口版本元数据
+
+注册 SHALL 包含 `service.api.version`，与插件发布版本独立；默认 1.0.0。仅接受规范的已发布 MAJOR.MINOR.PATCH，错误声明 MUST 在写入、指标和 listener 通知之前拒绝；注册后不能通过修改原属性改变接口版本。
+
+#### Scenario: 旧注册与非法声明
+- **WHEN** 省略接口版本或传入非法/非字符串版本
+- **THEN** 省略时记录 1.0.0；非法时拒绝且无注册/通知副作用
+
+### Requirement: 调用前接口兼容性检查
+
+普通 lookup SHALL 使用宿主该类型所需版本（默认 1.0.0），并允许消费者显式请求版本；返回 provider 必须 major 相同且不低于所需版本，0.x 则精确匹配。不兼容返回空且不得因 priority 更高而绕过检查；健康/暂存/选择与撤销约束仍适用。
+
+#### Scenario: 同 major 向后兼容与跨 major 隔离
+- **WHEN** 消费者要求 1.2.0，provider 声明 1.1.0、1.2.0、1.3.0 或 2.0.0
+- **THEN** 只返回 1.2.0 与 1.3.0；0.x 仅精确版本返回
+
+#### Scenario: scope 与路由约束
+- **WHEN** 使用插件上下文显式查找版本，或 provider 不健康、暂存、已撤销
+- **THEN** scope 正确传递版本要求，不返回不可见版本；排序和 pluginId/version 作用域撤销不变
+
+### Requirement: 宿主桥接遵循统一版本要求
+
+平台 SHALL 通过 skife-config 配置每个消费接口的最低版本；重复/错误配置启动失败。普通、单值与 healthcheck 桥接 SHALL 在发布给 Core 前按实际消费类型检查；不兼容 warn 并跳过，不进入路由历史。
+
+#### Scenario: 不兼容 provider 与桥接刷新
+- **WHEN** 高版本插件注册不兼容接口，随后路由刷新/撤销其他版本
+- **THEN** 普通、单值和 healthcheck registry 均不会调用该实现；subtype 不能绕过目标接口要求
+
 ## MODIFIED Requirements
 
 无。
@@ -78,3 +106,8 @@ Core 代码 SHALL NOT 出现 `instanceof XxxPlugin` 或指向具体插件的 pom
 | 健康状态影响可见性 | `DefaultServiceRegistry.setHealthPredicate` 过滤 unhealthy 版本 | `TestDefaultServiceRegistryHealthFiltering` |
 | 健康检查桥接 | `KillbillPluginServiceBridge` 将 `PluginHealthCheck` 路由到 `PluginServiceRegistry<Healthcheck>` | `TestKillbillPluginServiceBridge#testHealthCheckIsRoutedToTheHostRegistry` |
 | 宿主路由健康过滤、恢复与回退 | `DefaultServiceRegistry.refreshVisibility/isVisible` / `KillbillPluginServiceBridge` | `TestKillbillPluginServiceBridge.testHostRoutesFollowHealthFallbackAndRecovery`、`testSingleRegistryFallsBackAcrossDifferentNames` |
+| 接口版本元数据及旧注册默认 | `ServiceApiVersion` / `DefaultServiceReference` | `TestServiceVersionNegotiation` |
+| 规范版本解析与兼容方向 | `ServiceApiVersion.parse/supports` | `TestServiceApiVersion` |
+| 按宿主要求与显式版本查找 | `DefaultServiceRegistry`、scoped view、`PluginServiceScope` | `TestServiceVersionNegotiation`、`TestServiceVersionNegotiationEndToEnd` |
+| 宿主要求配置及共享装配 | `ServiceApiRequirements` / `PluginRuntimeModule` | `TestServiceApiRequirements`、`TestPluginRuntimeModule.testServiceApiRequirementConfigurationReachesRegistry` |
+| 普通/单值/healthcheck/subtype 版本检查 | `KillbillPluginServiceBridge.compatible` | `TestKillbillPluginServiceBridge` |
