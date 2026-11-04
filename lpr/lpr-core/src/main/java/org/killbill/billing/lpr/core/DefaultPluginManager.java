@@ -52,6 +52,7 @@ public class DefaultPluginManager {
     private final LprMetricsCollector metrics;
     private final Map<String, PluginRuntime> plugins = new ConcurrentHashMap<>();
     private final Map<String, PluginRuntime> previousRuntimes = new ConcurrentHashMap<>();
+    private final Map<VersionKey, PluginRuntime> retiringRuntimes = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<PluginActivationListener> activationListeners = new CopyOnWriteArrayList<>();
 
     public DefaultPluginManager(final PluginRepository repository,
@@ -105,7 +106,7 @@ public class DefaultPluginManager {
         // the newly scanned filesystem state.
         for (final Map.Entry<String, PluginRuntime> entry : List.copyOf(plugins.entrySet())) {
             final PluginRuntime current = entry.getValue();
-            if (current.state().isRunning()) {
+            if (current.state().isRunning() || current.state() == PluginState.STOPPING) {
                 discovered.put(entry.getKey(), current);
             }
         }
@@ -165,7 +166,7 @@ public class DefaultPluginManager {
     public synchronized void stopAll() {
         for (final PluginRuntime runtime : allRuntimes()) {
             try {
-                lifecycle.stop(runtime);
+                stopRuntime(runtime);
             } catch (final RuntimeException e) {
                 log.warn("Failed to stop plugin {}", runtime.pluginId(), e);
             }
@@ -187,8 +188,8 @@ public class DefaultPluginManager {
      */
     public synchronized boolean stop(final String pluginId) {
         final PluginRuntime previous = previousRuntimes.remove(pluginId);
-        if (previous != null) { lifecycle.stop(previous); }
-        return lifecycle.stop(require(pluginId));
+        if (previous != null) { stopRuntime(previous); }
+        return stopRuntime(require(pluginId));
     }
 
     /**
@@ -225,6 +226,9 @@ public class DefaultPluginManager {
             return;
         }
         completeUpgrade(pluginId, incumbent.version());
+        if (isVersionLoaded(pluginId, version)) {
+            throw new IllegalStateException("Plugin version is still loaded: " + pluginId + '/' + version);
+        }
         final PluginRuntime candidate = repository.loadVersion(pluginId, version);
         final boolean wasRunning = incumbent.state().isRunning();
         if (wasRunning) {
@@ -235,7 +239,7 @@ public class DefaultPluginManager {
             lifecycle.start(candidate);
             repository.setActiveVersion(pluginId, version, wasRunning ? incumbent.version() : null);
         } catch (final RuntimeException e) {
-            lifecycle.stop(candidate);
+            stopRuntime(candidate);
             serviceRegistry.clearStagedVersion(pluginId);
             throw e;
         }
@@ -253,7 +257,7 @@ public class DefaultPluginManager {
             serviceRegistry.selectVersion(pluginId, version);
         }
         if (wasRunning && !retain) {
-            lifecycle.stop(incumbent);
+            stopRuntime(incumbent);
         }
     }
 
@@ -272,7 +276,7 @@ public class DefaultPluginManager {
             plugins.put(pluginId, previous);
             previousRuntimes.remove(pluginId);
             serviceRegistry.selectVersion(pluginId, version);
-            lifecycle.stop(current);
+            stopRuntime(current);
         } else {
             switchVersion(pluginId, version, true);
         }
@@ -291,7 +295,7 @@ public class DefaultPluginManager {
         if (require(pluginId).version().equals(expectedVersion)) {
             final PluginRuntime previous = previousRuntimes.remove(pluginId);
             if (previous != null) {
-                lifecycle.stop(previous);
+                stopRuntime(previous);
             }
         }
     }
@@ -367,10 +371,33 @@ public class DefaultPluginManager {
     }
 
     private List<PluginRuntime> allRuntimes() {
+        retiringRuntimes.entrySet().removeIf(entry -> entry.getValue().state() == PluginState.STOPPED);
         final List<PluginRuntime> runtimes = new ArrayList<>(plugins.values());
         runtimes.addAll(previousRuntimes.values());
-        return runtimes;
+        runtimes.addAll(retiringRuntimes.values());
+        return runtimes.stream().distinct().toList();
     }
+
+    /** True until a version has released its loader, including timed-out stop callbacks. */
+    public synchronized boolean isVersionLoaded(final String pluginId, final String version) {
+        return allRuntimes().stream().anyMatch(runtime -> runtime.pluginId().equals(pluginId)
+                && runtime.version().equals(version) && runtime.classLoaderHandle() != null);
+    }
+
+    private boolean stopRuntime(final PluginRuntime runtime) {
+        final VersionKey key = new VersionKey(runtime.pluginId(), runtime.version());
+        try {
+            return lifecycle.stop(runtime);
+        } finally {
+            if (runtime.classLoaderHandle() != null) {
+                retiringRuntimes.put(key, runtime);
+            } else {
+                retiringRuntimes.remove(key, runtime);
+            }
+        }
+    }
+
+    private record VersionKey(String pluginId, String version) { }
 
     private Optional<RunningPlugin> asRunningPlugin(final PluginRuntime runtime) {
         synchronized (runtime) {

@@ -26,6 +26,8 @@ import org.killbill.billing.lpr.classloader.DefaultPluginClassLoaderFactory;
 import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.event.DefaultEventBus;
 import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
+import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
+import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.core.PluginRepository;
@@ -229,6 +231,12 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
         return new PluginInstaller(repository);
     }
 
+    @Provides
+    @Singleton
+    PluginStopExecutor providePluginStopExecutor(final PluginRuntimeConfig config) {
+        return new DefaultPluginStopExecutor(config.getPluginStopMaxThreads(), config.getPluginStopTimeout());
+    }
+
     /**
      * Wires the bridge in as a listener before anything can register, and returns the manager.
      * <p>
@@ -244,6 +252,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                                               final ClassLoaderPolicy policy,
                                               final LprMetricsCollector metrics,
                                               final PluginInvocationGuard invocationGuard,
+                                              final PluginStopExecutor stopExecutor,
                                               final PluginHealthCheckManager healthCheckManager,
                                               final com.google.inject.Injector injector,
                                               final Set<PluginServiceRegistry<?>> typedRegistries,
@@ -257,7 +266,7 @@ public class PluginRuntimeModule extends KillBillPlatformModuleBase {
                 serviceRegistry,
                 eventBus,
                 PlatformServices.resolve(injector),
-                metrics);
+                metrics, stopExecutor);
         final DefaultPluginManager pluginManager = new DefaultPluginManager(repository, lifecycle, serviceRegistry, metrics);
 
         serviceRegistry.setHealthPredicate(healthCheckManager::isHealthy);

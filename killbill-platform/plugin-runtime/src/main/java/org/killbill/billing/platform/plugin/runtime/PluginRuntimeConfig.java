@@ -126,4 +126,13 @@ public interface PluginRuntimeConfig extends KillbillPlatformConfig {
     @Description("How often to check the new version's health during the watch window, "
                  + "in milliseconds")
     long getPluginUpgradeHealthCheckInterval();
+    @Config("org.killbill.billing.plugin.lifecycle.stopTimeout")
+    @Default("30000")
+    @Description("Caller deadline for plugin stop and resource cleanup, in milliseconds")
+    long getPluginStopTimeout();
+
+    @Config("org.killbill.billing.plugin.lifecycle.stopMaxThreads")
+    @Default("8")
+    @Description("Maximum daemon workers executing plugin stop and resource cleanup")
+    int getPluginStopMaxThreads();
 }

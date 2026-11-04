@@ -98,7 +98,8 @@ public class TestArchitecturalConstraints {
                 "org.killbill.billing.lpr.core.DefaultEventBus", "lpr-event-default",
                 "org.killbill.billing.lpr.core.DefaultPluginClassLoader", "lpr-classloader-default",
                 "org.killbill.billing.lpr.core.DefaultPluginClassLoaderFactory", "lpr-classloader-default",
-                "org.killbill.billing.lpr.core.YamlDescriptorParser", "lpr-descriptor-yaml");
+                "org.killbill.billing.lpr.core.YamlDescriptorParser", "lpr-descriptor-yaml",
+                "org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor", "lpr-lifecycle-default");
 
         final List<String> violations = implementationsBelongingInAdapters.keySet().stream()
                                                                           .filter(TestArchitecturalConstraints::isOnClasspath)

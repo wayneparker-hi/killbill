@@ -288,6 +288,8 @@ plugins/my-plugin/
 
 | 后缀 | 默认值 | 用途 |
 |---|---|---|
+| `lifecycle.stopTimeout` | 30000 ms | stop 与资源清理的宿主等待期限 |
+| `lifecycle.stopMaxThreads` | 8 | 停止执行器的全局 daemon worker 上限，无排队 |
 | `invocation.defaultTimeout` | 30000 ms | 调用超时 |
 | `invocation.timeoutOverrides` | 空 | `pluginId=毫秒`，逗号分隔 |
 | `invocation.maxThreads` | 64 | 全运行时调用 worker 上限，无等待队列 |
@@ -309,3 +311,7 @@ plugins/my-plugin/
 存在 `src/main/resources/plugin.yaml` 的模块自动在 Maven `verify` 执行 ABI 校验。校验已知平台服务契约的直接、泛型、异常与继承签名，以及 jar/依赖中的重复类；必需输入缺失会失败。自定义共享接口须添加对应 `--service-api-prefix`（显式参数替换默认前缀列表）。此静态门禁不代替实际 ClassLoader 与跨插件调用测试。
 
 邮件插件通过 `org.killbill.billing.runtime.api.NotificationInvoiceFormatterFactory` 发现自定义工厂，每次渲染重新选择当前服务。旧 `org.killbill.billing.plugin.notification.api.InvoiceFormatterFactory` 仅保留弃用别名；新注册应直接使用共享契约。
+
+停止超时后，该版本保持 `STOPPING`，服务已撤销、旧 Context 的注册能力已关闭；宿主继续处理其他插件。运行时只请求中断，待 stop 和资源清理真正结束后才关闭 ClassLoader、清除引用并转为 `STOPPED`。此期间禁止重新加载或卸载相同版本。若停止执行器已饱和，新停止操作会明确拒绝并保留原状态和服务；释放阻塞后可重试。升级若已完成路由切换、随后旧版停止被拒绝，新版继续服务，旧实例仍受管理并可由后续停止操作清理。
+
+使用 TestKit 注入停止故障时，可通过 `PluginTestRuntime.create(platformServices, stopTimeoutMillis, maxStopThreads)` 缩短等待并限制 worker。测试结束前应释放所有故意阻塞的门闩。注入 `OutOfMemoryError` 只验证插件错误边界；JVM 全局内存耗尽的进程存活保证属于进程隔离范围。

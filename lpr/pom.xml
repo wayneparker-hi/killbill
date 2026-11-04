@@ -48,6 +48,7 @@
         <module>lpr-api</module>
         <module>lpr-spi</module>
         <module>lpr-core</module>
+        <module>lpr-lifecycle-default</module>
         <module>lpr-classloader-default</module>
         <module>lpr-descriptor-yaml</module>
         <module>lpr-event-default</module>

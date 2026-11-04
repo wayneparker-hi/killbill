@@ -32,6 +32,7 @@
         Replaces killbill-platform-osgi.</description>
 
     <dependencies>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
@@ -91,6 +92,11 @@
         <dependency>
             <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-lpr-event-default</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-lifecycle-default</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>

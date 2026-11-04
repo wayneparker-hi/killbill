@@ -100,4 +100,9 @@ public class TestPluginRuntimeConfig implements PluginRuntimeConfig {
     public long getPluginUpgradeHealthCheckInterval() {
         return 5000L;
     }
+    @Override
+    public long getPluginStopTimeout() { return 30000; }
+
+    @Override
+    public int getPluginStopMaxThreads() { return 8; }
 }

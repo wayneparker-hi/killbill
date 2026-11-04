@@ -229,12 +229,17 @@ public class PluginNodeCommandListener {
             log.warn("Ignoring UNINSTALL_PLUGIN for {}: no version given", pluginId);
             return;
         }
-        final var current = pluginManager.get(pluginId).orElse(null);
-        if (current != null && current.version().equals(version) && pluginManager.isRunning(pluginId)) {
-            pluginManager.stop(pluginId);
+        synchronized (pluginManager) {
+            final var current = pluginManager.get(pluginId).orElse(null);
+            if (current != null && current.version().equals(version) && pluginManager.isRunning(pluginId)) {
+                pluginManager.stop(pluginId);
+            }
+            if (pluginManager.isVersionLoaded(pluginId, version)) {
+                throw new IllegalStateException("Cannot uninstall a loaded plugin version: " + pluginId + '/' + version);
+            }
+            installer.uninstall(pluginId, version);
+            pluginManager.discover();
         }
-        installer.uninstall(pluginId, version);
-        pluginManager.discover();
     }
 
     private static String property(final PluginNodeCommandMetadata command, final String key) {

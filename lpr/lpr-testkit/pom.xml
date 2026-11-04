@@ -30,6 +30,7 @@
         working stack is precisely its job.</description>
 
     <dependencies>
+
         <dependency>
             <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-lpr-api</artifactId>
@@ -54,6 +55,17 @@
             <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-lpr-event-default</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-lifecycle-default</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-lpr-management</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.kill-bill.billing</groupId>

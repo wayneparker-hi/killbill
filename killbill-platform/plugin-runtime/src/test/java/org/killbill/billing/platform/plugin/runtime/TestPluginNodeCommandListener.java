@@ -28,6 +28,7 @@ import org.killbill.billing.lpr.api.PluginState;
 import org.killbill.billing.lpr.classloader.DefaultPluginClassLoaderFactory;
 import org.killbill.billing.lpr.event.DefaultEventBus;
 import org.killbill.billing.lpr.core.DefaultPluginLifecycleManager;
+import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.core.PluginRepository;
@@ -44,6 +45,7 @@ import org.killbill.billing.util.nodes.KillbillNodesApi;
 import org.killbill.billing.util.nodes.NodeCommand;
 import org.killbill.billing.util.nodes.NodeInfo;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -77,10 +79,13 @@ public class TestPluginNodeCommandListener {
     private Path artifact;
     private DefaultPluginManager manager;
     private PluginInstaller installer;
+    private DefaultPluginStopExecutor stopExecutor;
     private PluginNodeCommandListener listener;
 
     @BeforeMethod(groups = "fast")
     public void beforeMethod() throws Exception {
+        stopEntered = new java.util.concurrent.CountDownLatch(1);
+        stopRelease = new java.util.concurrent.CountDownLatch(1);
         root = Files.createTempDirectory("lpr-nodecmd-");
 
         // A jar sitting somewhere else on disk, standing in for a release artifact -- carrying its
@@ -89,6 +94,7 @@ public class TestPluginNodeCommandListener {
         new PluginJarBuilder().build(Map.of(CLASS_NAME, SOURCE), artifact);
         addDescriptorTo(artifact, "id: " + PLUGIN_ID + "\nversion: 1.0.0\nentrypoint:\n  class: " + CLASS_NAME + "\n");
 
+        stopExecutor = new DefaultPluginStopExecutor(8, 100);
         final PluginRepository repository = new PluginRepository(root, new YamlDescriptorParser());
         final DefaultServiceRegistry services = new DefaultServiceRegistry();
         manager = new DefaultPluginManager(repository,
@@ -97,17 +103,52 @@ public class TestPluginNodeCommandListener {
                                                                              getClass().getClassLoader(),
                                                                              services,
                                                                              new DefaultEventBus(),
-                                                                             Map.of()),
+                                                                             Map.of(), stopExecutor),
                                            services);
         installer = new PluginInstaller(repository);
         listener = new PluginNodeCommandListener(manager, installer, new NoopPluginsInfoApi(), NoopNodesApi::new);
     }
 
-    /**
-     * Installing lays the version out and makes the runtime aware of it, but deliberately stops
-     * short of running it: choosing a version and choosing to run it are separate decisions, which
-     * is what makes a staged rollout possible.
-     */
+    @AfterMethod(groups = "fast", alwaysRun = true)
+    public void closeRuntime() {
+        manager.stopAll();
+        stopExecutor.close();
+    }
+
+    public static java.util.concurrent.CountDownLatch stopEntered = new java.util.concurrent.CountDownLatch(1);
+    public static java.util.concurrent.CountDownLatch stopRelease = new java.util.concurrent.CountDownLatch(1);
+
+    public static void blockingStop() {
+        stopEntered.countDown();
+        while (stopRelease.getCount() > 0) {
+            try { stopRelease.await(); } catch (final InterruptedException ignored) { }
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testUninstallKeepsJarWhileTimedOutStopIsStillExecuting() throws Exception {
+        final String blockedSource = SOURCE.replace("public void stop() { }",
+                "public void stop() { org.killbill.billing.platform.plugin.runtime.TestPluginNodeCommandListener.blockingStop(); }");
+        new PluginJarBuilder().build(Map.of(CLASS_NAME, blockedSource), artifact);
+        addDescriptorTo(artifact, "id: " + PLUGIN_ID + "\nversion: 1.0.0\nentrypoint:\n  class: " + CLASS_NAME + "\n");
+        install("1.0.0");
+        manager.start(PLUGIN_ID);
+        try {
+            listener.handleKillbillEvent(command("UNINSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of()));
+            assertTrue(stopEntered.await(2, java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals(manager.state(PLUGIN_ID).orElseThrow(), PluginState.STOPPING);
+            assertTrue(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0/plugin.jar")));
+            listener.handleKillbillEvent(command("UNINSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of()));
+            assertTrue(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0/plugin.jar")));
+        } finally { stopRelease.countDown(); }
+        final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+        while (manager.state(PLUGIN_ID).orElseThrow() != PluginState.STOPPED && System.nanoTime() < deadline) {
+            Thread.sleep(5);
+        }
+        listener.handleKillbillEvent(command("UNINSTALL_PLUGIN", PLUGIN_ID, "1.0.0", Map.of()));
+        assertFalse(Files.exists(root.resolve(PLUGIN_ID).resolve("1.0.0")));
+    }
+
     @Test(groups = "fast")
     public void testInstallMakesTheVersionKnownWithoutStartingIt() {
         listener.handleKillbillEvent(command("INSTALL_PLUGIN", PLUGIN_ID, "1.0.0",

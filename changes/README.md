@@ -20,7 +20,7 @@ changes/
 
 | 变更 | 当前范围 | 后续 |
 |---|---|---|
-| [lpr-production-readiness](lpr-production-readiness/tasks.md) | T1–T5 实现与审查修复验收 | T6–T11 待实现，暂不归档 |
+| [lpr-production-readiness](lpr-production-readiness/tasks.md) | T1–T5 已提交；T11 故障注入与生命周期隔离已验收 | T6–T10 待实现，暂不归档 |
 
 ## 已归档变更
 

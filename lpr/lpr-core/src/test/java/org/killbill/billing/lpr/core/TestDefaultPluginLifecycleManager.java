@@ -37,6 +37,8 @@ import org.killbill.billing.lpr.spi.PluginClassLoaderFactory;
 import org.killbill.billing.lpr.spi.PluginClassLoaderHandle;
 import org.killbill.billing.lpr.spi.PluginDescriptor;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
+import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -60,9 +62,19 @@ public class TestDefaultPluginLifecycleManager {
     private EventBus eventBus;
     private StubClassLoaderFactory classLoaderFactory;
     private DefaultPluginLifecycleManager lifecycle;
+    private ExecutorService stopWorkers;
+    private PluginStopExecutor stopExecutor;
 
     @BeforeMethod(groups = "fast")
     public void beforeMethod() {
+        stopWorkers = Executors.newSingleThreadExecutor();
+        stopExecutor = new PluginStopExecutor() {
+            public void execute(final Runnable action) throws InterruptedException {
+                try { stopWorkers.submit(action).get(); }
+                catch (final java.util.concurrent.ExecutionException e) { throw new IllegalStateException(e.getCause()); }
+            }
+            public void close() { stopWorkers.shutdownNow(); }
+        };
         journal.clear();
         RecordingPlugin.registryForAssertions = null;
         serviceRegistry = new DefaultServiceRegistry();
@@ -73,7 +85,26 @@ public class TestDefaultPluginLifecycleManager {
                                                       getClass().getClassLoader(),
                                                       serviceRegistry,
                                                       eventBus,
-                                                      Map.of(Gateway.class, (Gateway) () -> "platform"));
+                                                      Map.of(Gateway.class, (Gateway) () -> "platform"), stopExecutor);
+    }
+
+    @AfterMethod(groups = "fast")
+    public void closeWorkers() { stopExecutor.close(); }
+
+    @Test(groups = "fast")
+    public void testStopCapacityRejectionPreservesActiveStateAndServices() {
+        final PluginStopExecutor rejecting = new PluginStopExecutor() {
+            public void execute(final Runnable action) { throw new java.util.concurrent.RejectedExecutionException("full"); }
+            public void close() { }
+        };
+        final DefaultPluginLifecycleManager bounded = new DefaultPluginLifecycleManager(classLoaderFactory,
+                ClassLoaderPolicy.defaultPolicy(), getClass().getClassLoader(), serviceRegistry, eventBus, Map.of(), rejecting);
+        final PluginRuntime runtime = runtimeFor(RecordingPlugin.class);
+        bounded.start(runtime);
+        assertThrows(java.util.concurrent.RejectedExecutionException.class, () -> bounded.stop(runtime));
+        assertEquals(runtime.state(), PluginState.ACTIVE);
+        assertTrue(serviceRegistry.getService(Gateway.class, "recording").isPresent());
+        lifecycle.stop(runtime);
     }
 
     @Test(groups = "fast")
@@ -265,7 +296,7 @@ public class TestDefaultPluginLifecycleManager {
         final TestLprMetricsCollector.RecordingMetrics recording = new TestLprMetricsCollector.RecordingMetrics();
         final LprMetricsCollector metrics = new LprMetricsCollector(recording);
         final DefaultPluginLifecycleManager measured = new DefaultPluginLifecycleManager(classLoaderFactory,
-                ClassLoaderPolicy.defaultPolicy(), getClass().getClassLoader(), serviceRegistry, eventBus, Map.of(), metrics);
+                ClassLoaderPolicy.defaultPolicy(), getClass().getClassLoader(), serviceRegistry, eventBus, Map.of(), metrics, stopExecutor);
         final PluginRuntime runtime = runtimeFor(FailingStartPlugin.class);
         assertThrows(IllegalStateException.class, () -> measured.start(runtime));
         assertEquals(recording.gaugeValue("killbill.lpr.classloaders.active"), 0L);

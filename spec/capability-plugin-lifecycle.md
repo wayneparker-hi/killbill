@@ -22,7 +22,7 @@
 
 ### Requirement: 插件 start 中失败必须清理
 
-若 `Plugin.start()` 抛出异常，运行时 MUST 撤销已注册服务、释放资源、关闭 ClassLoader、丢弃引用，并将状态置为 FAILED。
+若 `Plugin.start()` 抛出异常或 Error（含可恢复的插件级 `OutOfMemoryError`），运行时 MUST 撤销已注册服务、释放资源、关闭 ClassLoader、丢弃引用，并将状态置为 FAILED。
 
 #### Scenario: start 抛异常
 - **IF** `Plugin.start()` 抛 `RuntimeException`
@@ -35,6 +35,27 @@
 #### Scenario: 正常停止插件
 - **WHEN** 调用 `PluginManager.stop(pluginId)`
 - **THEN** 新调用者先被切断，旧调用者完成后插件再停止，最终 ClassLoader 可回收
+
+### Requirement: 有界停止与超时隔离
+
+`Plugin.stop()` 及其资源清理 SHALL 在 SPI 提供的有界 daemon 执行器中运行；宿主等待时间可配置。超时 SHALL 撤销服务并继续处理其他插件。仍执行中的版本 SHALL 保持 STOPPING，禁止同版本重新加载或删除 jar；回调退出后才按序释放资源、关闭 ClassLoader 并清除引用。执行器饱和 SHALL 明确拒绝操作，不创建额外 worker。
+
+#### Scenario: stop 忽略中断并阻塞
+- **WHEN** 插件 stop 等待一个永不自行释放的门闩
+- **THEN** 宿主在配置期限内返回，其他插件可停止；阻塞版本为 STOPPING，服务不可见，ClassLoader 保持可用
+- **AND** 测试释放门闩后，该版本完成清理并进入 STOPPED
+
+#### Scenario: start 抛出 OutOfMemoryError
+- **WHEN** 插件已注册服务和资源后主动抛出 OutOfMemoryError
+- **THEN** 失败版本完整清理并进入 FAILED，其他插件仍能启动和提供服务
+
+### Requirement: 并发安装与版本操作一致
+
+同节点并发安装、发现、激活与回滚 SHALL 不丢失已加载实例，不重复启动同版本，不产生可见服务空窗；ACTIVE marker SHALL 与最终运行版本一致。
+
+#### Scenario: 并发发布和版本切换
+- **WHEN** 多线程安装新版本并与 activate / rollback / discover 交错执行
+- **THEN** 最终选中版本、marker 与路由一致；停止所有插件后无残留服务或资源
 
 ### Requirement: 插件启动早于 Core Service
 
@@ -71,6 +92,9 @@
 | CAS 状态转换 | `PluginRuntime.transition` / `DefaultPluginLifecycleManager.start` | `TestDefaultPluginLifecycleManager` |
 | 启动顺序 | `DefaultPluginLifecycleManager.start` | `TestDefaultPluginLifecycleManager` |
 | 启动失败清理 | `DefaultPluginLifecycleManager.start catch 块` | `TestDefaultPluginLifecycleManager` |
+| 插件级 Error 隔离 | `DefaultPluginLifecycleManager.start/tearDown` / `DefaultResourceRegistry.runQuietly` | `TestLifecycleFaultInjection.startupOutOfMemoryErrorDoesNotStrandServicesResourcesOrOtherPlugins`、`stopErrorStillReleasesResourcesAndLoader` |
+| 有界停止与超时隔离 | `PluginStopExecutor` / `DefaultPluginStopExecutor` / `PluginServiceScope` / `DefaultPluginManager.retiringRuntimes` | `TestDefaultPluginStopExecutor`、`TestLifecycleFaultInjection`、`TestPluginNodeCommandListener.testUninstallKeepsJarWhileTimedOutStopIsStillExecuting` |
+| 并发版本操作 | `DefaultPluginManager` 同节点串行化 / `PluginInstaller.install` 原子发布 | `TestConcurrentPluginOperations` |
 | 停止顺序 | `DefaultPluginLifecycleManager.stop` / `cleanUp` | `TestDefaultPluginLifecycleManager` |
 | START_PLUGIN 顺序 | `PluginRuntimeService` (`@LifecycleHandlerType(START_PLUGIN)`) | 全量启动测试 |
 | STARTED 事件约束 | `Plugin.java` 接口注释 + `PluginContext` 注释 | 代码审查、集成测试 |

@@ -19,6 +19,8 @@ package org.killbill.billing.lpr.core;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.killbill.billing.lpr.api.EventBus;
 import org.killbill.billing.lpr.api.Plugin;
@@ -28,6 +30,7 @@ import org.killbill.billing.lpr.api.PluginState;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
 import org.killbill.billing.lpr.spi.PluginClassLoaderFactory;
 import org.killbill.billing.lpr.spi.PluginClassLoaderHandle;
+import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +48,7 @@ import org.slf4j.LoggerFactory;
  *   build ClassLoader              1. withdraw services   (cut off new callers first)
  *   load entrypoint                2. Plugin.stop()       (let it finish its own work)
  *   build context                  3. release resources   (threads, subscriptions, connections)
- *   Plugin.start()                 4. close ClassLoader   (nothing can be running by now)
+ *   Plugin.start()                 4. close ClassLoader   (stop callback has actually returned)
  *   ACTIVE                         5. drop references     (or nothing is ever unloaded)
  *                                  STOPPED
  * </pre>
@@ -64,14 +67,16 @@ public class DefaultPluginLifecycleManager {
     private final EventBus eventBus;
     private final Map<Class<?>, Object> platformServices;
     private final LprMetricsCollector metrics;
+    private final PluginStopExecutor stopExecutor;
 
     public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory,
                                          final ClassLoaderPolicy policy,
                                          final ClassLoader parentClassLoader,
                                          final DefaultServiceRegistry serviceRegistry,
                                          final EventBus eventBus,
-                                         final Map<Class<?>, Object> platformServices) {
-        this(classLoaderFactory, policy, parentClassLoader, serviceRegistry, eventBus, platformServices, null);
+                                         final Map<Class<?>, Object> platformServices,
+                                         final PluginStopExecutor stopExecutor) {
+        this(classLoaderFactory, policy, parentClassLoader, serviceRegistry, eventBus, platformServices, null, stopExecutor);
     }
 
     public DefaultPluginLifecycleManager(final PluginClassLoaderFactory classLoaderFactory,
@@ -80,13 +85,15 @@ public class DefaultPluginLifecycleManager {
                                          final DefaultServiceRegistry serviceRegistry,
                                          final EventBus eventBus,
                                          final Map<Class<?>, Object> platformServices,
-                                         final LprMetricsCollector metrics) {
+                                         final LprMetricsCollector metrics,
+                                         final PluginStopExecutor stopExecutor) {
         this.classLoaderFactory = Objects.requireNonNull(classLoaderFactory, "classLoaderFactory");
         this.policy = Objects.requireNonNull(policy, "policy");
         this.parentClassLoader = Objects.requireNonNull(parentClassLoader, "parentClassLoader");
         this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceRegistry");
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus");
         this.platformServices = Map.copyOf(Objects.requireNonNullElse(platformServices, Map.of()));
+        this.stopExecutor = Objects.requireNonNull(stopExecutor, "stopExecutor");
         this.metrics = metrics != null ? metrics : new LprMetricsCollector(NoOpLprMetrics.INSTANCE);
     }
 
@@ -131,7 +138,7 @@ public class DefaultPluginLifecycleManager {
                     new DefaultPluginConfig(runtime.pluginId(), runtime.descriptor().config()),
                     runtime.artifact().root(),
                     runtime.artifact().jar(),
-                    serviceRegistry.forPlugin(runtime.pluginId(), runtime.version()),
+                    new PluginServiceScope(serviceRegistry, runtime.pluginId(), runtime.version()),
                     eventBus,
                     resources,
                     platformServices);
@@ -145,11 +152,11 @@ public class DefaultPluginLifecycleManager {
             log.info("Started plugin {} version {}", runtime.pluginId(), runtime.version());
             return true;
 
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             // Roll back whatever got as far as being registered. A plugin that failed halfway
             // through start() must not leave services behind for the core to call.
             log.error("Failed to start plugin {} version {}", runtime.pluginId(), runtime.version(), e);
-            serviceRegistry.unregisterAll(runtime.pluginId(), runtime.version());
+            withdrawServices(runtime);
             releaseResources(runtime);
             closeQuietly(handle);
             if (handle != null) {
@@ -169,7 +176,7 @@ public class DefaultPluginLifecycleManager {
      * not need to know which plugins made it up.
      *
      * @param runtime the plugin to stop
-     * @return true if this call stopped it
+     * @return true if this call accepted teardown; a timed-out callback remains STOPPING
      */
     public boolean stop(final PluginRuntime runtime) {
         Objects.requireNonNull(runtime, "runtime");
@@ -184,32 +191,53 @@ public class DefaultPluginLifecycleManager {
             return false;
         }
 
+        try {
+            stopExecutor.execute(() -> tearDown(runtime));
+        } catch (final TimeoutException e) {
+            withdrawServices(runtime);
+            log.warn("Plugin {} {} stop timed out; cleanup continues in STOPPING", runtime.pluginId(), runtime.version());
+        } catch (final InterruptedException e) {
+            withdrawServices(runtime);
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted waiting for plugin {} stop; cleanup continues", runtime.pluginId());
+        } catch (final RejectedExecutionException e) {
+            runtime.transition(PluginState.STOPPING, PluginState.ACTIVE);
+            throw e;
+        }
+        return true;
+    }
+
+    private void tearDown(final PluginRuntime runtime) {
         final long stopNanos = System.nanoTime();
-
-        // 1. New callers can no longer reach this version. In-flight ones keep a live
-        //    implementation until they return, which is why this precedes Plugin.stop().
-        //    Scoped by version, not just id: during an upgrade the incoming version shares this
-        //    plugin's id, and withdrawing by id alone would take its registrations down too.
-        serviceRegistry.unregisterAll(runtime.pluginId(), runtime.version());
-
-        // 2. Let the plugin wind down its own work while its classes are still loadable.
+        withdrawServices(runtime);
         final Plugin instance = runtime.instance();
         final PluginClassLoaderHandle handle = runtime.classLoaderHandle();
-        if (instance != null && handle != null) {
-            try {
+        try {
+            if (instance != null && handle != null) {
                 runWithPluginClassLoader(handle.classLoader(), instance::stop);
-            } catch (final Exception e) {
-                // Carry on: a plugin that cannot stop cleanly must not block the shutdown of the
-                // rest, and leaving it ACTIVE would be worse than a noisy stop.
-                log.warn("Plugin {} threw while stopping; continuing teardown", runtime.pluginId(), e);
+            }
+        } catch (final Throwable e) {
+            log.warn("Plugin {} threw while stopping; continuing teardown", runtime.pluginId(), e);
+        } finally {
+            // Interruption is a request to stop the callback, not to skip resource cleanup.
+            final boolean interrupted = Thread.interrupted();
+            try {
+                cleanUp(runtime);
+                runtime.transition(PluginState.STOPPING, PluginState.STOPPED);
+                metrics.recordPluginStop(System.nanoTime() - stopNanos);
+            } finally {
+                if (interrupted) { Thread.currentThread().interrupt(); }
             }
         }
+    }
 
-        cleanUp(runtime);
-        runtime.transition(PluginState.STOPPING, PluginState.STOPPED);
-        metrics.recordPluginStop(System.nanoTime() - stopNanos);
-        log.info("Stopped plugin {} version {}", runtime.pluginId(), runtime.version());
-        return true;
+    private void withdrawServices(final PluginRuntime runtime) {
+        final PluginContext context = runtime.context();
+        if (context != null && context.services() instanceof PluginServiceScope scope) {
+            scope.close();
+        } else {
+            serviceRegistry.unregisterAll(runtime.pluginId(), runtime.version());
+        }
     }
 
     /**

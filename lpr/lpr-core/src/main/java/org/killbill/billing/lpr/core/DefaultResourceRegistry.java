@@ -122,7 +122,7 @@ public class DefaultResourceRegistry implements ResourceRegistry {
     private void runQuietly(final Runnable action, final String description) {
         try {
             action.run();
-        } catch (final RuntimeException e) {
+        } catch (final Throwable e) {
             log.warn("Failed to release a resource ({}) of plugin {}", description, pluginId, e);
         }
     }

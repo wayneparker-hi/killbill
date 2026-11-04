@@ -39,6 +39,7 @@ import org.killbill.billing.lpr.core.PluginRepository;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
 import org.killbill.billing.lpr.spi.PluginDescriptor;
+import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 
 /**
  * A complete plugin runtime over a temporary directory.
@@ -63,8 +64,10 @@ public final class PluginTestRuntime implements AutoCloseable {
     private final DefaultEventBus eventBus = new DefaultEventBus();
     private final PluginRepository repository;
     private final DefaultPluginManager manager;
+    private final DefaultPluginStopExecutor stopExecutor;
 
-    private PluginTestRuntime(final Path root, final Map<Class<?>, Object> platformServices) {
+    private PluginTestRuntime(final Path root, final Map<Class<?>, Object> platformServices, final long stopTimeoutMillis, final int maxStopThreads) {
+        this.stopExecutor = new DefaultPluginStopExecutor(maxStopThreads, stopTimeoutMillis);
         this.root = root;
         this.pluginsDir = root.resolve("plugins");
         try {
@@ -80,7 +83,7 @@ public final class PluginTestRuntime implements AutoCloseable {
                 PluginTestRuntime.class.getClassLoader(),
                 serviceRegistry,
                 eventBus,
-                platformServices);
+                platformServices, stopExecutor);
         this.manager = new DefaultPluginManager(repository, lifecycle, serviceRegistry);
     }
 
@@ -96,9 +99,20 @@ public final class PluginTestRuntime implements AutoCloseable {
      * @return a runtime over a fresh temporary directory
      */
     public static PluginTestRuntime create(final Map<Class<?>, Object> platformServices) {
+        return create(platformServices, 30000);
+    }
+
+    /** Creates a runtime with a caller deadline for plugin stop and cleanup, in milliseconds. */
+    public static PluginTestRuntime create(final Map<Class<?>, Object> platformServices, final long stopTimeoutMillis) {
+        return create(platformServices, stopTimeoutMillis, 8);
+    }
+
+    /** Creates a runtime with bounded stop workers and a caller deadline. */
+    public static PluginTestRuntime create(final Map<Class<?>, Object> platformServices,
+                                           final long stopTimeoutMillis, final int maxStopThreads) {
         try {
             return new PluginTestRuntime(Files.createTempDirectory("lpr-runtime-"),
-                                         Objects.requireNonNullElse(platformServices, Map.of()));
+                                         Objects.requireNonNullElse(platformServices, Map.of()), stopTimeoutMillis, maxStopThreads);
         } catch (final IOException e) {
             throw new UncheckedIOException("Cannot create a temporary plugin runtime", e);
         }
@@ -257,6 +271,7 @@ public final class PluginTestRuntime implements AutoCloseable {
         try {
             manager.stopAll();
         } finally {
+            stopExecutor.close();
             deleteRecursively(root);
         }
     }

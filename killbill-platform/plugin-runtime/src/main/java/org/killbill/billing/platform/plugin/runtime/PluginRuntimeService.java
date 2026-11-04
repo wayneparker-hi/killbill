@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.killbill.billing.lpr.core.DefaultPluginManager;
+import org.killbill.billing.lpr.spi.PluginStopExecutor;
 import org.killbill.billing.platform.api.LifecycleHandlerType;
 import org.killbill.billing.platform.api.LifecycleHandlerType.LifecycleLevel;
 import jakarta.inject.Named;
@@ -60,6 +61,7 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
     private final PluginInvocationGuard invocationGuard;
     private final PluginHealthCheckManager healthCheckManager;
     private final PluginUpgradeMonitor upgradeMonitor;
+    private final PluginStopExecutor stopExecutor;
 
     @Inject
     public PluginRuntimeService(final DefaultPluginManager pluginManager,
@@ -69,13 +71,15 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
                                 final PluginNodeCommandListener nodeCommandListener,
                                 final PluginInvocationGuard invocationGuard,
                                 final PluginHealthCheckManager healthCheckManager,
-                                final PluginUpgradeMonitor upgradeMonitor) {
+                                final PluginUpgradeMonitor upgradeMonitor,
+                                final PluginStopExecutor stopExecutor) {
         this.pluginManager = Objects.requireNonNull(pluginManager, "pluginManager");
         this.config = Objects.requireNonNull(config, "config");
         this.eventDispatcher = Objects.requireNonNull(eventDispatcher, "eventDispatcher");
         this.externalBus = Objects.requireNonNull(externalBus, "externalBus");
         this.nodeCommandListener = Objects.requireNonNull(nodeCommandListener, "nodeCommandListener");
         this.invocationGuard = invocationGuard;
+        this.stopExecutor = Objects.requireNonNull(stopExecutor, "stopExecutor");
         this.healthCheckManager = healthCheckManager;
         this.upgradeMonitor = Objects.requireNonNull(upgradeMonitor, "upgradeMonitor");
     }
@@ -159,7 +163,11 @@ public class PluginRuntimeService implements PluginRuntimeLifecycleService {
             upgradeMonitor.stop();
         }
         log.info("Stopping plugins");
-        pluginManager.stopAll();
+        try {
+            pluginManager.stopAll();
+        } finally {
+            stopExecutor.close();
+        }
         if (invocationGuard != null) {
             invocationGuard.shutdown();
         }

@@ -126,16 +126,24 @@
 - **Notes**: 不阻塞 P0/P1
 
 ### T11: 混沌/故障注入测试
-- **Status**: `[ ]` pending
+- **Status**: `[x]` completed
 - **Owner**: TBD
 - **Acceptance Criteria**:
   - 插件 `start()` 抛 `OutOfMemoryError` 时 Core 存活。
   - 插件 `stop()` 死锁时 stop 超时并继续。
   - 并发 install + activate + rollback 不破坏状态机。
 - **Affected Specs**: `capability-plugin-lifecycle.md`, `capability-resource-management.md`
-- **Notes**: 
+- **Notes**: 故障注入、停止执行器 SPI/adapter、超时版本隔离、卸载保护及并发操作已验收；详见 [t11-validation.md](t11-validation.md)。OOM 为显式 Error 注入，不代表真实全局内存耗尽下的进程存活保证。
 
 ---
+
+## T11 执行清单
+
+- [x] 插件级 Error / OOM 启动清理与其他插件存活
+- [x] SPI + 有界停止 adapter、平台配置及 TestKit 装配
+- [x] 超时 STOPPING 隔离、延迟清理与同版本重载/卸载保护
+- [x] 并发安装 / 发现 / 激活 / 回滚端到端故障注入
+- [x] 负例守卫、隔离/卸载/架构测试及全量构建
 
 ## 完成后归档
 

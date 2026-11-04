@@ -33,6 +33,7 @@ import org.killbill.billing.lpr.core.DefaultPluginManager;
 import org.killbill.billing.lpr.core.DefaultServiceRegistry;
 import org.killbill.billing.lpr.core.PluginInfo;
 import org.killbill.billing.lpr.core.PluginRepository;
+import org.killbill.billing.lpr.lifecycle.DefaultPluginStopExecutor;
 import org.killbill.billing.lpr.descriptor.yaml.YamlDescriptorParser;
 import org.killbill.billing.lpr.spi.ClassLoaderPolicy;
 import org.killbill.billing.lpr.testkit.PluginJarBuilder;
@@ -80,6 +81,7 @@ public class TestHelloWorldPluginMigration {
     private DefaultServiceRegistry runtimeRegistry;
     private DefaultPaymentProviderPluginRegistry paymentRegistry;
     private DefaultPluginManager pluginManager;
+    private DefaultPluginStopExecutor stopExecutor;
 
     @BeforeClass(groups = "fast")
     public void beforeClass() throws Exception {
@@ -94,13 +96,14 @@ public class TestHelloWorldPluginMigration {
         runtimeRegistry.addListener(new KillbillPluginServiceBridge(List.<PluginServiceRegistry<?>>of(paymentRegistry)));
 
         final PluginRepository repository = new PluginRepository(root.resolve("plugins"), new YamlDescriptorParser());
+        stopExecutor = new DefaultPluginStopExecutor(8, 30000);
         final DefaultPluginLifecycleManager lifecycle = new DefaultPluginLifecycleManager(
                 new DefaultPluginClassLoaderFactory(),
                 ClassLoaderPolicy.defaultPolicy(),
                 getClass().getClassLoader(),
                 runtimeRegistry,
                 new DefaultEventBus(),
-                java.util.Map.of());
+                java.util.Map.of(), stopExecutor);
         pluginManager = new DefaultPluginManager(repository, lifecycle, runtimeRegistry);
     }
 
@@ -109,6 +112,7 @@ public class TestHelloWorldPluginMigration {
         if (pluginManager != null) {
             pluginManager.stopAll();
         }
+        if (stopExecutor != null) { stopExecutor.close(); }
     }
 
     /**
