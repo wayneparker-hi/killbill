@@ -70,7 +70,9 @@ final class PostgresqlDurableEventsStorage {
         source.setOptions("-c lock_timeout=300ms -c statement_timeout=2s");
     }
 
-    DefaultPersistentBus newBus() {
+    DefaultPersistentBus newBus() { return newBus(Map.of()); }
+
+    DefaultPersistentBus newBus(final Map<String, String> overrides) {
         final var properties = new Properties();
         final String prefix = "org.killbill.persistent.bus.external.";
         properties.setProperty(prefix + "tableName", ACTIVE);
@@ -82,6 +84,7 @@ final class PostgresqlDurableEventsStorage {
         properties.setProperty(prefix + "claim.time", "1s");
         properties.setProperty(prefix + "reapThreshold", "2s");
         properties.setProperty(prefix + "reapSchedule", "20ms");
+        overrides.forEach((key, value) -> properties.setProperty(prefix + key, value));
         final var config = new AugmentedConfigurationObjectFactory(properties)
                 .buildWithReplacements(PersistentBusConfig.class, Map.of("instanceName", "external"));
         return new DefaultPersistentBus(InTransaction.buildDDBI(source), new DefaultClock(), config,
@@ -123,6 +126,38 @@ final class PostgresqlDurableEventsStorage {
                 assertEquals(envelope.message(), message(id));
                 assertEquals(rows.getString(3), state);
                 assertFalse(rows.next(), "Duplicate queue envelope " + id);
+            }
+        }
+    }
+
+    String owner(final String table, final UUID id, final String state) throws SQLException {
+        assertTrue(table.equals(ACTIVE) || table.equals(HISTORY));
+        try (var connection = source.getConnection();
+             var statement = connection.prepareStatement("SELECT processing_owner FROM " + table + " WHERE user_token=? AND processing_state=?")) {
+            statement.setString(1, id.toString());
+            statement.setString(2, state);
+            try (var rows = statement.executeQuery()) {
+                assertTrue(rows.next(), "Missing owner for " + id + " / " + state);
+                final String owner = rows.getString(1);
+                assertFalse(rows.next(), "Duplicate owner record " + id);
+                return owner;
+            }
+        }
+    }
+
+    void verifyUnexpiredClaim(final UUID id, final String owner) throws SQLException {
+        try (var connection = source.getConnection();
+             var statement = connection.prepareStatement("SELECT processing_owner,processing_available_date > ?,processing_available_date,CURRENT_TIMESTAMP " +
+                                                         "FROM bus_ext_events WHERE user_token=? AND processing_state='IN_PROCESSING'")) {
+            statement.setTimestamp(1, new java.sql.Timestamp(System.currentTimeMillis()));
+            statement.setString(2, id.toString());
+            try (var rows = statement.executeQuery()) {
+                assertTrue(rows.next(), "Missing in-flight claim " + id);
+                assertEquals(rows.getString(1), owner);
+                System.out.println("durable claim=" + id + " owner=" + owner + " expires=" + rows.getTimestamp(3).toInstant() +
+                                   " observed=" + java.time.Instant.now() + " db-now=" + rows.getTimestamp(4).toInstant());
+                assertTrue(rows.getBoolean(2), "Claim expired before the observation " + id);
+                assertFalse(rows.next(), "Duplicate in-flight claim " + id);
             }
         }
     }

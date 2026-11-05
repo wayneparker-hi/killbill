@@ -29,7 +29,7 @@ python3 tools/validation/validate.py \
 |---|---|
 | 基础设施 | PostgreSQL 版本、Redis PING；不读写 Redis 业务键，不启用 Redis 缓存/时钟 |
 | 构建 | reactor 全量构建与插件 ABI；七项静态检查按项目规约跳过，构建阶段跳过测试 |
-| 数据库回归 | 全新数据库，账户（2 项）、业务集成（1 项）、队列停机（3 项）及 `ITPostgresqlDurableEvents`（4 项）；不同夹具使用独立库 |
+| 数据库回归 | 全新数据库，账户（2 项）、业务集成（1 项）、队列停机（3 项）、`ITPostgresqlDurableEvents`（4 项）及双节点 IT（2 项），共 12 项；不同夹具使用独立库 |
 | 启动 | 另一个全新数据库，部署实际 WAR/web.xml/生产 Guice 装配；只监听 `127.0.0.1` 的随机端口 |
 | 插件与业务 | 从构建产物安装 hello-world；创建租户/账户/支付方式，standard-monthly EVERGREEN 订阅生成发票，手动通过测试插件支付 |
 | 恢复 | 停服后用同一数据库和插件目录再次启动，验证插件 RUNNING、订阅 ACTIVE、发票金额/COMMITTED/余额为零以及唯一 SUCCESS/PURCHASE 交易 |
@@ -42,6 +42,8 @@ HTTP 冒烟使用生产模式（`server.test.mode=false`），没有替换 Guice
 多个逻辑通知队列共享调度器，非最后一个队列停止返回成功，只代表逻辑停用；最后一个停止才等待 handler 和完成写库。正常排空后重启的已完成通知不重复；超时后过期的 IN_PROCESSING 记录会由 reaper 恢复，handler 的副作用可能重复，业务仍需幂等。
 
 durableEvents 使用真实 `bus_ext_events` 表和生产 adapter/DAO/reaper。子 JVM 分别在发布成功后、UUID 幂等副作用提交后且确认前调用 halt；新 JVM 验证 UUID/topic/payload 不变及恢复消费。恢复过程会先留下 REAPED 历史，再生成 PROCESSED；同 UUID 多条历史不能直接视为重复副作用。测试还覆盖瞬时/永久失败、缺失订阅和真实 PostgreSQL 表锁超时。IT 类由验收入口显式选择，默认离线回归不连接 PostgreSQL。不会停止数据库或修改集群角色。实测结果与变异证据见 [durableEvents 验证](../../changes/archive/durable-events-postgresql/validation.md)。
+
+双节点 IT 使用同机两个独立 JVM、不同 `CreatorName`、相同 JVM 时区和同一个独立 PostgreSQL 库，通过屏障观察两节点同时在途且 claim 有效。正常场景验证每条消息一次投递；故障场景强制终止一个确认前节点（Unix 退出码 137），存活节点不重启，等待生产 reaper 恢复同 UUID。数据库 owner、REAPED/PROCESSED、每节点投递日志及 UUID 唯一业务结果共同校验。它验证的是生产 adapter/队列，未启动两个完整 WAR，也不覆盖跨主机网络分区、租约过期后旧 worker 继续执行、数据库故障或公平分配。实测与测试时区问题见 [双节点验证](../../changes/archive/durable-events-dual-node/validation.md)。
 
 ## 输出与清理
 

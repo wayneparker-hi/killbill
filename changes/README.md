@@ -24,6 +24,7 @@ changes/
 
 | 变更 | 主题 | 归档日期 |
 |---|---|---|
+| [archive/durable-events-dual-node](archive/durable-events-dual-node/ARCHIVED.md) | 双节点持久化事件竞争与故障接管验证 | 2026-11-05 |
 | [archive/durable-events-postgresql](archive/durable-events-postgresql/ARCHIVED.md) | PostgreSQL 持久化插件事件进程故障恢复 | 2026-11-04 |
 | [archive/queue-shutdown-drain](archive/queue-shutdown-drain/ARCHIVED.md) | 逻辑停用误报、完成/重试排空及恢复验证 | 2026-11-04 |
 | [archive/lpr-release-validation](archive/lpr-release-validation/ARCHIVED.md) | 独立 PostgreSQL、生产 WAR 业务与重启验收 | 2026-11-04 |

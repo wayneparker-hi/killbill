@@ -709,6 +709,14 @@ lombok 通过内部 API 改写 AST，**版本与 JDK 强耦合**；1.18.22 不�
 
 ---
 
+## 九、双 JVM 验收时区口径（2026-11-05）
+
+- Surefire 通过 parent POM 固定 `user.timezone=GMT`，手工启动的 Java 子进程原先只继承本机时区；无时区数据库字段在父子 JVM 中解释相差 8 小时，初版租约有效性断言未检出 1ms 过期 claim。
+- 仅修正测试：子 JVM 传递父时区，就绪信号核对实际时区；当前时间沿用 DAO 的 JDBC Timestamp 绑定口径。过期租约与省略时区参数的单变量变异均检出，无生产时区配置改动。
+- 初轮未检出结果、对照日志和最终范围见 [双节点验证](../../changes/archive/durable-events-dual-node/validation.md)。
+
+---
+
 ## 附：文档职责划分
 
 避免同一件事记在多处后不一致：

@@ -71,6 +71,18 @@
 - **WHEN** 独立验收库中的目标表被另一事务锁住，发布连接达到 lock_timeout
 - **THEN** 严格发布显式失败且没有消息被误接收；释放锁后可重新发布并消费
 
+### Requirement: PostgreSQL 双节点验证
+
+共用数据库、相同订阅与不同队列节点标识的两个 JVM SHALL 使用生产 POLLING claim/reaper 验证消息消费；此范围不承诺公平分配、跨主机网络故障、失效租约 fencing 或 exactly-once。
+
+#### Scenario: 有效租约内竞争消费
+- **WHEN** 两个节点同时运行、均持有不同消息的有效 claim，handler 在租约到期前完成
+- **THEN** 测试批次每个 UUID 最终只有一条 PROCESSED、无 REAPED/FAILED，独立投递记录各一次；数据库 owner 与实际消费节点一致
+
+#### Scenario: 运行中节点接管
+- **WHEN** 两节点均在途，一个节点在提交业务效果后且确认前被强制终止，另一节点继续运行
+- **THEN** 真实 claim 过期后由存活节点重放同 UUID；REAPED 保留旧 owner，PROCESSED 为存活节点，UUID 去重业务效果一份，投递记录证明发生跨节点重放
+
 ### Requirement: 有界准入与持久化失败处理
 
 宿主 MUST 限制单节点并发发布与执行中的 handler 数量，并限制序列化信封字节数（不超过既有 2048 字段预算）。超额发布立即拒绝；执行额度不足、无可见订阅或 handler 异常 MUST 进入 PersistentBus 重试，耗尽后进入历史表 FAILED 死信。
@@ -110,5 +122,6 @@
 | 发布 / 投递背压 | adapter semaphore、信封 UTF-8 字节预算 | `TestPersistentPluginEventBus.testPublicationBackpressureAndPermitRelease`、`testDeliveryBackpressureAndTcclRestoration` |
 | 重启 / 重试 / FAILED | `DefaultPersistentBus.postReliable`、队列 dispatcher / 历史表 | `TestPersistentPluginEventStorage` |
 | PostgreSQL 进程退出 / 确认前崩溃 / 写入失败 | 同生产 external bus 表、reaper、固定信封与 adapter | `ITPostgresqlDurableEvents`、`DurableEventsCrashWorker` |
+| PostgreSQL 双 JVM 竞争 / 已运行节点接管 | 生产 POLLING claim / reaper，不同 CreatorName | `ITPostgresqlDurableEventsCluster`、`DurableEventsNodeWorker` |
 | 版本选择 / 资源释放 / TCCL | `DurablePluginEventScope`、ServiceRegistry、ResourceRegistry | `TestPersistentPluginEventBus.testVersionSelectionRollbackAndOldCleanup`、`TestDurablePluginEventIsolation` |
 | 平台装配 / 生命周期 | `PluginRuntimeModule` / `PluginRuntimeService` | `TestPluginRuntimeModule.testModuleStartsRealDurablePluginAndReleasesSubscription` |

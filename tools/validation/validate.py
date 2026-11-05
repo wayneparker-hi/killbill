@@ -139,8 +139,9 @@ class Validation:
             ("postgres-account", "killbill/account", "TestAccountDao#testBasic+testMinimalFields"),
             ("postgres-business", "killbill/beatrix", "TestIntegration#testBasePlanCompleteWithBillingDayInPast"),
             ("postgres-queue-shutdown", "killbill-commons/queue", "TestNotificationQueueShutdown"),
-            ("postgres-durable-events", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEvents")):
-            if label in ("postgres-queue-shutdown", "postgres-durable-events"):
+            ("postgres-durable-events", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEvents"),
+            ("postgres-durable-cluster", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEventsCluster")):
+            if label in ("postgres-queue-shutdown", "postgres-durable-events", "postgres-durable-cluster"):
                 database = self.infrastructure.create(ROOT, label)
             properties = " ".join(JVM + [
                 "-Dorg.killbill.billing.dbi.test.postgresql=true", "-Dorg.killbill.billing.dbi.test.useLocalDb=true",

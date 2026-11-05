@@ -34,12 +34,17 @@
 - **WHEN** 独立 PostgreSQL 验收运行发布后退出、确认前崩溃、重试/死信与真实写锁超时测试
 - **THEN** 子 JVM 故障退出码、消息身份、队列状态与幂等业务结果均须符合预期；保留子进程日志且不上传连接密码
 
+#### Scenario: 双 JVM 竞争与接管
+- **WHEN** 专用 PostgreSQL 双节点测试启动两个不同标识的 JVM，在同时在途时结束一个节点
+- **THEN** 就绪/在途屏障、有效 claim、实际 owner、故障退出、跨节点重放和最终结果必须全部核验；超时或子进程提前退出不得算通过
+
 ## 实现与验证对照
 
 | Requirement | 实现 | 验证 |
 |---|---|---|
 | 隔离数据与 DDL | `tools/validation/infrastructure.py` | `ValidationGuards`、真实 PostgreSQL DDL 错误/事务回滚探针 |
 | 真实启动与恢复 | `WarServer.java`、`http_smoke.py` | `validate.py` HTTP 业务与重启冒烟、`ValidationGuards` 失败结果守卫 |
-| 结果与退出码 | `tools/validation/validate.py` | PostgreSQL 10 项目标测试、`ValidationGuards`、SIGTERM 实际进程探针 |
+| 结果与退出码 | `tools/validation/validate.py` | PostgreSQL 12 项目标测试、`ValidationGuards`、SIGTERM 实际进程探针 |
 | 停机异常传播 | `Validation.stop_server` / `check_queue_shutdown` | `ValidationGuards.test_queue_shutdown_timeout_and_uncompleted_records_reject_acceptance` |
 | 插件事件进程故障 | PostgreSQL 独立库与外部队列 | `ITPostgresqlDurableEvents`、`DurableEventsWorkerProcess` |
+| 双节点竞争与接管 | 独立双 JVM、同库、生产 external bus | `ITPostgresqlDurableEventsCluster`、节点屏障 / owner / 退出码核验 |
