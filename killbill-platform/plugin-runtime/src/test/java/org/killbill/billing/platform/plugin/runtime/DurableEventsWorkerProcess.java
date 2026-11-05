@@ -57,6 +57,40 @@ final class DurableEventsWorkerProcess implements AutoCloseable {
         assertEquals(process.exitValue(), expectedExit, "Unexpected child exit; see " + log);
     }
 
+    void pause() throws Exception { signal("STOP"); verifySuspended(true); }
+
+    void resume() throws Exception { signal("CONT"); verifySuspended(false); }
+
+    private void signal(final String signal) throws Exception {
+        assertTrue(process.isAlive(), "Cannot signal an exited child; see " + log);
+        final Process command = new ProcessBuilder("/bin/kill", "-" + signal, Long.toString(process.pid())).start();
+        try {
+            assertTrue(command.waitFor(5, TimeUnit.SECONDS), "Timed out sending " + signal);
+            assertEquals(command.exitValue(), 0, "Could not send " + signal + " to owned child " + process.pid());
+            System.out.println("durable worker signal=" + signal + " pid=" + process.pid());
+        } finally { if (command.isAlive()) { command.destroyForcibly(); } }
+    }
+
+    void verifySuspended(final boolean expected) throws Exception {
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            assertTrue(process.isAlive(), "Child exited during suspension probe; see " + log);
+            final Process command = new ProcessBuilder("ps", "-o", "stat=", "-p", Long.toString(process.pid())).start();
+            try {
+                assertTrue(command.waitFor(2, TimeUnit.SECONDS), "ps probe timed out");
+                final String state = new String(command.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+                assertEquals(command.exitValue(), 0, "No process state for owned child");
+                assertFalse(state.isEmpty());
+                if (state.startsWith("T") == expected) {
+                    System.out.println("durable worker pid=" + process.pid() + " state=" + state + " suspended=" + expected);
+                    return;
+                }
+            } finally { if (command.isAlive()) { command.destroyForcibly(); } }
+            Thread.sleep(20);
+        }
+        fail("Unexpected suspension state; expected=" + expected + "; see " + log);
+    }
+
     void kill() throws Exception {
         assertTrue(process.isAlive(), "Child exited before fault injection; see " + log);
         process.destroyForcibly();

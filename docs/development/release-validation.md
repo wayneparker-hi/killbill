@@ -29,7 +29,7 @@ python3 tools/validation/validate.py \
 |---|---|
 | 基础设施 | PostgreSQL 版本、Redis PING；不读写 Redis 业务键，不启用 Redis 缓存/时钟 |
 | 构建 | reactor 全量构建与插件 ABI；七项静态检查按项目规约跳过，构建阶段跳过测试 |
-| 数据库回归 | 全新数据库，账户（2 项）、业务集成（1 项）、队列停机（3 项）、`ITPostgresqlDurableEvents`（4 项）及双节点 IT（2 项），共 12 项；不同夹具使用独立库 |
+| 数据库回归 | 全新数据库，账户（2 项）、业务集成（1 项）、队列停机（3 项）、`ITPostgresqlDurableEvents`（4 项）、双节点 IT（2 项）及旧 worker 恢复 IT（2 项），共 14 项；不同夹具使用独立库 |
 | 启动 | 另一个全新数据库，部署实际 WAR/web.xml/生产 Guice 装配；只监听 `127.0.0.1` 的随机端口 |
 | 插件与业务 | 从构建产物安装 hello-world；创建租户/账户/支付方式，standard-monthly EVERGREEN 订阅生成发票，手动通过测试插件支付 |
 | 恢复 | 停服后用同一数据库和插件目录再次启动，验证插件 RUNNING、订阅 ACTIVE、发票金额/COMMITTED/余额为零以及唯一 SUCCESS/PURCHASE 交易 |
@@ -45,13 +45,15 @@ durableEvents 使用真实 `bus_ext_events` 表和生产 adapter/DAO/reaper。�
 
 双节点 IT 使用同机两个独立 JVM、不同 `CreatorName`、相同 JVM 时区和同一个独立 PostgreSQL 库，通过屏障观察两节点同时在途且 claim 有效。正常场景验证每条消息一次投递；故障场景强制终止一个确认前节点（Unix 退出码 137），存活节点不重启，等待生产 reaper 恢复同 UUID。数据库 owner、REAPED/PROCESSED、每节点投递日志及 UUID 唯一业务结果共同校验。它验证的是生产 adapter/队列，未启动两个完整 WAR，也不覆盖跨主机网络分区、租约过期后旧 worker 继续执行、数据库故障或公平分配。实测与测试时区问题见 [双节点验证](../../changes/archive/durable-events-dual-node/validation.md)。
 
+旧 worker IT 对本次 A 子 JVM 发送 SIGSTOP，并核对操作系统实际暂停状态；B 经真实租约过期/reaper 得到新的物理记录后，以 SIGCONT 恢复 A。A 的迟到成功与迟到异常均在 B 仍在 handler 中时写入完成/重试队列，再通过正常 stopQueue 排空，比较 B 的 record_id、owner、state、error_count、时间与信封是否保持不变。最终 B 可完成、active 为空，UUID 唯一业务效果一份；迟到成功的旧尝试会追加一条 PROCESSED 历史。夹具业务效果在暂停前已提交；该场景暂停整个 JVM，未验证恢复后才提交业务效果或仅卡 handler 而同机 reaper 继续运行的交错。实测与变异证据见 [旧 worker 验证](../../changes/archive/durable-events-stale-worker/validation.md)。
+
 ## 输出与清理
 
 默认输出在 `var/release-validation/<时间>-<随机后缀>/`，不进入 Git。`--output` 可以指定新的目录；完整构建时不能放在仓库的 Maven target 目录中，以免 clean 删除报告。
 
 - `report.json`：阶段、命令、退出码、构建/ABI 数量、实际测试数量、库名、DDL/产物摘要和日志路径；不含数据库密码。
 - `build.log`、`postgres-*.log`、`server-1.log`、`server-2.log`：原始结果。输出目录权限 0700；临时配置位于其中，不提交或作为 CI 制品上传。
-- `durable-events-*/`：子 JVM 日志、退出码对应记录及投递观察；私有 `connection.properties` 不作为 CI 制品上传。子 JVM halt 退出码 23/24 是测试预期的故障点，父测试仍须完整通过。
+- `durable-events-*/`：子 JVM 日志、退出码对应记录及投递观察；私有 `connection.properties` 不作为 CI 制品上传。子 JVM halt 退出码 23/24、强制终止 137 是测试预期的故障点，父测试仍须完整通过；旧 worker 的 STOP/CONT、ps 状态与物理记录快照保存在对应 postgres 日志中。
 - 正常成功：停止两次启动的本次 Java 进程，并删除本次创建的数据库；原有数据库、容器和 Redis 数据不清理。
 - 失败、超时或中断：非零退出，停止本次服务；保留库名和日志便于诊断。Maven/Java 子进程按进程组终止，超时后强杀；服务被强杀会将验收标为失败。
 - `--keep-databases`：成功也保留本次库。确认诊断完成后，可对报告列出的精确库名手动 `dropdb`；不要批量按前缀删除其他运行中的验收库。

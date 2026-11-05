@@ -717,6 +717,14 @@ lombok 通过内部 API 改写 AST，**版本与 JDK 强耦合**；1.18.22 不�
 
 ---
 
+## 十、过期 worker 的尝试历史（2026-11-05）
+
+- 旧 JVM 暂停过期后由 B 接管，再恢复 A：旧成功 ACK 可追加旧 owner 的 PROCESSED，最终同 UUID 有 REAPED(A)、PROCESSED(A)、PROCESSED(B)。历史按尝试解释，不能把 PROCESSED 条数直接等同于业务副作用数。
+- 当前完成/重试按旧物理 record_id 操作；两个受控交错中未影响 B 的新记录。完整快照包含 errors，能检出 UPDATE 误伤后 owner/state 被重新领取掩盖的变化；不代表提供 fencing 或所有并发顺序已验证。
+- 实测、两项生产路径变异和边界见 [旧 worker 验证](../../changes/archive/durable-events-stale-worker/validation.md)。
+
+---
+
 ## 附：文档职责划分
 
 避免同一件事记在多处后不一致：

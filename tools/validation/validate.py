@@ -140,8 +140,9 @@ class Validation:
             ("postgres-business", "killbill/beatrix", "TestIntegration#testBasePlanCompleteWithBillingDayInPast"),
             ("postgres-queue-shutdown", "killbill-commons/queue", "TestNotificationQueueShutdown"),
             ("postgres-durable-events", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEvents"),
-            ("postgres-durable-cluster", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEventsCluster")):
-            if label in ("postgres-queue-shutdown", "postgres-durable-events", "postgres-durable-cluster"):
+            ("postgres-durable-cluster", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEventsCluster"),
+            ("postgres-durable-stale", "killbill-platform/plugin-runtime", "ITPostgresqlDurableEventsStaleWorker")):
+            if label in ("postgres-queue-shutdown", "postgres-durable-events", "postgres-durable-cluster", "postgres-durable-stale"):
                 database = self.infrastructure.create(ROOT, label)
             properties = " ".join(JVM + [
                 "-Dorg.killbill.billing.dbi.test.postgresql=true", "-Dorg.killbill.billing.dbi.test.useLocalDb=true",

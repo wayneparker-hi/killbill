@@ -22,7 +22,7 @@ public final class DurableEventsNodeWorker {
         final var storage = new PostgresqlDurableEventsStorage(Path.of(args[0]));
         final String mode = args[1], node = args[2];
         final List<UUID> messages = Files.readAllLines(storage.directory.resolve("messages")).stream().map(UUID::fromString).toList();
-        assertTrue(mode.equals("publish") || mode.equals("normal") || mode.equals("failover"));
+        assertTrue(List.of("publish", "normal", "failover", "stale-success", "stale-failure").contains(mode));
         final var bus = storage.newBus(Map.of("claimed", "1", "queue.capacity", "1", "queue.mode", "POLLING",
                                              "claim.time", mode.equals("normal") ? "30s" : "6s",
                                              "reapThreshold", mode.equals("normal") ? "40s" : "8s"));
@@ -36,7 +36,7 @@ public final class DurableEventsNodeWorker {
                 Runtime.getRuntime().halt(23);
             }
             final var consumer = adapter.open("target", registry.forPlugin("target", "1.0.0"));
-            consumer.subscribe("jobs", event -> received(storage, event, messages, node));
+            consumer.subscribe("jobs", event -> received(storage, event, messages, node, mode));
             signal(storage.directory, "ready-" + node, CreatorName.get() + "|" + java.util.TimeZone.getDefault().getID());
             awaitSignal(storage.directory, "go");
             assertTrue(bus.startQueue());
@@ -48,7 +48,7 @@ public final class DurableEventsNodeWorker {
     }
 
     private static void received(final PostgresqlDurableEventsStorage storage, final DurableEvent event,
-                                 final List<UUID> messages, final String node) {
+                                 final List<UUID> messages, final String node, final String mode) {
         assertTrue(messages.contains(event.id()), "Foreign message " + event.id());
         assertEquals(event, PostgresqlDurableEventsStorage.message(event.id()));
         try {
@@ -59,6 +59,12 @@ public final class DurableEventsNodeWorker {
                 signal(storage.directory, "entered-" + node, event.id().toString());
             }
             awaitSignal(storage.directory, "release-" + node);
+            if (mode.startsWith("stale-")) {
+                final boolean failed = mode.equals("stale-failure") && node.equals("a");
+                signal(storage.directory, "returned-" + node, failed ? "failure" : "success");
+                System.out.println("durable handler returned uuid=" + event.id() + " node=" + node + " failed=" + failed);
+                if (failed) { throw new IllegalStateException("deliberate late failure"); }
+            }
         } catch (final Exception error) { throw new IllegalStateException(error); }
     }
 

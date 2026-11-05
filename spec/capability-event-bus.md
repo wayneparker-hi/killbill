@@ -83,6 +83,14 @@
 - **WHEN** 两节点均在途，一个节点在提交业务效果后且确认前被强制终止，另一节点继续运行
 - **THEN** 真实 claim 过期后由存活节点重放同 UUID；REAPED 保留旧 owner，PROCESSED 为存活节点，UUID 去重业务效果一份，投递记录证明发生跨节点重放
 
+#### Scenario: 旧 worker 迟到成功
+- **WHEN** A JVM 暂停超过有效租约，B 经生产 reaper 重投同 UUID 并持有新的有效 claim，此后 A 恢复并完成旧调用
+- **THEN** A 的迟到完成不得删除或改写 B 的新物理记录；B 可继续完成，最终无活跃记录，UUID 去重业务结果一份；历史按尝试和 owner 解释，不承诺旧调用被 fencing
+
+#### Scenario: 旧 worker 迟到失败
+- **WHEN** 相同接管条件下，A 恢复后旧调用抛错进入重试路径
+- **THEN** 不得重置 B 的记录、owner 或错误计数，也不得复活已回收的旧物理记录；B 可正常完成且消息无丢失
+
 ### Requirement: 有界准入与持久化失败处理
 
 宿主 MUST 限制单节点并发发布与执行中的 handler 数量，并限制序列化信封字节数（不超过既有 2048 字段预算）。超额发布立即拒绝；执行额度不足、无可见订阅或 handler 异常 MUST 进入 PersistentBus 重试，耗尽后进入历史表 FAILED 死信。
@@ -123,5 +131,6 @@
 | 重启 / 重试 / FAILED | `DefaultPersistentBus.postReliable`、队列 dispatcher / 历史表 | `TestPersistentPluginEventStorage` |
 | PostgreSQL 进程退出 / 确认前崩溃 / 写入失败 | 同生产 external bus 表、reaper、固定信封与 adapter | `ITPostgresqlDurableEvents`、`DurableEventsCrashWorker` |
 | PostgreSQL 双 JVM 竞争 / 已运行节点接管 | 生产 POLLING claim / reaper，不同 CreatorName | `ITPostgresqlDurableEventsCluster`、`DurableEventsNodeWorker` |
+| 旧 worker 迟到 ACK / 重试 | 生产按物理 record_id 完成、重试与回收 | `ITPostgresqlDurableEventsStaleWorker` |
 | 版本选择 / 资源释放 / TCCL | `DurablePluginEventScope`、ServiceRegistry、ResourceRegistry | `TestPersistentPluginEventBus.testVersionSelectionRollbackAndOldCleanup`、`TestDurablePluginEventIsolation` |
 | 平台装配 / 生命周期 | `PluginRuntimeModule` / `PluginRuntimeService` | `TestPluginRuntimeModule.testModuleStartsRealDurablePluginAndReleasesSubscription` |

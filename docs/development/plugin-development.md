@@ -444,7 +444,7 @@ durable.publish("invoice-consumer", "invoice-created-v1",
 
 真实 PostgreSQL 故障验收见 [发布验收](release-validation.md)。确认前崩溃可导致同 UUID 再次执行 handler；可将消息 UUID 的唯一记录与业务修改放在同一事务中，实现业务去重。夹具的唯一键只演示这一责任，不会让队列变为 exactly-once。信封的 `search_key2=0` 是平台非空索引的中性值，不携带业务租户授权；租户身份与权限需在业务协议中另行验证。
 
-多个节点共用外部队列时，队列节点标识 `org.killbill.queue.creator.name` 应各不相同。双 JVM 的正常消费和确认前故障接管通过发布验收验证；该验证不意味着租约到期后仍运行的旧 handler 会被 fencing，也不承诺每个节点获得相同消息数量。
+多个节点共用外部队列时，队列节点标识 `org.killbill.queue.creator.name` 应各不相同。发布验收覆盖正常消费、确认前故障接管及旧 JVM 暂停过期后恢复：旧调用的完成/重试按旧物理记录 ID 处理，未影响 B 的新记录；旧调用仍能返回，插件仍需幂等。迟到成功可留下相同 UUID、不同 owner 的多条 PROCESSED 历史，这是尝试历史，不能单凭条数认定业务重复。该验证不提供 fencing，也不承诺每个节点获得相同消息数量。
 
 重试、worker、队列和历史保留配置复用 `org.killbill.persistent.bus.external.*`（默认 instanceName 为 external，表为 bus_ext_events / bus_ext_events_history，以宿主配置为准），包括 `max.failure.retry`、`nbThreads`、`queue.capacity`、`queue.mode`。持续失败进入相应 `historyTableName` 的 `processing_state='FAILED'`。停机时保留宿主拒绝监听器直到总线停止，防止无订阅被静默 ACK；停机期间达到重试上限的消息也可能成为死信。
 

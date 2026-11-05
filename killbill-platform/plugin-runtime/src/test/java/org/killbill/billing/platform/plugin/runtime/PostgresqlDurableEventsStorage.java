@@ -162,6 +162,36 @@ final class PostgresqlDurableEventsStorage {
         }
     }
 
+    record Attempt(long recordId, String creator, String owner, String state, long errors,
+                   java.time.Instant created, java.time.Instant available, String className, String json) {}
+
+    java.util.List<Attempt> attempts(final String table, final UUID id) throws SQLException {
+        assertTrue(table.equals(ACTIVE) || table.equals(HISTORY));
+        final var result = new java.util.ArrayList<Attempt>();
+        try (var connection = source.getConnection();
+             var statement = connection.prepareStatement("SELECT record_id,creating_owner,processing_owner,processing_state,error_count," +
+                                                         "created_date,processing_available_date,class_name,event_json FROM " + table +
+                                                         " WHERE user_token=? ORDER BY record_id")) {
+            statement.setString(1, id.toString());
+            try (var rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    final var available = rows.getTimestamp(7);
+                    result.add(new Attempt(rows.getLong(1), rows.getString(2), rows.getString(3), rows.getString(4), rows.getLong(5),
+                                           rows.getTimestamp(6).toInstant(), available == null ? null : available.toInstant(),
+                                           rows.getString(8), rows.getString(9)));
+                }
+            }
+        }
+        System.out.println("durable attempts table=" + table + " uuid=" + id + " rows=" + result);
+        return java.util.List.copyOf(result);
+    }
+
+    Attempt attempt(final String table, final UUID id, final String state, final String owner) throws SQLException {
+        final var matches = attempts(table, id).stream().filter(row -> row.state().equals(state) && owner.equals(row.owner())).toList();
+        assertEquals(matches.size(), 1, "Expected one " + state + " attempt for " + id + " on " + owner);
+        return matches.get(0);
+    }
+
     void effect(final DurableEvent event) throws SQLException {
         try (var connection = source.getConnection();
              var statement = connection.prepareStatement("INSERT INTO validation_durable_effects(message_id,topic,payload) " +
