@@ -18,7 +18,9 @@ changes/
 
 ## 当前变更
 
-无。
+| 变更 | 状态 | 主题 |
+|---|---|---|
+| [product-assurance](product-assurance/proposal.md) | 执行中 | 资金正确性、在途升级、独立验收及产品收益证据；已完成 [同机双 WAR 阶段](product-assurance/dual-war-validation.md)，总体 [tasks](product-assurance/tasks.md) |
 
 ## 已归档变更
 

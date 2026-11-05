@@ -725,6 +725,14 @@ lombok 通过内部 API 改写 AST，**版本与 JDK 强耦合**；1.18.22 不�
 
 ---
 
+## 十一、双 WAR 的同步完成等待（2026-11-05）
+
+- 同机两个真实 WAR 下，A 的订阅创建 `callCompletion=true` 返回 408，但数据库已有订阅和金额 100 的发票项；相应有效订阅、发票和发票支付错误事件均由 B 消费。
+- `KillbillEventHandler.activeWaiters` 为每 JVM 内存列表，`EntitlementCallCompletion` 仅等待本机收到的事件。该窗口的 408 表示同步等待超时，不能据此判为创建失败或无条件重发。
+- 本轮部署验收改用现有异步创建协议及有界轮询，保留单节点同步冒烟；不声称修复跨节点同步完成。对照日志、环境及剩余边界见 [双 WAR 阶段](../../changes/product-assurance/dual-war-validation.md)。
+
+---
+
 ## 附：文档职责划分
 
 避免同一件事记在多处后不一致：

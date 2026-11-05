@@ -16,7 +16,8 @@ import uuid
 import zipfile
 
 from infrastructure import Infrastructure
-from http_smoke import Api, business_flow, check_plugin, verify_business
+from war_node import WarNode, check_queue_shutdown, stop_process
+from http_smoke import business_flow, check_plugin, verify_business
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
@@ -167,8 +168,9 @@ class Validation:
         if not totals["tests"] or any(totals[k] for k in ("failures", "errors", "skipped")):
             raise RuntimeError(f"Unsuccessful test results: {totals}")
 
-    def configure_server(self, database):
-        plugins = self.output / "plugins/hello-world/1.0.0"
+    def configure_server(self, database, install=None, name="killbill"):
+        install = install or self.output / "plugins"
+        plugins = install / "hello-world/1.0.0"
         plugins.mkdir(parents=True)
         jar = artifact(ROOT / "plugins/hello-world-plugin/target", "hello-world-plugin-*.jar")
         shutil.copy2(jar, plugins / "plugin.jar")
@@ -180,48 +182,22 @@ class Validation:
             "org.killbill.catalog.uri": (ROOT / "killbill/profiles/killbill/src/main/resources/SpyCarAdvanced.xml").as_uri(),
             "org.killbill.server.updateCheck.skip": "true", "org.killbill.server.test.mode": "false",
             "org.killbill.server.multitenant": "true", "org.killbill.server.lookupEnvironmentVariables": "false",
-            "org.killbill.billing.plugin.install.dir": str(self.output / "plugins"),
+            "org.killbill.billing.plugin.install.dir": str(install),
             "org.killbill.billing.plugin.mandatory.plugins": "hello-world",
             "org.killbill.notificationq.main.sleep": "100", "org.killbill.persistent.bus.main.sleep": "100",
             "org.killbill.persistent.bus.external.sleep": "100", "org.killbill.tenant.broadcast.rate": "1s"}
-        self.config = self.output / "killbill.properties"
+        self.config = self.output / f"{name}.properties"
         self.config.write_text("\n".join(k + "=" + property_value(v) for k, v in values.items()) + "\n")
         self.record("plugin", path=str(jar), sha256=hashlib.sha256(jar.read_bytes()).hexdigest())
 
     def start_server(self, generation):
-        port_file = self.output / f"port-{generation}"
-        work = self.output / f"webapp-{generation}"
-        work.mkdir()
-        command = [str(Path(self.args.java_home) / "bin/java"), *JVM,
-                   "-Dorg.killbill.server.properties=" + self.config.as_uri(),
-                   "-cp", self.classpath, "WarServer", str(self.war), str(port_file), str(work)]
-        log = self.output / f"server-{generation}.log"
-        self.server_log = log
-        with log.open("w") as output:
-            self.server = subprocess.Popen(command, cwd=self.output, env=self.environment, stdout=output,
-                                           stderr=subprocess.STDOUT, start_new_session=True)
-        self.record("server-start", pid=self.server.pid, log=str(log), generation=generation, command=command)
-        deadline = time.monotonic() + 180
-        while not port_file.is_file():
-            if self.server.poll() is not None or time.monotonic() >= deadline:
-                raise RuntimeError(f"WAR startup failed or timed out; see {log}")
-            time.sleep(0.25)
-        api = Api(int(port_file.read_text()))
-        api.get("/1.0/healthcheck")
-        self.record("server-ready", generation=generation, port=int(port_file.read_text()))
-        return api
+        self.server = WarNode(self, generation, self.config)
+        return self.server.start(JVM)
 
     def stop_server(self):
-        if self.server is None:
-            return
-        process = self.server
-        forced = stop_process(process)
-        self.record("server-stopped", pid=process.pid, exit_code=process.returncode)
-        self.server = None
-        if forced:
-            raise RuntimeError("WAR needed forced termination")
-        check_queue_shutdown(self.server_log)
-        self.record("queue-shutdown", status="passed", log=str(self.server_log))
+        if self.server is not None:
+            self.server.stop()
+            self.server = None
 
     def http_smoke(self):
         database = self.infrastructure.create(ROOT, "http")
@@ -243,6 +219,8 @@ class Validation:
             self.prepare_build()
             self.database_tests()
             self.http_smoke()
+            from war_cluster import WarCluster
+            WarCluster(self, JVM).run()
             if not self.args.keep_databases:
                 for database in sorted(self.infrastructure.owned):
                     self.infrastructure.drop(database)
@@ -261,26 +239,6 @@ class Validation:
 
 def property_value(value):
     return str(value).replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r")
-
-
-def check_queue_shutdown(log):
-    warning = re.search(r"Timed out while shutting down|Stopped queue with \d+ event/notifications non completed",
-                        log.read_text())
-    if warning:
-        raise RuntimeError(f"Queue shutdown did not complete cleanly: {warning.group()}; see {log}")
-
-
-def stop_process(process):
-    if process.poll() is not None:
-        return False
-    os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=20)
-        return False
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.wait(timeout=5)
-        return True
 
 
 def artifact(directory, pattern):

@@ -18,6 +18,11 @@
 - **WHEN** 创建租户、账户、订阅并由测试插件完成发票支付，再重启服务
 - **THEN** 健康检查通过，账户/订阅/发票/成功交易可重新查询，发票余额为零，插件重新加载
 
+#### Scenario: 同机双 WAR 消费、故障与重新加入
+- **WHEN** 两个不同节点名的独立 WAR 共用本次 PostgreSQL 库与本机插件目录
+- **THEN** 核验 PID/端口/插件与跨节点业务可见性、两节点同时持有有效 claim 的消费、确认前强杀 A 后不重启 B 的生产 reaper 接管，以及 A 新进程重新加入后的异步创建/轮询业务闭环
+- **AND** 验收插件只通过公共 API 驱动生产链路；逐 UUID 检查物理记录、owner、投递和去重效果，异常清理全部 owned WAR；不推导多机/NFS、外部支付恰好一次或负载均衡自动重试保证
+
 ### Requirement: 检查结果可审计
 
 入口 SHALL 保存阶段状态、执行命令、退出码、实际测试数量、失败/跳过与日志路径；构建与测试分开报告。子进程有启动/停止截止时间，异常或中断须清理本次服务。
@@ -53,3 +58,4 @@
 | 插件事件进程故障 | PostgreSQL 独立库与外部队列 | `ITPostgresqlDurableEvents`、`DurableEventsWorkerProcess` |
 | 双节点竞争与接管 | 独立双 JVM、同库、生产 external bus | `ITPostgresqlDurableEventsCluster`、节点屏障 / owner / 退出码核验 |
 | 旧 worker 恢复 | owned JVM STOP/CONT、真实 reaper、物理记录快照 | `ITPostgresqlDurableEventsStaleWorker` |
+| 双真实 WAR | `war_node.py`、`war_cluster.py`、输出目录编译的验收插件 | 同时在途、真实强杀/接管、跨节点业务与重新加入；`ClusterGuards` |

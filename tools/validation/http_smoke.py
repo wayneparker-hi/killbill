@@ -59,7 +59,7 @@ def check_plugin(api):
         raise RuntimeError(f"hello-world plugin is not running: {plugins}")
 
 
-def business_flow(api):
+def business_flow(api, call_completion=True):
     key, secret = uuid.uuid4().hex, uuid.uuid4().hex
     api.create("/1.0/kb/tenants?useGlobalDefault=true", {"apiKey": key, "apiSecret": secret})
     api.headers.update({"X-Killbill-ApiKey": key, "X-Killbill-ApiSecret": secret})
@@ -73,7 +73,7 @@ def business_flow(api):
     method_path = api.create(f"/1.0/kb/accounts/{account_id}/paymentMethods", {
         "pluginName": "hello-world-plugin", "pluginInfo": {"properties": []}})
     method_id = method_path.rsplit("/", 1)[1]
-    subscription_path = api.create("/1.0/kb/subscriptions?callCompletion=true", {
+    subscription_path = api.create("/1.0/kb/subscriptions?callCompletion=" + str(call_completion).lower(), {
         "accountId": account_id, "planName": "standard-monthly", "phaseType": "EVERGREEN"})
     subscription = api.get(subscription_path)
     if subscription["state"] != "ACTIVE":

@@ -33,7 +33,8 @@ python3 tools/validation/validate.py \
 | 启动 | 另一个全新数据库，部署实际 WAR/web.xml/生产 Guice 装配；只监听 `127.0.0.1` 的随机端口 |
 | 插件与业务 | 从构建产物安装 hello-world；创建租户/账户/支付方式，standard-monthly EVERGREEN 订阅生成发票，手动通过测试插件支付 |
 | 恢复 | 停服后用同一数据库和插件目录再次启动，验证插件 RUNNING、订阅 ACTIVE、发票金额/COMMITTED/余额为零以及唯一 SUCCESS/PURCHASE 交易 |
-| 停机 | 两次停服日志不得有队列 timeout 或未完成记录告警；出现则验收失败并保留数据库 |
+| 双 WAR | 另一个全新库、本机共享插件目录；两个独立 WAR 并行消费，确认前强杀 A，B 不重启接管，A 新进程重新加入；跨节点查询与异步业务闭环 |
+| 停机 | 所有正常停服日志不得有队列 timeout 或未完成记录告警；出现则验收失败并保留数据库；预期强杀单独核验退出 -SIGKILL |
 
 测试使用 `postgresql` profile；`travis` profile 强制 H2，不能用于这组 PostgreSQL 验收。DB 参数经 `-DsurefireArgLine` 传入，并保留英文 locale、四个 add-opens。现有测试 DB helper 固定 localhost:5432，脚本拒绝用其他地址运行这组 slow 测试。不同模块顺序执行。
 
@@ -47,14 +48,26 @@ durableEvents 使用真实 `bus_ext_events` 表和生产 adapter/DAO/reaper。�
 
 旧 worker IT 对本次 A 子 JVM 发送 SIGSTOP，并核对操作系统实际暂停状态；B 经真实租约过期/reaper 得到新的物理记录后，以 SIGCONT 恢复 A。A 的迟到成功与迟到异常均在 B 仍在 handler 中时写入完成/重试队列，再通过正常 stopQueue 排空，比较 B 的 record_id、owner、state、error_count、时间与信封是否保持不变。最终 B 可完成、active 为空，UUID 唯一业务效果一份；迟到成功的旧尝试会追加一条 PROCESSED 历史。夹具业务效果在暂停前已提交；该场景暂停整个 JVM，未验证恢复后才提交业务效果或仅卡 handler 而同机 reaper 继续运行的交错。实测与变异证据见 [旧 worker 验证](../../changes/archive/durable-events-stale-worker/validation.md)。
 
+## 同机双 WAR
+
+`war_cluster.py` 复用真实 WAR/生产 web.xml，并在输出目录编译一个仅用于验收的 `ClusterProbePlugin`。它通过公共 PluginContext 注册 Servlet 和 durable 订阅，使用平台 DataSource 写本次独立库的夹具表；没有替换 Guice 模块，也不将夹具打入生产制品。两个 WAR 使用不同 CreatorName、PID、随机端口和解压目录，共享本机插件目录；两个节点均启用 durableEvents。
+
+- 正常阶段发布 8 个 UUID，用 entered 屏障确认两节点实际同时在 handler 中，再校验有效 claim。dispatcher 可预取，因此不能用 IN_PROCESSING 总数判断执行中的 handler 数。释放后要求每 UUID 一次投递、一份效果及一条 PROCESSED，无 REAPED/FAILED。
+- 故障阶段发布 6 个 UUID，在 A/B 均在途时强杀 A。B 保持原 PID，reaper 自然等待租约过期后重放 A 的 UUID；核验旧 owner、不同物理记录、新有效 claim 与逐节点投递。A 预取但未执行的消息也必须最终完成，业务效果按 UUID 唯一键去重。
+- A 以新 PID 重新加入；故障前、故障后和重新加入后共创建 4 组订阅/发票/测试支付，从对端逐项读取。重新加入不能增加已完成消息的投递。最后正常停止 B 与重启的 A。
+
+夹具的 claim=15s / reapThreshold=20s 只用于 external bus 的验收配置，不修改生产默认值；handler 屏障最多等待 60s。效果在确认前提交，不能据此推导外部支付幂等、恰好一次、自动 HTTP 重试、任意交错或多机/NFS 保证。本阶段证据见 [部署验收阶段](../../changes/product-assurance/dual-war-validation.md)。
+
+双 WAR 使用 `callCompletion=false` 并轮询最终发票状态。实测 `callCompletion=true` 可在 A 返回 408，而订阅和发票已创建：完成事件由 B 消费，本机内存 waiter 未获通知。408 不能作为重新创建的依据。本轮记录该限制，没有实现跨节点同步等待；原单节点同步冒烟仍保留。
+
 ## 输出与清理
 
 默认输出在 `var/release-validation/<时间>-<随机后缀>/`，不进入 Git。`--output` 可以指定新的目录；完整构建时不能放在仓库的 Maven target 目录中，以免 clean 删除报告。
 
 - `report.json`：阶段、命令、退出码、构建/ABI 数量、实际测试数量、库名、DDL/产物摘要和日志路径；不含数据库密码。
-- `build.log`、`postgres-*.log`、`server-1.log`、`server-2.log`：原始结果。输出目录权限 0700；临时配置位于其中，不提交或作为 CI 制品上传。
+- `build.log`、`postgres-*.log`、`server-*.log`：原始结果。输出目录权限 0700；临时配置位于其中，不提交或作为 CI 制品上传。
 - `durable-events-*/`：子 JVM 日志、退出码对应记录及投递观察；私有 `connection.properties` 不作为 CI 制品上传。子 JVM halt 退出码 23/24、强制终止 137 是测试预期的故障点，父测试仍须完整通过；旧 worker 的 STOP/CONT、ps 状态与物理记录快照保存在对应 postgres 日志中。
-- 正常成功：停止两次启动的本次 Java 进程，并删除本次创建的数据库；原有数据库、容器和 Redis 数据不清理。
+- 正常成功：停止全部本次 WAR 进程，完整入口删除 7 个本次创建的数据库；原有数据库、容器和 Redis 数据不清理。
 - 失败、超时或中断：非零退出，停止本次服务；保留库名和日志便于诊断。Maven/Java 子进程按进程组终止，超时后强杀；服务被强杀会将验收标为失败。
 - `--keep-databases`：成功也保留本次库。确认诊断完成后，可对报告列出的精确库名手动 `dropdb`；不要批量按前缀删除其他运行中的验收库。
 
@@ -64,7 +77,7 @@ durableEvents 使用真实 `bus_ext_events` 表和生产 adapter/DAO/reaper。�
 python3 -m unittest discover -s tools/validation -p 'test_*.py' -v
 ```
 
-守卫覆盖越权清库、DDL 错误保留、子命令失败/超时、空测试/跳过/错误后端、缺失插件、错误交易/账单状态及停机队列异常。初版守卫验证见 [发布验收记录](../../changes/archive/lpr-release-validation/validation.md)；队列修复记录见 [队列停机变更](../../changes/archive/queue-shutdown-drain/validation.md)。
+守卫覆盖越权清库、DDL 错误保留、子命令失败/超时、空测试/跳过/错误后端、缺失插件、错误交易/账单状态、停机队列异常、WAR 身份/故障退出及多进程清理。初版守卫验证见 [发布验收记录](../../changes/archive/lpr-release-validation/validation.md)；队列修复记录见 [队列停机变更](../../changes/archive/queue-shutdown-drain/validation.md)。
 
 GitHub workflow 在现有全量构建及运行时回归之后，复用 job 的 PostgreSQL 16 / Redis 7 services 执行同一入口（`--skip-build`），上传 JSON 报告与日志。配置了 Linux 验收入口，不等于本机已执行过远端 CI。
 
